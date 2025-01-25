@@ -1,38 +1,62 @@
-.App {
-  text-align: center;
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif; /* Default font */
+}
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* Navigation Bar Styles */
+.navigation-bar {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Drop shadow at the bottom */
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Flex container adjustments for upper and lower navbar */
+.upper-navbar,
+.lower-navbar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+/* Default mobile-friendly styles */
+.upper-navbar .left-part,
+.upper-navbar .middle-part,
+.upper-navbar .right-part,
+.lower-navbar .left-part,
+.lower-navbar .middle-part,
+.lower-navbar .right-part {
+  flex: 1 1 100%;
+  text-align: center;
+  margin: 5px 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Media query for larger screens */
+@media (min-width: 768px) {
+  .upper-navbar,
+  .lower-navbar {
+    flex-wrap: nowrap;
   }
-  to {
-    transform: rotate(360deg);
+
+  .upper-navbar .left-part,
+  .upper-navbar .middle-part,
+  .upper-navbar .right-part,
+  .lower-navbar .left-part,
+  .lower-navbar .middle-part,
+  .lower-navbar .right-part {
+    flex: initial;
+    text-align: left;
+    margin: 0;
+  }
+
+  .lower-navbar .middle-part {
+    flex: 1;
+    display: flex;
+    justify-content: center;
   }
 }
