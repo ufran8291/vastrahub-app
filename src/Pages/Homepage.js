@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, doc, setDoc, getDocs, getDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
 
 // Assets
-import heroImg from "../assets/heroimg.png";
+import defaultHeroImg from "../assets/heroimg.png";
 import svg1 from "../assets/iconamoon_delivery-light.svg";
 import svg2 from "../assets/si_rupee-duotone.svg";
 import svg3 from "../assets/mdi-light_calendar.svg";
@@ -17,31 +17,30 @@ import categoryPlaceholder from "../assets/categoryplaceholder.png";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
 import googlePlayImage from "../assets/googleplay.png";
 import appStoreImage from "../assets/appstore.png";
-import mobileAppImage from "../assets/mobileapp.png";
-import tagImage1 from "../assets/tag1.png";
-import tagImage2 from "../assets/tag2.png";
-import tagImage3 from "../assets/tag3.png";
-import tagImage4 from "../assets/tag4.png";
+import mobileAppImage from "../assets/mobilepp.png";
 
 // Components
-// import SizeSelectorOverlay from "../Components/SizeSelectorOverlay";
-import SizeSelectorOverlay from '../components/SizeSelectorOverlay'
+import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 
 export default function Homepage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
+  // Local state
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredProducts2, setFeaturedProducts2] = useState([]); // Second set of featured products
+  const [heroBanner, setHeroBanner] = useState(null); // For hero banner image
+  const [banners, setBanners] = useState([]); // For banner images (banner-1 to banner-4)
 
   const categoryCarouselRef = useRef(null);
   const productCarouselRef = useRef(null);
 
-  // Overlay product
+  // Overlay product (for SizeSelectorOverlay)
   const [overlayProduct, setOverlayProduct] = useState(null);
 
-  // Info sections
+  // Info sections for the top info area
   const sections = [
     {
       svg: svg1,
@@ -65,7 +64,51 @@ export default function Homepage() {
     },
   ];
 
-  // Fetch categories
+  // ------------------ Fetch Hero Banner ------------------
+  const fetchHeroBanner = async () => {
+    try {
+      const heroDocRef = doc(db, "banners", "hero-banner");
+      const heroDocSnap = await getDoc(heroDocRef);
+      if (heroDocSnap.exists()) {
+        const data = heroDocSnap.data();
+        if (data.imageLink) {
+          setHeroBanner(data.imageLink);
+        } else {
+          console.log("No imageLink found in hero-banner document. Using default hero image.");
+        }
+      } else {
+        console.log("Hero banner document does not exist. Using default hero image.");
+      }
+    } catch (error) {
+      console.error("Error fetching hero banner:", error);
+    }
+  };
+
+  // ------------------ Fetch Banner Images ------------------
+  const fetchBannerImages = async () => {
+    try {
+      // We expect banner documents with IDs "banner-1", "banner-2", "banner-3", "banner-4"
+      const bannerIds = ["banner-1", "banner-2", "banner-3", "banner-4"];
+      const fetchedBanners = await Promise.all(
+        bannerIds.map(async (id) => {
+          const bannerDocRef = doc(db, "banners", id);
+          const bannerDocSnap = await getDoc(bannerDocRef);
+          if (bannerDocSnap.exists()) {
+            const data = bannerDocSnap.data();
+            return { id, imageLink: data.imageLink, link: data.link || null };
+          } else {
+            console.log(`Banner document ${id} does not exist.`);
+            return null;
+          }
+        })
+      );
+      setBanners(fetchedBanners.filter((banner) => banner !== null));
+    } catch (error) {
+      console.error("Error fetching banner images:", error);
+    }
+  };
+
+  // ------------------ Fetch Categories ------------------
   const getCategoryImages = async () => {
     const cats = [];
     try {
@@ -84,13 +127,12 @@ export default function Homepage() {
     return cats;
   };
 
-  // Fetch featured products
+  // ------------------ Fetch Featured Products (Tag: "Featured Products") ------------------
   const getFeaturedProducts = async () => {
     const prods = [];
     try {
       const tagsSnap = await getDocs(collection(db, "tags"));
       let productIds = [];
-      const otherTags = [];
 
       tagsSnap.forEach((docSnap) => {
         if (docSnap.data().title === "Featured Products") {
@@ -119,19 +161,60 @@ export default function Homepage() {
     return prods;
   };
 
+  // ------------------ Fetch Featured Products 2 (Tag: "Featured Products 2") ------------------
+  const getFeaturedProducts2 = async () => {
+    const prods = [];
+    try {
+      const tagsSnap = await getDocs(collection(db, "tags"));
+      let productIds = [];
+
+      tagsSnap.forEach((docSnap) => {
+        if (docSnap.data().title === "Featured Products 2") {
+          productIds = docSnap.data().products || [];
+        }
+      });
+
+      for (const productId of productIds) {
+        const productRef = doc(db, "products", productId);
+        const productDoc = await getDoc(productRef);
+        if (productDoc.exists()) {
+          const data = productDoc.data();
+          prods.push({
+            id: productId,
+            title: data.title,
+            image: data.coverImage || productPlaceholder,
+            price: data.sizes?.[0]?.pricePerPiece || 0,
+            sizes: data.sizes || [],
+            fabric: data.fabric || "",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching featured products 2:", error);
+    }
+    return prods;
+  };
+
   useEffect(() => {
+    // Fetch hero banner and tag banners
+    fetchHeroBanner();
+    fetchBannerImages();
+
+    // Fetch categories and both sets of featured products concurrently
     async function fetchData() {
-      const [cats, prods] = await Promise.all([
+      const [cats, prods, prods2] = await Promise.all([
         getCategoryImages(),
         getFeaturedProducts(),
+        getFeaturedProducts2(),
       ]);
       setCategories(cats);
       setFeaturedProducts(prods);
+      setFeaturedProducts2(prods2);
     }
     fetchData();
   }, []);
 
-  // Carousel scroll (if you have buttons for scrolling)
+  // ------------------ Carousel Scroll (optional) ------------------
   const scrollCarousel = (ref, direction, amount) => {
     if (ref.current) {
       ref.current.scrollBy({
@@ -141,7 +224,7 @@ export default function Homepage() {
     }
   };
 
-  // Add to Cart
+  // ------------------ Add to Cart ------------------
   const handleAddToCartClick = (product) => {
     if (!isLoggedIn) {
       toast.info("Please log in to add products to your cart.");
@@ -151,12 +234,12 @@ export default function Homepage() {
     setOverlayProduct(product);
   };
 
-  // Close overlay
+  // ------------------ Close Overlay ------------------
   const closeOverlay = () => {
     setOverlayProduct(null);
   };
 
-  // On overlay confirm => store in Firestore
+  // ------------------ Handle Overlay Confirm ------------------
   const handleOverlayConfirm = async (sizeQuantities) => {
     const uid = firestoreUser?.id;
     if (!uid) {
@@ -187,18 +270,18 @@ export default function Homepage() {
     }
   };
 
-  // Banners
-  const tags = [
-    { image: tagImage1, alt: "Browse by Category", buttonLabel: "Shop Now", categoryIndex: 0 },
-    { image: tagImage2, alt: "Featured Catalogue", buttonLabel: "Shop Now", categoryIndex: 1 },
-    { image: tagImage3, alt: "Best Deals", buttonLabel: "Shop Now", categoryIndex: 2 },
-    { image: tagImage4, alt: "New Arrivals", buttonLabel: "Shop Now", categoryIndex: 3 },
-  ];
-
   return (
     <>
-      {/* Hero Image */}
-      <img src={heroImg} alt="Hero" width="100%" />
+      {/* Hero Banner */}
+      <img
+        src={heroBanner ? heroBanner : defaultHeroImg}
+        alt="Hero"
+        width="100%"
+        onError={(e) => {
+          console.log("Hero banner image not available, falling back to default.");
+          e.target.src = defaultHeroImg;
+        }}
+      />
 
       {/* Info Sections */}
       <div className="container" style={{ padding: "70px 20px" }}>
@@ -238,7 +321,7 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Categories Section */}
       <div className="container" style={{ padding: "50px 20px" }}>
         <h1
           style={{
@@ -274,7 +357,7 @@ export default function Homepage() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "scale(1.02)";
-                  // e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+                  e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
@@ -311,7 +394,7 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Featured Products */}
+      {/* Featured Products Section 1 */}
       <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
         <div className="container" style={{ padding: "50px 20px" }}>
           <h1
@@ -325,7 +408,13 @@ export default function Homepage() {
           >
             FEATURED PRODUCTS
           </h1>
-          <div style={{ position: "relative", overflow: "hidden", paddingLeft: "20px" }}>
+          <div
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              paddingLeft: "20px",
+            }}
+          >
             <div
               className="row no-scrollbar"
               ref={productCarouselRef}
@@ -409,7 +498,13 @@ export default function Homepage() {
                     >
                       Available Sizes:
                     </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                      }}
+                    >
                       {prod.sizes.map((sz, j) => (
                         <div
                           key={j}
@@ -450,9 +545,13 @@ export default function Homepage() {
                       ))}
                     </div>
                   </div>
-
-                  <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
-                    {/* View More */}
+                  <div
+                    style={{
+                      marginTop: "15px",
+                      display: "flex",
+                      gap: "10px",
+                    }}
+                  >
                     <button
                       style={{
                         flex: 1,
@@ -472,7 +571,6 @@ export default function Homepage() {
                     >
                       View More
                     </button>
-                    {/* Add to Cart */}
                     <button
                       style={{
                         flex: 1,
@@ -498,56 +596,330 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Banners */}
+     
+      {/* Banners Section with Custom Grid Layout */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gridTemplateRows: "auto auto",
-            gap: "20px",
-          }}
-        >
-          {tags.map((tag, i) => (
+        <div className="banner-grid">
+          {/* Banner 1 */}
+          {banners[0] && (
             <div
-              key={i}
+              className="banner banner1"
+              onClick={() =>
+                banners[0].link
+                  ? window.open(banners[0].link, "_blank")
+                  : toast.info("Banner clicked!")
+              }
               style={{
-                gridColumn: i % 2 === 0 && i < 2 ? "span 2" : "auto",
                 position: "relative",
+                overflow: "hidden",
+                cursor: "pointer",
+                transition: "transform 0.3s",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
               <img
-                src={tag.image}
-                alt={tag.alt}
+                src={banners[0].imageLink}
+                alt="Banner 1"
                 style={{
                   width: "100%",
-                  height: "auto",
+                  height: "100%",
+                  objectFit: "cover",
                   borderRadius: "8px",
                 }}
               />
-              <button
-                style={{
-                  position: "absolute",
-                  bottom: "10px",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  padding: "10px 20px",
-                  backgroundColor: "#fff",
-                  border: "1px solid #333",
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  if (categories[tag.categoryIndex]) {
-                    navigate("/shopbycategory", { state: { category: categories[tag.categoryIndex] } });
-                  } else {
-                    toast.error("Category not found.");
-                  }
-                }}
-              >
-                {tag.buttonLabel}
-              </button>
             </div>
-          ))}
+          )}
+          {/* Banner 2 */}
+          {banners[1] && (
+            <div
+              className="banner banner2"
+              onClick={() =>
+                banners[1].link
+                  ? window.open(banners[1].link, "_blank")
+                  : toast.info("Banner clicked!")
+              }
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                cursor: "pointer",
+                transition: "transform 0.3s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <img
+                src={banners[1].imageLink}
+                alt="Banner 2"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          )}
+          {/* Banner 3 */}
+          {banners[2] && (
+            <div
+              className="banner banner3"
+              onClick={() =>
+                banners[2].link
+                  ? window.open(banners[2].link, "_blank")
+                  : toast.info("Banner clicked!")
+              }
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                cursor: "pointer",
+                transition: "transform 0.3s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <img
+                src={banners[2].imageLink}
+                alt="Banner 3"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          )}
+          {/* Banner 4 */}
+          {banners[3] && (
+            <div
+              className="banner banner4"
+              onClick={() =>
+                banners[3].link
+                  ? window.open(banners[3].link, "_blank")
+                  : toast.info("Banner clicked!")
+              }
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                cursor: "pointer",
+                transition: "transform 0.3s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <img
+                src={banners[3].imageLink}
+                alt="Banner 4"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+ {/* Featured Products Section 2 */}
+ <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
+        <div className="container" style={{ padding: "50px 20px" }}>
+          <h1
+            style={{
+              fontFamily: "Lora, serif",
+              fontWeight: "600",
+              fontSize: "48px",
+              textAlign: "left",
+              marginBottom: "50px",
+            }}
+          >
+            FEATURED PRODUCTS
+          </h1>
+          <div
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              paddingLeft: "20px",
+            }}
+          >
+            <div
+              className="row no-scrollbar"
+              style={{
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "scroll",
+              }}
+            >
+              {featuredProducts2.map((prod, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: "0 0 auto",
+                    width: "430px",
+                    marginRight: "10px",
+                    textAlign: "left",
+                    padding: "10px",
+                    height: "550px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    paddingBottom: "20px",
+                  }}
+                >
+                  <div>
+                    <img
+                      src={prod.image}
+                      alt={prod.title}
+                      style={{
+                        width: "100%",
+                        height: "250px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        marginBottom: "10px",
+                      }}
+                    />
+                    <h3
+                      style={{
+                        fontFamily: "Lora, serif",
+                        fontWeight: "500",
+                        fontSize: "20px",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      {prod.title}
+                    </h3>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontFamily: "Plus Jakarta Sans, sans-serif",
+                          fontSize: "16px",
+                          fontWeight: "400",
+                        }}
+                      >
+                        {prod.fabric}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "Plus Jakarta Sans, sans-serif",
+                          fontSize: "16px",
+                          fontWeight: "400",
+                        }}
+                      >
+                        From ₹ {prod.price}
+                      </p>
+                    </div>
+                    <p
+                      style={{
+                        fontFamily: "Plus Jakarta Sans, sans-serif",
+                        fontSize: "16px",
+                        fontWeight: "500",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      Available Sizes:
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                      }}
+                    >
+                      {prod.sizes.map((sz, j) => (
+                        <div
+                          key={j}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            border: `2px solid ${
+                              sz.boxesInStock > 0 ? "#333" : "#ccc"
+                            }`,
+                            backgroundColor: sz.boxesInStock > 0 ? "#fff" : "#f5f5f5",
+                            color: sz.boxesInStock > 0 ? "#333" : "#aaa",
+                            borderRadius: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            position: "relative",
+                            fontFamily: "Plus Jakarta Sans, sans-serif",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            cursor: sz.boxesInStock > 0 ? "pointer" : "not-allowed",
+                            opacity: sz.boxesInStock > 0 ? 1 : 0.6,
+                          }}
+                        >
+                          {sz.size}
+                          {sz.boxesInStock === 0 && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                width: "100%",
+                                height: "2px",
+                                backgroundColor: "#aaa",
+                                transform: "rotate(-45deg)",
+                                top: "50%",
+                              }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "15px",
+                      display: "flex",
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        backgroundColor: "#fff",
+                        color: "#333",
+                        fontFamily: "Plus Jakarta Sans, sans-serif",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        borderRadius: "0px",
+                        border: "solid 1px #333",
+                        cursor: "pointer",
+                      }}
+                      onClick={() =>
+                        navigate("/view-product", { state: { productId: prod.id } })
+                      }
+                    >
+                      View More
+                    </button>
+                    <button
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        backgroundColor: "#333",
+                        color: "#fff",
+                        fontFamily: "Plus Jakarta Sans, sans-serif",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        borderRadius: "0px",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => handleAddToCartClick(prod)}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -566,7 +938,7 @@ export default function Homepage() {
             color: "#000",
           }}
         >
-          <div style={{ maxWidth: "60%" }}>
+          <div style={{ maxWidth: "50%" }}>
             <h2
               style={{
                 fontFamily: "Lora",
@@ -606,7 +978,7 @@ export default function Homepage() {
               />
             </div>
           </div>
-          <div style={{ maxWidth: "40%" }}>
+          <div style={{ maxWidth: "50%" }}>
             <img
               src={mobileAppImage}
               alt="Vastrahub Mobile App"

@@ -75,3 +75,48 @@ body {
 .subcategory-dropdown {
   z-index: 1000;
 }
+/* src/App.css */
+
+/* Banner grid layout */
+.banner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "banner1 banner2"
+    "banner1 banner3"
+    "banner4 banner4";
+  gap: 20px;
+}
+
+/* Position each banner */
+.banner1 {
+  grid-area: banner1;
+}
+.banner2 {
+  grid-area: banner2;
+}
+.banner3 {
+  grid-area: banner3;
+}
+.banner4 {
+  grid-area: banner4;
+}
+
+/* Hover effect (if not handled inline) */
+.banner-grid .banner:hover {
+  transform: scale(1.03);
+  transition: transform 0.3s;
+}
+
+/* Mobile: stack banners */
+@media (max-width: 768px) {
+  .banner-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "banner1"
+      "banner2"
+      "banner3"
+      "banner4";
+  }
+}
