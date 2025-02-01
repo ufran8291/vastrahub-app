@@ -60,3 +60,18 @@ body {
     justify-content: center;
   }
 }
+/* src/App.css */
+
+/* Show subcategory dropdown on hover */
+.lower-navbar .middle-part .subcategory-dropdown {
+  display: none;
+}
+
+.lower-navbar .middle-part:hover .subcategory-dropdown {
+  display: block;
+}
+
+/* Optional: Adjust z-index to ensure dropdown appears above other elements */
+.subcategory-dropdown {
+  z-index: 1000;
+}

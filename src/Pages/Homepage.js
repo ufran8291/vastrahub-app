@@ -1,7 +1,9 @@
+// src/Pages/Homepage.js
+
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, doc, setDoc, getDocs, getDoc } from "firebase/firestore";
-import { db } from "../Configs/FirebaseConfig"; 
+import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
 
@@ -21,221 +23,13 @@ import tagImage2 from "../assets/tag2.png";
 import tagImage3 from "../assets/tag3.png";
 import tagImage4 from "../assets/tag4.png";
 
-// ---------------- SIZE SELECTOR OVERLAY ----------------
-function SizeSelectorOverlay({ product, onClose, onConfirm }) {
-  const [quantities, setQuantities] = useState([]);
+// Components
+// import SizeSelectorOverlay from "../Components/SizeSelectorOverlay";
+import SizeSelectorOverlay from '../components/SizeSelectorOverlay'
 
-  // Count distinct sizes with quantity > 0
-  const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
-
-  useEffect(() => {
-    if (product && product.sizes) {
-      // Initialize each size with quantity = 0
-      const initData = product.sizes.map((s) => ({
-        ...s,
-        quantity: 0,
-      }));
-      setQuantities(initData);
-    }
-  }, [product]);
-
-  // =========== INCREMENT ===========
-  const handleIncrement = (idx) => {
-    console.log(`handleIncrement fired, idx=${idx}`);
-    setQuantities((prev) => {
-      const updated = [...prev];
-      const stock = updated[idx].boxesInStock || 0;
-      if (updated[idx].quantity < stock) {
-        updated[idx].quantity += 1;
-        console.log(`quantity for idx=${idx} => ${updated[idx].quantity}`);
-      }
-      return updated;
-    });
-  };
-
-  // =========== DECREMENT ===========
-  const handleDecrement = (idx) => {
-    console.log(`handleDecrement fired, idx=${idx}`);
-    setQuantities((prev) => {
-      const updated = [...prev];
-      if (updated[idx].quantity > 0) {
-        updated[idx].quantity -= 1;
-        console.log(`quantity for idx=${idx} => ${updated[idx].quantity}`);
-      }
-      return updated;
-    });
-  };
-
-  // =========== CONFIRM ===========
-  const handleConfirm = () => {
-    if (distinctSelected < 2) {
-      toast.info("Please select at least 2 different sizes.");
-      return;
-    }
-    const selectedSizes = quantities.filter((q) => q.quantity > 0);
-    onConfirm(selectedSizes);
-  };
-
-  if (!product) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        zIndex: 9999,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "8px",
-          padding: "20px",
-          width: "400px",
-          fontFamily: "Plus Jakarta Sans, sans-serif",
-        }}
-      >
-        <h3
-          style={{
-            marginBottom: "10px",
-            fontFamily: "Lora, serif",
-            fontWeight: 600,
-            fontSize: "22px",
-          }}
-        >
-          Select Quantities
-        </h3>
-        <p style={{ marginBottom: "20px", fontSize: "16px", color: "#333" }}>
-          {product.title}
-        </p>
-
-        {/* SCROLLABLE AREA */}
-        <div style={{ maxHeight: "300px", overflowY: "auto", marginBottom: "20px" }}>
-          {quantities.map((sizeObj, idx) => (
-            <div
-              key={sizeObj.size}
-              style={{
-                borderBottom: "1px solid #eee",
-                padding: "8px 0",
-                marginBottom: "8px",
-              }}
-            >
-              <strong style={{ fontSize: "16px" }}>
-                Size: {sizeObj.size} (Stock: {sizeObj.boxesInStock})
-              </strong>
-              <div style={{ fontSize: "14px", color: "#555" }}>
-                Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
-              </div>
-
-              {/* Increment/Decrement Controls */}
-              <div
-                style={{
-                  marginTop: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                {/* Decrement button */}
-                <button
-                  onClick={() => handleDecrement(idx)}
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: sizeObj.quantity > 0 ? "pointer" : "not-allowed",
-                  }}
-                >
-                  -
-                </button>
-
-                <span style={{ minWidth: "24px", textAlign: "center" }}>
-                  {sizeObj.quantity}
-                </span>
-
-                {/* Increment button */}
-                <button
-                  onClick={() => handleIncrement(idx)}
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                  }}
-                  disabled={sizeObj.quantity >= sizeObj.boxesInStock}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* NOTE IF <2 DISTINCT SIZES */}
-        {distinctSelected < 2 && (
-          <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>
-            You must select at least 2 different sizes.
-          </p>
-        )}
-
-        {/* ACTION BUTTONS */}
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {/* CANCEL */}
-          <button
-            onClick={onClose}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#fff",
-              color: "#333",
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "0px",
-              border: "solid 1px #333",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-
-          {/* CONFIRM */}
-          <button
-            onClick={handleConfirm}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#333",
-              color: "#fff",
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "0px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// -------------------- HOMEPAGE COMPONENT --------------------
 export default function Homepage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser } = useContext(GlobalContext);
-
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
   const [categories, setCategories] = useState([]);
@@ -277,9 +71,11 @@ export default function Homepage() {
     try {
       const snap = await getDocs(collection(db, "categories"));
       snap.forEach((docSnap) => {
+        console.log(docSnap.data());
         cats.push({
-          name: docSnap.data().categoryName.toUpperCase(),
+          name: docSnap.data().categoryName || "UNNAMED",
           image: docSnap.data().imageUrl || null,
+          subCategories: docSnap.data().subCategories || [],
         });
       });
     } catch (error) {
@@ -294,6 +90,7 @@ export default function Homepage() {
     try {
       const tagsSnap = await getDocs(collection(db, "tags"));
       let productIds = [];
+      const otherTags = [];
 
       tagsSnap.forEach((docSnap) => {
         if (docSnap.data().title === "Featured Products") {
@@ -334,7 +131,7 @@ export default function Homepage() {
     fetchData();
   }, []);
 
-  // Carousel scroll
+  // Carousel scroll (if you have buttons for scrolling)
   const scrollCarousel = (ref, direction, amount) => {
     if (ref.current) {
       ref.current.scrollBy({
@@ -362,7 +159,10 @@ export default function Homepage() {
   // On overlay confirm => store in Firestore
   const handleOverlayConfirm = async (sizeQuantities) => {
     const uid = firestoreUser?.id;
-    if (!uid) return;
+    if (!uid) {
+      toast.error("User not authenticated.");
+      return;
+    }
     try {
       for (let sq of sizeQuantities) {
         if (sq.quantity > 0) {
@@ -389,14 +189,15 @@ export default function Homepage() {
 
   // Banners
   const tags = [
-    { image: tagImage1, alt: "Browse by Category", buttonLabel: "Shop Now" },
-    { image: tagImage2, alt: "Featured Catalogue", buttonLabel: "Shop Now" },
-    { image: tagImage3, alt: "Best Deals", buttonLabel: "Shop Now" },
-    { image: tagImage4, alt: "New Arrivals", buttonLabel: "Shop Now" },
+    { image: tagImage1, alt: "Browse by Category", buttonLabel: "Shop Now", categoryIndex: 0 },
+    { image: tagImage2, alt: "Featured Catalogue", buttonLabel: "Shop Now", categoryIndex: 1 },
+    { image: tagImage3, alt: "Best Deals", buttonLabel: "Shop Now", categoryIndex: 2 },
+    { image: tagImage4, alt: "New Arrivals", buttonLabel: "Shop Now", categoryIndex: 3 },
   ];
 
   return (
     <>
+      {/* Hero Image */}
       <img src={heroImg} alt="Hero" width="100%" />
 
       {/* Info Sections */}
@@ -468,6 +269,20 @@ export default function Homepage() {
                   width: "325px",
                   marginRight: "20px",
                   textAlign: "left",
+                  cursor: "pointer",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.02)";
+                  // e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                onClick={() => {
+                  console.log("Category clicked:", cat);
+                  navigate("/shopbycategory", { state: { category: cat } });
                 }}
               >
                 <img
@@ -651,7 +466,9 @@ export default function Homepage() {
                         border: "solid 1px #333",
                         cursor: "pointer",
                       }}
-                      onClick={() => navigate("/view-product", { state: { productId: prod.id } })}
+                      onClick={() =>
+                        navigate("/view-product", { state: { productId: prod.id } })
+                      }
                     >
                       View More
                     </button>
@@ -691,65 +508,54 @@ export default function Homepage() {
             gap: "20px",
           }}
         >
-          <div style={{ gridColumn: "span 2", position: "relative" }}>
-            <img
-              src={tagImage1}
-              alt="Browse by Category"
-              style={{ width: "100%", height: "auto", borderRadius: "8px" }}
-            />
-            <button
+          {tags.map((tag, i) => (
+            <div
+              key={i}
               style={{
-                position: "absolute",
-                bottom: "10px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                padding: "10px 20px",
-                backgroundColor: "#fff",
-                border: "1px solid #333",
+                gridColumn: i % 2 === 0 && i < 2 ? "span 2" : "auto",
+                position: "relative",
               }}
             >
-              Shop Now
-            </button>
-          </div>
-          <div>
-            <img
-              src={tagImage2}
-              alt="Featured Catalogue"
-              style={{ width: "100%", borderRadius: "8px" }}
-            />
-          </div>
-          <div>
-            <img
-              src={tagImage3}
-              alt="Best Deals"
-              style={{ width: "100%", borderRadius: "8px" }}
-            />
-          </div>
-          <div style={{ gridColumn: "span 2", position: "relative" }}>
-            <img
-              src={tagImage4}
-              alt="New Arrivals"
-              style={{ width: "100%", height: "auto", borderRadius: "8px" }}
-            />
-            <button
-              style={{
-                position: "absolute",
-                bottom: "10px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                padding: "10px 20px",
-                backgroundColor: "#fff",
-                border: "1px solid #333",
-              }}
-            >
-              Shop Now
-            </button>
-          </div>
+              <img
+                src={tag.image}
+                alt={tag.alt}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: "8px",
+                }}
+              />
+              <button
+                style={{
+                  position: "absolute",
+                  bottom: "10px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  padding: "10px 20px",
+                  backgroundColor: "#fff",
+                  border: "1px solid #333",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  if (categories[tag.categoryIndex]) {
+                    navigate("/shopbycategory", { state: { category: categories[tag.categoryIndex] } });
+                  } else {
+                    toast.error("Category not found.");
+                  }
+                }}
+              >
+                {tag.buttonLabel}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Vastrahub App Section */}
-      <div className="container-fluid" style={{ backgroundColor: "#fff", padding: "50px 0" }}>
+      <div
+        className="container-fluid"
+        style={{ backgroundColor: "#fff", padding: "50px 0" }}
+      >
         <div
           className="container"
           style={{
@@ -786,11 +592,17 @@ export default function Homepage() {
                 src={googlePlayImage}
                 alt="Google Play Store"
                 style={{ width: "150px", cursor: "pointer" }}
+                onClick={() =>
+                  window.open("https://play.google.com/store", "_blank")
+                }
               />
               <img
                 src={appStoreImage}
                 alt="App Store"
                 style={{ width: "150px", cursor: "pointer" }}
+                onClick={() =>
+                  window.open("https://www.apple.com/app-store/", "_blank")
+                }
               />
             </div>
           </div>

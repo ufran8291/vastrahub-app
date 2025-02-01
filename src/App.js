@@ -21,6 +21,7 @@ import ViewProduct from "./Pages/ViewProduct";
 import SearchProducts from "./Pages/SearchProducts";
 import UserCart from "./Pages/UserCart";
 import MyProfile from "./Pages/MyProfile";
+import ShopByCategory from "./Pages/ShopByCategory";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -88,6 +89,11 @@ function App() {
           path: "/my-profile",
           element: <MyProfile />,
         },
+        {
+          path: "/shopbycategory",
+          element: <ShopByCategory />,
+        }
+        
       ],
     },
   ]);
