@@ -27,6 +27,9 @@ export default function Homepage() {
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
+  // Loader state
+  const [loading, setLoading] = useState(true);
+
   // Local state
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -197,8 +200,8 @@ export default function Homepage() {
 
   useEffect(() => {
     // Fetch hero banner and tag banners
-    fetchHeroBanner();
-    fetchBannerImages();
+    Promise.all([fetchHeroBanner(), fetchBannerImages()])
+      .catch((error) => console.error("Error in banners:", error));
 
     // Fetch categories and both sets of featured products concurrently
     async function fetchData() {
@@ -210,6 +213,7 @@ export default function Homepage() {
       setCategories(cats);
       setFeaturedProducts(prods);
       setFeaturedProducts2(prods2);
+      setLoading(false);
     }
     fetchData();
   }, []);
@@ -269,6 +273,16 @@ export default function Homepage() {
       toast.error("Failed to add items to cart.");
     }
   };
+
+  // ------------------ Loader Component ------------------
+  if (loading) {
+    return (
+      <div style={loaderStyles.container}>
+        <h1 style={loaderStyles.text}>VastraHub</h1>
+        <h1 style={loaderStyles.text2}> VYAPAR KA NAYA TAREEKA</h1>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -357,7 +371,7 @@ export default function Homepage() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "scale(1.02)";
-                  e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+                  // e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
@@ -597,6 +611,7 @@ export default function Homepage() {
       </div>
 
      
+
       {/* Banners Section with Custom Grid Layout */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
         <div className="banner-grid">
@@ -922,7 +937,6 @@ export default function Homepage() {
           </div>
         </div>
       </div>
-
       {/* Vastrahub App Section */}
       <div
         className="container-fluid"
@@ -999,3 +1013,32 @@ export default function Homepage() {
     </>
   );
 }
+
+// Loader styles for full-screen loading overlay
+const loaderStyles = {
+  container: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "#000",
+    zIndex: 9999,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    // alignItems: "center",
+  },
+  text: {
+    color: "#fff",
+    fontSize: "4rem",
+    fontFamily: "Lora, serif",
+    // fontFamily:"Plus Jakarta Sans, sans-serif",
+    textAlign: "center",
+    marginBottom:'10px'
+  },
+  text2: {
+    color: "#fff",
+    fontSize: "5rem",
+    // fontFamily: "Lora, serif",
+    fontFamily:"Plus Jakarta Sans, sans-serif",
+    textAlign: "center",
+  },
+};

@@ -22,6 +22,7 @@ import SearchProducts from "./Pages/SearchProducts";
 import UserCart from "./Pages/UserCart";
 import MyProfile from "./Pages/MyProfile";
 import ShopByCategory from "./Pages/ShopByCategory";
+import HelpPage from "./Pages/HelpPage";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -92,6 +93,10 @@ function App() {
         {
           path: "/shopbycategory",
           element: <ShopByCategory />,
+        },
+        {
+          path: "/help",
+          element: <HelpPage />,
         }
         
       ],
