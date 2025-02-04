@@ -1,5 +1,4 @@
 // src/Pages/ShopByCategory.js
-
 import React, { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -19,8 +18,7 @@ import categoryPlaceholder from "../assets/categoryplaceholder.png";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
 
 // Components
-// import SizeSelectorOverlay from "../Components/SizeSelectorOverlay";
-import SizeSelectorOverlay from '../components/SizeSelectorOverlay'
+import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 
 // Import GlobalContext to get user info
 import { GlobalContext } from "../Context/GlobalContext";
@@ -132,37 +130,6 @@ export default function ShopByCategory() {
     setOverlayProduct(product);
   };
 
-  // ---------------- 5) HANDLE OVERLAY CONFIRM ----------------
-  const handleOverlayConfirm = async (sizeQuantities) => {
-    const uid = firestoreUser?.id;
-    if (!uid) {
-      toast.error("User not authenticated.");
-      return;
-    }
-    try {
-      for (let sq of sizeQuantities) {
-        if (sq.quantity > 0) {
-          const cartRef = collection(db, "users", uid, "cart");
-          const docRef = doc(cartRef);
-          await setDoc(docRef, {
-            productId: overlayProduct.id,
-            productTitle: overlayProduct.title,
-            size: sq.size,
-            pricePerPiece: sq.pricePerPiece,
-            boxPieces: sq.boxPieces,
-            quantity: sq.quantity,
-            updatedAt: new Date(),
-          });
-        }
-      }
-      toast.success("Added items to cart!");
-      setOverlayProduct(null);
-    } catch (error) {
-      console.error("Error saving to cart:", error);
-      toast.error("Failed to add items to cart.");
-    }
-  };
-
   return (
     <div style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
       {/* ============ Top Section ============ */}
@@ -254,7 +221,7 @@ export default function ShopByCategory() {
         }}
       >
         {filteredProducts.length === 0 ? (
-          <p style={{ gridColumn: "1 / -1", color: "#666", textAlign:'center', marginTop:"100px",marginBottom:"100px" }}>
+          <p style={{ gridColumn: "1 / -1", color: "#666", textAlign:'center', marginTop:"100px", marginBottom:"100px" }}>
             No products match the selected category/subcategory filters.
           </p>
         ) : (
@@ -433,7 +400,6 @@ export default function ShopByCategory() {
         <SizeSelectorOverlay
           product={overlayProduct}
           onClose={() => setOverlayProduct(null)}
-          onConfirm={handleOverlayConfirm}
         />
       )}
     </div>

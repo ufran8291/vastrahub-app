@@ -1,60 +1,138 @@
-// src/Components/SizeSelectorOverlay.js
-
-import React, { useState, useEffect } from "react";
+// src/components/SizeSelectorOverlay.js
+import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
+import { GlobalContext } from "../Context/GlobalContext";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "../Configs/FirebaseConfig";
 
-export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
+export default function SizeSelectorOverlay({ product, onClose }) {
+  const { firestoreUser } = useContext(GlobalContext);
+  const uid = firestoreUser?.id;
   const [quantities, setQuantities] = useState([]);
+  // We'll store any existing cart items for this product keyed by size.
+  const [existingCartItems, setExistingCartItems] = useState({});
 
   // Count distinct sizes with quantity > 0
   const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
 
   useEffect(() => {
-    if (product && product.sizes) {
-      // Initialize each size with quantity = 0
-      const initData = product.sizes.map((s) => ({
-        ...s,
-        quantity: 0,
-      }));
-      setQuantities(initData);
+    async function initQuantities() {
+      if (product && product.sizes) {
+        let cartMapping = {};
+        if (uid) {
+          try {
+            const cartRef = collection(db, "users", uid, "cart");
+            const q = query(cartRef, where("productId", "==", product.id));
+            const snapshot = await getDocs(q);
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              // Use the size as key (assuming one doc per product/size)
+              cartMapping[data.size] = { docId: docSnap.id, quantity: data.quantity };
+            });
+          } catch (error) {
+            console.error("Error fetching existing cart items:", error);
+          }
+        }
+        setExistingCartItems(cartMapping);
+        // Initialize each size with quantity from the cart if available; otherwise zero.
+        const initData = product.sizes.map((s) => ({
+          ...s,
+          quantity: cartMapping[s.size]?.quantity || 0,
+        }));
+        setQuantities(initData);
+      }
     }
-  }, [product]);
+    initQuantities();
+  }, [product, uid]);
 
-  // =========== INCREMENT ===========
+  // ---------- INCREMENT / DECREMENT ----------
   const handleIncrement = (idx) => {
-    console.log(`handleIncrement fired, idx=${idx}`);
     setQuantities((prev) => {
       const updated = [...prev];
       const stock = updated[idx].boxesInStock || 0;
       if (updated[idx].quantity < stock) {
         updated[idx].quantity += 1;
-        console.log(`quantity for idx=${idx} => ${updated[idx].quantity}`);
       }
       return updated;
     });
   };
 
-  // =========== DECREMENT ===========
   const handleDecrement = (idx) => {
-    console.log(`handleDecrement fired, idx=${idx}`);
     setQuantities((prev) => {
       const updated = [...prev];
       if (updated[idx].quantity > 0) {
         updated[idx].quantity -= 1;
-        console.log(`quantity for idx=${idx} => ${updated[idx].quantity}`);
       }
       return updated;
     });
   };
 
-  // =========== CONFIRM ===========
-  const handleConfirm = () => {
+  // ---------- CONFIRM HANDLER ----------
+  const handleConfirm = async () => {
     if (distinctSelected < 2) {
       toast.info("Please select at least 2 different sizes.");
       return;
     }
-    const selectedSizes = quantities.filter((q) => q.quantity > 0);
-    onConfirm(selectedSizes);
+    if (!uid) {
+      toast.error("User not authenticated.");
+      return;
+    }
+    try {
+      const cartRef = collection(db, "users", uid, "cart");
+      for (let sq of quantities) {
+        const existing = existingCartItems[sq.size];
+        if (sq.quantity > 0) {
+          if (existing) {
+            // Update the existing cart document.
+            const docRef = doc(db, "users", uid, "cart", existing.docId);
+            await setDoc(
+              docRef,
+              {
+                productId: product.id,
+                productTitle: product.title,
+                size: sq.size,
+                pricePerPiece: sq.pricePerPiece,
+                boxPieces: sq.boxPieces,
+                quantity: sq.quantity,
+                updatedAt: new Date(),
+              },
+              { merge: true }
+            );
+          } else {
+            // Create a new cart document.
+            const newDocRef = doc(cartRef);
+            await setDoc(newDocRef, {
+              productId: product.id,
+              productTitle: product.title,
+              size: sq.size,
+              pricePerPiece: sq.pricePerPiece,
+              boxPieces: sq.boxPieces,
+              quantity: sq.quantity,
+              updatedAt: new Date(),
+            });
+          }
+        } else {
+          // If quantity is 0 and there is an existing cart document, remove it.
+          if (existing) {
+            const docRef = doc(db, "users", uid, "cart", existing.docId);
+            await deleteDoc(docRef);
+          }
+        }
+      }
+      toast.success("Cart updated!");
+      onClose();
+    } catch (error) {
+      console.error("Error updating cart:", error);
+      toast.error("Failed to update cart.");
+    }
   };
 
   if (!product) return null;
@@ -121,7 +199,6 @@ export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
                   gap: "10px",
                 }}
               >
-                {/* Decrement button */}
                 <button
                   onClick={() => handleDecrement(idx)}
                   style={{
@@ -142,7 +219,6 @@ export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
                   {sizeObj.quantity}
                 </span>
 
-                {/* Increment button */}
                 <button
                   onClick={() => handleIncrement(idx)}
                   style={{
@@ -163,7 +239,6 @@ export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
           ))}
         </div>
 
-        {/* NOTE IF <2 DISTINCT SIZES */}
         {distinctSelected < 2 && (
           <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>
             You must select at least 2 different sizes.
@@ -172,7 +247,6 @@ export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
 
         {/* ACTION BUTTONS */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {/* CANCEL */}
           <button
             onClick={onClose}
             style={{
@@ -189,8 +263,6 @@ export default function SizeSelectorOverlay({ product, onClose, onConfirm }) {
           >
             Cancel
           </button>
-
-          {/* CONFIRM */}
           <button
             onClick={handleConfirm}
             style={{

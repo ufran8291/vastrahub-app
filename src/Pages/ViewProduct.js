@@ -1,9 +1,10 @@
+// src/Pages/ViewProduct.js
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { doc, getDoc, collection, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
-import { GlobalContext } from "../Context/GlobalContext"; // Adjust if your path differs
+import { GlobalContext } from "../Context/GlobalContext";
 
 import Tooltip from "@mui/material/Tooltip";
 import {
@@ -17,7 +18,6 @@ const ViewProduct = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // We check if the user is logged in from global context
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id || null;
@@ -27,10 +27,10 @@ const ViewProduct = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Carousel
+  // Carousel state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Track how many boxes for each size
+  // Track how many boxes for each size (initialize later based on cart)
   const [sizesQuantity, setSizesQuantity] = useState([]);
 
   // Magnifier
@@ -40,7 +40,7 @@ const ViewProduct = () => {
   const [zoomScale] = useState(2);
   const imgContainerRef = useRef(null);
 
-  // ---------------- EFFECT: Fetch Product ----------------
+  // ---------------- EFFECT: Fetch Product and Initialize Quantities ----------------
   useEffect(() => {
     if (!productId) {
       toast.error("No product ID provided.");
@@ -56,13 +56,30 @@ const ViewProduct = () => {
           const data = docSnap.data();
           setProduct(data);
 
-          // Initialize quantity array for each size that has stock > 0
-          if (data.sizes && Array.isArray(data.sizes)) {
-            const initialQuantities = data.sizes.map((s) =>
-              s.boxesInStock > 0 ? 0 : null
-            );
-            setSizesQuantity(initialQuantities);
+          // Initialize quantity array for each size with 0 (if stock available)
+          let initialQuantities = data.sizes && Array.isArray(data.sizes)
+            ? data.sizes.map((s) => (s.boxesInStock > 0 ? 0 : null))
+            : [];
+
+          // If logged in, fetch existing cart items for this product
+          if (data.sizes && Array.isArray(data.sizes) && uid) {
+            try {
+              const cartRef = collection(db, "users", uid, "cart");
+              const q = query(cartRef, where("productId", "==", productId));
+              const snapshot = await getDocs(q);
+              let mapping = {};
+              snapshot.forEach((docSnap) => {
+                const cartData = docSnap.data();
+                mapping[cartData.size] = cartData.quantity;
+              });
+              initialQuantities = data.sizes.map((s) =>
+                s.boxesInStock > 0 ? mapping[s.size] || 0 : null
+              );
+            } catch (error) {
+              console.error("Error fetching cart items:", error);
+            }
           }
+          setSizesQuantity(initialQuantities);
         } else {
           toast.error("Product not found in database.");
           navigate("/");
@@ -77,14 +94,14 @@ const ViewProduct = () => {
     };
 
     fetchProduct();
-  }, [productId, navigate]);
+  }, [productId, navigate, uid]);
 
   // ---------------- EFFECT: Preload images ----------------
   useEffect(() => {
     if (!product) return;
     getAllImages().forEach((url) => {
       const img = new Image();
-      img.src = url; // triggers preload
+      img.src = url;
     });
   }, [product]);
 
@@ -96,17 +113,14 @@ const ViewProduct = () => {
   const totalImagesCount = getAllImages().length;
   const getCurrentImageUrl = () => {
     const allImgs = getAllImages();
-    if (!allImgs.length) return "";
-    return allImgs[currentImageIndex];
+    return allImgs.length ? allImgs[currentImageIndex] : "";
   };
 
   const handleNextImage = () => {
-    const totalCount = totalImagesCount;
-    setCurrentImageIndex((prev) => (prev + 1) % totalCount);
+    setCurrentImageIndex((prev) => (prev + 1) % totalImagesCount);
   };
   const handlePrevImage = () => {
-    const totalCount = totalImagesCount;
-    setCurrentImageIndex((prev) => (prev - 1 + totalCount) % totalCount);
+    setCurrentImageIndex((prev) => (prev - 1 + totalImagesCount) % totalImagesCount);
   };
 
   // =============== Size Selector Handlers ===============
@@ -151,7 +165,7 @@ const ViewProduct = () => {
     return sizesQuantity.filter((q) => q && q > 0).length;
   };
 
-  // =============== Add to Cart ===============
+  // =============== Add to Cart Handler ===============
   const handleAddToCart = async () => {
     if (!isLoggedIn) return;
     const distinctSizesSelected = getCountDistinctSizesSelected();
@@ -160,28 +174,57 @@ const ViewProduct = () => {
       return;
     }
 
-    // We'll store each size selection in Firestore
     try {
+      const cartRef = collection(db, "users", uid, "cart");
+      // Fetch existing cart items for this product
+      const q = query(cartRef, where("productId", "==", productId));
+      const snapshot = await getDocs(q);
+      let mapping = {};
+      snapshot.forEach((docSnap) => {
+        mapping[docSnap.data().size] = { docId: docSnap.id, quantity: docSnap.data().quantity };
+      });
+
       let anySelected = false;
       for (let i = 0; i < product.sizes.length; i++) {
-        if (sizesQuantity[i] && sizesQuantity[i] > 0) {
-          anySelected = true;
-
-          const sizeObj = product.sizes[i];
-          const boxesSelected = sizesQuantity[i];
-
-          // Write a doc in user cart
-          const cartRef = collection(db, "users", uid, "cart");
-          const newDocRef = doc(cartRef); // random doc ID
-          await setDoc(newDocRef, {
-            productId: productId,
-            productTitle: product.title,
-            size: sizeObj.size,
-            pricePerPiece: sizeObj.pricePerPiece,
-            boxPieces: sizeObj.boxPieces,
-            quantity: boxesSelected,
-            updatedAt: new Date(),
-          });
+        const sizeObj = product.sizes[i];
+        const boxesSelected = sizesQuantity[i];
+        if (boxesSelected > 0) anySelected = true;
+        if (boxesSelected > 0) {
+          if (mapping[sizeObj.size]) {
+            // Update existing cart document
+            const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);
+            await setDoc(
+              docRef,
+              {
+                productId: productId,
+                productTitle: product.title,
+                size: sizeObj.size,
+                pricePerPiece: sizeObj.pricePerPiece,
+                boxPieces: sizeObj.boxPieces,
+                quantity: boxesSelected,
+                updatedAt: new Date(),
+              },
+              { merge: true }
+            );
+          } else {
+            // Create a new cart document
+            const newDocRef = doc(cartRef);
+            await setDoc(newDocRef, {
+              productId: productId,
+              productTitle: product.title,
+              size: sizeObj.size,
+              pricePerPiece: sizeObj.pricePerPiece,
+              boxPieces: sizeObj.boxPieces,
+              quantity: boxesSelected,
+              updatedAt: new Date(),
+            });
+          }
+        } else {
+          // If quantity is 0 and an entry exists, remove it
+          if (mapping[sizeObj.size]) {
+            const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);
+            await deleteDoc(docRef);
+          }
         }
       }
 
@@ -189,15 +232,14 @@ const ViewProduct = () => {
         toast.info("No valid boxes selected. Please pick at least one size with stock.");
         return;
       }
-
-      toast.success("Selected items added to cart!");
+      toast.success("Selected items updated in cart!");
     } catch (err) {
-      console.error("Error adding to cart:", err);
-      toast.error("Failed to add items to cart.");
+      console.error("Error updating cart:", err);
+      toast.error("Failed to update cart.");
     }
   };
 
-  // =============== Magnifier ===============
+  // =============== Magnifier Handlers ===============
   const handleMouseEnter = () => {
     if (getCurrentImageUrl()) setShowMagnifier(true);
   };
@@ -219,7 +261,6 @@ const ViewProduct = () => {
     navigate("/otp-verify");
   };
 
-  // =============== Render ===============
   if (loading) {
     return (
       <div
@@ -243,7 +284,6 @@ const ViewProduct = () => {
   })();
   const distinctSizesSelected = getCountDistinctSizesSelected();
 
-  // Decide tooltip for "ADD TO CART" button
   let cartButtonTooltip = "";
   if (!isLoggedIn) cartButtonTooltip = "Please log in to add items to cart.";
   else if (distinctSizesSelected < 2) {
@@ -261,7 +301,6 @@ const ViewProduct = () => {
           onMouseLeave={handleMouseLeave}
           onMouseMove={handleMouseMove}
         >
-          {/* Left Arrow */}
           {totalImagesCount > 1 && (
             <button
               onClick={handlePrevImage}
@@ -282,8 +321,6 @@ const ViewProduct = () => {
               <AiOutlineArrowLeft />
             </button>
           )}
-
-          {/* Main Image */}
           {getCurrentImageUrl() ? (
             <img
               src={getCurrentImageUrl()}
@@ -308,8 +345,6 @@ const ViewProduct = () => {
               No Images
             </div>
           )}
-
-          {/* Right Arrow */}
           {totalImagesCount > 1 && (
             <button
               onClick={handleNextImage}
@@ -330,8 +365,6 @@ const ViewProduct = () => {
               <AiOutlineArrowRight />
             </button>
           )}
-
-          {/* Magnifier Lens */}
           {showMagnifier && (
             <div
               style={{
@@ -354,8 +387,6 @@ const ViewProduct = () => {
             />
           )}
         </div>
-
-        {/* Image Indicator */}
         {totalImagesCount > 1 && (
           <div
             style={{
@@ -389,8 +420,6 @@ const ViewProduct = () => {
         >
           {product.title || "Untitled Product"}
         </h1>
-
-        {/* Starting from Price */}
         {minPrice && isLoggedIn ? (
           <p
             style={{
@@ -414,10 +443,7 @@ const ViewProduct = () => {
             Starting from -- per piece (Login to view prices)
           </p>
         ) : null}
-
-        {/* 2-Column Layout for details */}
         <div style={{ display: "flex", flexWrap: "wrap", rowGap: "10px" }}>
-          {/* Column 1 */}
           <div style={{ flex: "1 1 300px" }}>
             <p
               style={{
@@ -439,7 +465,6 @@ const ViewProduct = () => {
               Fabric: {product.fabric || "N/A"}
             </p>
           </div>
-          {/* Column 2 */}
           <div style={{ flex: "1 1 300px" }}>
             <p
               style={{
@@ -480,9 +505,7 @@ const ViewProduct = () => {
         {product.sizes && product.sizes.length > 0 ? (
           <div style={{ border: "1px solid #ccc", borderRadius: "8px" }}>
             {product.sizes.map((sizeObj, index) => {
-              // skip if no stock
               if (sizeObj.boxesInStock === 0) return null;
-
               const boxesSelected = sizesQuantity[index];
               const totalForThisSize = isLoggedIn
                 ? getSizeTotal(sizeObj, boxesSelected)
@@ -535,7 +558,6 @@ const ViewProduct = () => {
                     </p>
                   </div>
 
-                  {/* QTY Controls */}
                   <div
                     style={{
                       display: "flex",
@@ -554,15 +576,11 @@ const ViewProduct = () => {
                         height: "30px",
                         borderRadius: "4px",
                         fontSize: "16px",
-                        cursor:
-                          isLoggedIn && boxesSelected > 0
-                            ? "pointer"
-                            : "not-allowed",
+                        cursor: isLoggedIn && boxesSelected > 0 ? "pointer" : "not-allowed",
                       }}
                     >
                       <AiOutlineMinus />
                     </button>
-
                     <p
                       style={{
                         width: "30px",
@@ -572,7 +590,6 @@ const ViewProduct = () => {
                     >
                       {boxesSelected || 0}
                     </p>
-
                     <button
                       onClick={() => handlePlus(index)}
                       disabled={
@@ -595,7 +612,6 @@ const ViewProduct = () => {
                     </button>
                   </div>
 
-                  {/* total for this size */}
                   <div style={{ marginLeft: "20px", textAlign: "right" }}>
                     <p
                       style={{
@@ -617,12 +633,14 @@ const ViewProduct = () => {
           </p>
         )}
 
-        {/* Dark overlay if not logged in */}
         {!isLoggedIn && (
           <div
             style={{
               position: "absolute",
-              top: 0, left: 0, right: 0, bottom: 0,
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               backgroundColor: "rgba(0,0,0,0.85)",
               display: "flex",
               alignItems: "center",
@@ -694,8 +712,6 @@ const ViewProduct = () => {
               </p>
             )}
           </div>
-
-          {/* Tooltip if disabled */}
           <Tooltip title={cartButtonTooltip} arrow>
             <span>
               <button

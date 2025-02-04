@@ -1,5 +1,4 @@
 // src/Pages/Homepage.js
-
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, doc, getDocs, getDoc, setDoc } from "firebase/firestore";
@@ -90,7 +89,6 @@ export default function Homepage() {
   // ------------------ Fetch Banner Images ------------------
   const fetchBannerImages = async () => {
     try {
-      // We expect banner documents with IDs "banner-1", "banner-2", "banner-3", "banner-4"
       const bannerIds = ["banner-1", "banner-2", "banner-3", "banner-4"];
       const fetchedBanners = await Promise.all(
         bannerIds.map(async (id) => {
@@ -117,7 +115,6 @@ export default function Homepage() {
     try {
       const snap = await getDocs(collection(db, "categories"));
       snap.forEach((docSnap) => {
-        console.log(docSnap.data());
         cats.push({
           name: docSnap.data().categoryName || "UNNAMED",
           image: docSnap.data().imageUrl || null,
@@ -200,8 +197,9 @@ export default function Homepage() {
 
   useEffect(() => {
     // Fetch hero banner and tag banners
-    Promise.all([fetchHeroBanner(), fetchBannerImages()])
-      .catch((error) => console.error("Error in banners:", error));
+    Promise.all([fetchHeroBanner(), fetchBannerImages()]).catch((error) =>
+      console.error("Error in banners:", error)
+    );
 
     // Fetch categories and both sets of featured products concurrently
     async function fetchData() {
@@ -243,43 +241,11 @@ export default function Homepage() {
     setOverlayProduct(null);
   };
 
-  // ------------------ Handle Overlay Confirm ------------------
-  const handleOverlayConfirm = async (sizeQuantities) => {
-    const uid = firestoreUser?.id;
-    if (!uid) {
-      toast.error("User not authenticated.");
-      return;
-    }
-    try {
-      for (let sq of sizeQuantities) {
-        if (sq.quantity > 0) {
-          const cartRef = collection(db, "users", uid, "cart");
-          const docRef = doc(cartRef);
-          await setDoc(docRef, {
-            productId: overlayProduct.id,
-            productTitle: overlayProduct.title,
-            size: sq.size,
-            pricePerPiece: sq.pricePerPiece,
-            boxPieces: sq.boxPieces,
-            quantity: sq.quantity,
-            updatedAt: new Date(),
-          });
-        }
-      }
-      toast.success("Added items to cart!");
-      setOverlayProduct(null);
-    } catch (error) {
-      console.error("Error saving to cart:", error);
-      toast.error("Failed to add items to cart.");
-    }
-  };
-
-  // ------------------ Loader Component ------------------
   if (loading) {
     return (
       <div style={loaderStyles.container}>
         <h1 style={loaderStyles.text}>VastraHub</h1>
-        <h1 style={loaderStyles.text2}> VYAPAR KA NAYA TAREEKA</h1>
+        <h1 style={loaderStyles.text2}>VYAPAR KA NAYA TAREEKA</h1>
       </div>
     );
   }
@@ -371,14 +337,12 @@ export default function Homepage() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "scale(1.02)";
-                  // e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 onClick={() => {
-                  console.log("Category clicked:", cat);
                   navigate("/shopbycategory", { state: { category: cat } });
                 }}
               >
@@ -610,12 +574,9 @@ export default function Homepage() {
         </div>
       </div>
 
-     
-
-      {/* Banners Section with Custom Grid Layout */}
+      {/* Banners Section */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
         <div className="banner-grid">
-          {/* Banner 1 */}
           {banners[0] && (
             <div
               className="banner banner1"
@@ -645,7 +606,6 @@ export default function Homepage() {
               />
             </div>
           )}
-          {/* Banner 2 */}
           {banners[1] && (
             <div
               className="banner banner2"
@@ -675,7 +635,6 @@ export default function Homepage() {
               />
             </div>
           )}
-          {/* Banner 3 */}
           {banners[2] && (
             <div
               className="banner banner3"
@@ -705,7 +664,6 @@ export default function Homepage() {
               />
             </div>
           )}
-          {/* Banner 4 */}
           {banners[3] && (
             <div
               className="banner banner4"
@@ -737,8 +695,9 @@ export default function Homepage() {
           )}
         </div>
       </div>
- {/* Featured Products Section 2 */}
- <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
+
+      {/* Featured Products Section 2 */}
+      <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
         <div className="container" style={{ padding: "50px 20px" }}>
           <h1
             style={{
@@ -937,6 +896,7 @@ export default function Homepage() {
           </div>
         </div>
       </div>
+
       {/* Vastrahub App Section */}
       <div
         className="container-fluid"
@@ -1007,7 +967,6 @@ export default function Homepage() {
         <SizeSelectorOverlay
           product={overlayProduct}
           onClose={closeOverlay}
-          onConfirm={handleOverlayConfirm}
         />
       )}
     </>
@@ -1024,21 +983,18 @@ const loaderStyles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    // alignItems: "center",
   },
   text: {
     color: "#fff",
     fontSize: "4rem",
     fontFamily: "Lora, serif",
-    // fontFamily:"Plus Jakarta Sans, sans-serif",
     textAlign: "center",
-    marginBottom:'10px'
+    marginBottom: "10px",
   },
   text2: {
     color: "#fff",
     fontSize: "5rem",
-    // fontFamily: "Lora, serif",
-    fontFamily:"Plus Jakarta Sans, sans-serif",
+    fontFamily: "Plus Jakarta Sans, sans-serif",
     textAlign: "center",
   },
 };
