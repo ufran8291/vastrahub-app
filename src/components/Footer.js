@@ -1,8 +1,12 @@
+// src/Components/Footer.js
 import React from 'react';
 import '../App.css';
-import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa'; // Social icons
+import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 export default function Footer() {
+  const navigate = useNavigate();
+
   return (
     <footer style={{ backgroundColor: '#161515', color: '#fff', padding: '40px 20px', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
       <div className="container">
@@ -16,7 +20,7 @@ export default function Footer() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                border: '1px solid #aaa', // Matches placeholder color
+                border: '1px solid #aaa',
                 borderRadius: '5px',
                 overflow: 'hidden',
                 maxWidth: '300px',
@@ -34,14 +38,13 @@ export default function Footer() {
                   fontSize: '12px',
                   outline: 'none',
                   fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  placeholderTextColor: '#aaa',
                 }}
               />
               <button
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#aaa', // Matches placeholder color
+                  color: '#aaa',
                   padding: '10px',
                   cursor: 'pointer',
                 }}
@@ -55,9 +58,28 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>COMPANY</h4>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: '8px', fontSize: '15px' }}>Our Story</li>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: '8px', fontSize: '15px' }}>Careers</li>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px' }}>Ethics & Sustainability</li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  marginBottom: '8px',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/about-us")}
+              >
+                About Us
+              </li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  marginBottom: '8px',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/careers")}
+              >
+                Careers
+              </li>
             </ul>
           </div>
 
@@ -65,10 +87,38 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>HELP</h4>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: '8px', fontSize: '15px' }}>FAQ</li>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: '8px', fontSize: '15px' }}>Shipping & Returns</li>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: '8px', fontSize: '15px' }}>Terms of Service</li>
-              <li style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px' }}>Privacy Policy</li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  marginBottom: '8px',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/terms-and-conditions")}
+              >
+                Terms &amp; Conditions
+              </li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  marginBottom: '8px',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/refund-policy")}
+              >
+                Refund &amp; Replacement Policy
+              </li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/privacy-policy")}
+              >
+                Privacy Policy
+              </li>
             </ul>
           </div>
 

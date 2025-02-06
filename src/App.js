@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState } from "react";
 import "./App.css";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
@@ -23,6 +24,17 @@ import UserCart from "./Pages/UserCart";
 import MyProfile from "./Pages/MyProfile";
 import ShopByCategory from "./Pages/ShopByCategory";
 import HelpPage from "./Pages/HelpPage";
+import OrderPage from "./Pages/OrderPage";
+import OrderSuccess from "./Pages/OrderSuccess";
+// import MyOrders from "./Pages/MyOrders";
+import MyOders from './Pages/MyOders'
+import OrderDetails from "./Pages/OrderDetails";
+import RefundPolicy from "./Pages/RefundPolicy";
+
+// New pages to add:
+import AboutUs from "./Pages/AboutUs";
+import TermsAndConditions from "./Pages/TermsAndConditions";
+import PrivacyPolicy from "./Pages/PrivacyPolicy";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -47,7 +59,10 @@ function App() {
             // </ProtectedRoute>
           ),
         },
-        
+        {
+          path: "/signin",
+          element: <SignIn />,
+        },
         {
           path: "/otp-verify",
           element: <OTPVerification />,
@@ -60,8 +75,6 @@ function App() {
           path: "/registration-success",
           element: <RegistrationSuccess />,
         },
-        // These routes are public or “unprotected” by default.
-        // If you want them behind a ProtectedRoute, wrap them similarly to Homepage above.
         {
           path: "/request-pending",
           element: <RequestPending />,
@@ -97,8 +110,40 @@ function App() {
         {
           path: "/help",
           element: <HelpPage />,
-        }
-        
+        },
+        {
+          path: "/order",
+          element: <OrderPage />,
+        },
+        {
+          path: "/order-success",
+          element: <OrderSuccess />,
+        },
+        {
+          path: "/order-details",
+          element: <OrderDetails />,
+        },
+        {
+          path: "/my-orders",
+          element: <MyOders />,
+        },
+        {
+          path: "/refund-policy",
+          element: <RefundPolicy />,
+        },
+        // New pages added:
+        {
+          path: "/about-us",
+          element: <AboutUs />,
+        },
+        {
+          path: "/terms-and-conditions",
+          element: <TermsAndConditions />,
+        },
+        {
+          path: "/privacy-policy",
+          element: <PrivacyPolicy />,
+        },
       ],
     },
   ]);
@@ -106,29 +151,23 @@ function App() {
   return <RouterProvider router={router} />;
 }
 
-// export default App;
-
 /**
- * Protected route to only allow access if condition is true
- * (e.g., userAuth.currentUser is not null).
+ * Protected route to only allow access if condition is true.
+ * For demonstration, we're also reading auth.currentUser.
  */
 export const ProtectedRoute = ({ condition, children }) => {
-  // For demonstration, we're also reading `auth.currentUser` here
   const [userExists] = useState(auth);
-
   console.log(
     `ProtectedRoute check -> condition: ${condition}, userExists: ${
       userExists.currentUser ? "true" : "false"
     }`
   );
-
   if (userExists.currentUser !== null || condition === true) {
     return children;
   } else {
     return <Navigate to="/signin" />;
   }
 };
-
 
 function AppWithProvider() {
   return (
@@ -138,5 +177,4 @@ function AppWithProvider() {
   );
 }
 
-// We now export AppWithProvider instead of App
 export default AppWithProvider;
