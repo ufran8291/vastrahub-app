@@ -76,9 +76,20 @@ export default function Footer() {
                   fontSize: '15px',
                   cursor: 'pointer',
                 }}
-                onClick={() => navigate("/careers")}
+                onClick={() => navigate("/help")}
               >
                 Careers
+              </li>
+              <li
+                style={{
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                  marginBottom: '8px',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate("/help")}
+              >
+                Contact Us
               </li>
             </ul>
           </div>

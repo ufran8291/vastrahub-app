@@ -1,5 +1,4 @@
 // src/Pages/Navigation.js
-
 import React, { useState, useEffect, useContext } from "react";
 import "../App.css";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -18,7 +17,7 @@ import WALogo from "../assets/WALogo.svg";
 // Import GlobalContext
 import { GlobalContext } from "../Context/GlobalContext";
 
-// Material UI Tooltip (optional)
+// Material UI Tooltip
 import { Tooltip } from "@mui/material";
 import { toast } from "react-toastify";
 
@@ -134,42 +133,68 @@ export default function Navigation() {
     >
       {/* Upper Part */}
       <div className="upper-navbar d-flex justify-content-between align-items-center">
-        {/* Left Part */}
+        {/* Left Part: Call Us */}
         <div className="left-part d-flex align-items-center">
-          <img
-            src={callIcon}
-            alt="Call"
-            style={{ height: "16px", marginRight: "8px" }}
-          />
-          <span style={{ fontSize: 12 }}>Call us on 1234567890</span>
+          <Tooltip title="Call us now" arrow>
+            <img
+              src={callIcon}
+              alt="Call"
+              style={{ height: "16px", marginRight: "8px", cursor: "pointer" }}
+              onClick={() => window.open("tel:+917757838011")}
+            />
+          </Tooltip>
+          <Tooltip title="Click to call +91 7757838011" arrow>
+            <span
+              style={{
+                fontSize: 12,
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+              onClick={() => window.open("tel:+917757838011")}
+            >
+              Call us on +91 7757838011
+            </span>
+          </Tooltip>
         </div>
 
-        {/* Middle Part */}
+        {/* Middle Part: Social Icons */}
         <div className="middle-part d-flex align-items-center">
-          <img
-            src={IGLogo}
-            height={30}
-            style={{ margin: "0 8px", cursor: "pointer" }}
-            alt="Instagram"
-            onClick={() => window.open("https://instagram.com", "_blank")}
-          />
-          <img
-            src={WALogo}
-            height={30}
-            style={{ margin: "0 8px", cursor: "pointer" }}
-            alt="WhatsApp"
-            onClick={() => window.open("https://wa.me/", "_blank")}
-          />
-          <img
-            src={FBLogo}
-            height={30}
-            style={{ margin: "0 8px", cursor: "pointer" }}
-            alt="Facebook"
-            onClick={() => window.open("https://facebook.com", "_blank")}
-          />
+          <Tooltip title="Visit our Instagram" arrow>
+            <img
+              src={IGLogo}
+              height={30}
+              style={{ margin: "0 8px", cursor: "pointer" }}
+              alt="Instagram"
+              onClick={() =>
+                window.open("https://www.instagram.com/vastrahub.in/", "_blank")
+              }
+            />
+          </Tooltip>
+          <Tooltip title="Chat with us on WhatsApp" arrow>
+            <img
+              src={WALogo}
+              height={30}
+              style={{ margin: "0 8px", cursor: "pointer" }}
+              alt="WhatsApp"
+              onClick={() =>
+                window.open("https://wa.me/917757838011", "_blank")
+              }
+            />
+          </Tooltip>
+          <Tooltip title="Visit our Instagram (via Facebook icon)" arrow>
+            <img
+              src={FBLogo}
+              height={30}
+              style={{ margin: "0 8px", cursor: "pointer" }}
+              alt="Facebook"
+              onClick={() =>
+                window.open("https://www.instagram.com/vastrahub.in/", "_blank")
+              }
+            />
+          </Tooltip>
         </div>
 
-        {/* Right Part */}
+        {/* Right Part: Login/Logout */}
         <div className="right-part">
           <span
             style={{
@@ -265,18 +290,19 @@ export default function Navigation() {
 
         {/* Right Part: Icons (Search, User, Cart) */}
         <div className="right-part d-flex align-items-center">
-          <img
-            src={searchIcon}
-            alt="Search"
-            style={{
-              height: "20px",
-              margin: "0 10px",
-              cursor: "pointer",
-            }}
-            onClick={() => navigate("/search-products")}
-          />
+          <Tooltip title="Search Products" arrow>
+            <img
+              src={searchIcon}
+              alt="Search"
+              style={{
+                height: "20px",
+                margin: "0 10px",
+                cursor: "pointer",
+              }}
+              onClick={() => navigate("/search-products")}
+            />
+          </Tooltip>
 
-          {/* User Icon with Tooltip */}
           <Tooltip title={userIconTooltip} arrow>
             <img
               src={userIcon}
@@ -290,30 +316,27 @@ export default function Navigation() {
             />
           </Tooltip>
 
-          <img
-            src={cartIcon}
-            alt="Cart"
-            style={{
-              height: "20px",
-              margin: "0 10px",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              if (isLoggedIn) {
-                navigate("/user-cart");
-                return;
-              } else {
-                toast.info("Please log in to view your cart.");
-                navigate("/otp-verify");
-                return;
-              }
-            }}
-          />
+          <Tooltip title="View Cart" arrow>
+            <img
+              src={cartIcon}
+              alt="Cart"
+              style={{
+                height: "20px",
+                margin: "0 10px",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                if (isLoggedIn) {
+                  navigate("/user-cart");
+                } else {
+                  toast.info("Please log in to view your cart.");
+                  navigate("/otp-verify");
+                }
+              }}
+            />
+          </Tooltip>
         </div>
       </div>
     </div>
   );
 }
-
-/* Add the following CSS to your App.css or corresponding CSS file to handle the subcategory dropdown */
-

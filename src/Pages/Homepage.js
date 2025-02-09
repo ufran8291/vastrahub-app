@@ -1,7 +1,7 @@
 // src/Pages/Homepage.js
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, doc, getDocs, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
@@ -20,6 +20,94 @@ import mobileAppImage from "../assets/mobilepp.png";
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
+import { Button } from "@mui/material";
+
+// Helper function to get tag document id by title
+const getTagIdByTitle = async (title) => {
+  try {
+    const q = query(collection(db, "tags"), where("title", "==", title));
+    const snapshot = await getDocs(q);
+    let tagId = null;
+    snapshot.forEach((doc) => {
+      tagId = doc.id;
+    });
+    return tagId;
+  } catch (error) {
+    console.error("Error fetching tag id for", title, error);
+    return null;
+  }
+};
+
+// Local Component: CategoryCard with image hover overlay effect
+function CategoryCard({ category, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      style={{
+        flex: "0 0 auto",
+        width: "325px",
+        marginRight: "20px",
+        textAlign: "left",
+        cursor: "pointer",
+        position: "relative",
+      }}
+    >
+      <div style={{ position: "relative", overflow: "hidden" }}>
+        <img
+          src={category.image || categoryPlaceholder}
+          alt={category.name}
+          style={{
+            width: "325px",
+            height: "365px",
+            objectFit: "cover",
+            transition: "transform 0.3s",
+            transform: hover ? "scale(1.05)" : "scale(1)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: hover ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.3s",
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontSize: "1.5rem",
+              opacity: hover ? 1 : 0,
+              transition: "opacity 0.3s",
+              fontFamily: "Lora, serif",
+            }}
+          >
+            SHOP NOW →
+          </span>
+        </div>
+      </div>
+      <h3
+        style={{
+          fontFamily: "Plus Jakarta Sans, sans-serif",
+          fontWeight: "500",
+          fontSize: "32px",
+          textTransform: "uppercase",
+          marginTop: "10px",
+        }}
+      >
+        {category.name}
+      </h3>
+    </div>
+  );
+}
 
 export default function Homepage() {
   const navigate = useNavigate();
@@ -29,12 +117,17 @@ export default function Homepage() {
   // Loader state
   const [loading, setLoading] = useState(true);
 
-  // Local state
+  // Local state variables
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredProducts2, setFeaturedProducts2] = useState([]); // Second set of featured products
-  const [heroBanner, setHeroBanner] = useState(null); // For hero banner image
-  const [banners, setBanners] = useState([]); // For banner images (banner-1 to banner-4)
+  const [heroBanner, setHeroBanner] = useState(null); // Hero banner image URL
+  const [heroBannerTag, setHeroBannerTag] = useState(null); // Tag id from hero banner (if available)
+  const [banners, setBanners] = useState([]); // Banner images (for banner-1 to banner-4)
+  const [featuredTagId, setFeaturedTagId] = useState(null); // Tag id for "Featured Products"
+  const [featuredTagId2, setFeaturedTagId2] = useState(null); // Tag id for "Featured Products 2"
+  // State for banner hover effects (an array of booleans)
+  const [bannerHover, setBannerHover] = useState([]);
 
   const categoryCarouselRef = useRef(null);
   const productCarouselRef = useRef(null);
@@ -42,7 +135,7 @@ export default function Homepage() {
   // Overlay product (for SizeSelectorOverlay)
   const [overlayProduct, setOverlayProduct] = useState(null);
 
-  // Info sections for the top info area
+  // Info sections for the top area
   const sections = [
     {
       svg: svg1,
@@ -78,6 +171,9 @@ export default function Homepage() {
         } else {
           console.log("No imageLink found in hero-banner document. Using default hero image.");
         }
+        if (data.hasTag === true && data.tagId) {
+          setHeroBannerTag(data.tagId);
+        }
       } else {
         console.log("Hero banner document does not exist. Using default hero image.");
       }
@@ -96,14 +192,18 @@ export default function Homepage() {
           const bannerDocSnap = await getDoc(bannerDocRef);
           if (bannerDocSnap.exists()) {
             const data = bannerDocSnap.data();
-            return { id, imageLink: data.imageLink, link: data.link || null };
+            // Include tagId if available
+            return { id, imageLink: data.imageLink, link: data.link || null, tagId: data.tagId || null };
           } else {
             console.log(`Banner document ${id} does not exist.`);
             return null;
           }
         })
       );
-      setBanners(fetchedBanners.filter((banner) => banner !== null));
+      const validBanners = fetchedBanners.filter((banner) => banner !== null);
+      setBanners(validBanners);
+      // Initialize hover state for banners
+      setBannerHover(new Array(validBanners.length).fill(false));
     } catch (error) {
       console.error("Error fetching banner images:", error);
     }
@@ -133,13 +233,11 @@ export default function Homepage() {
     try {
       const tagsSnap = await getDocs(collection(db, "tags"));
       let productIds = [];
-
       tagsSnap.forEach((docSnap) => {
         if (docSnap.data().title === "Featured Products") {
           productIds = docSnap.data().products || [];
         }
       });
-
       for (const productId of productIds) {
         const productRef = doc(db, "products", productId);
         const productDoc = await getDoc(productRef);
@@ -167,13 +265,11 @@ export default function Homepage() {
     try {
       const tagsSnap = await getDocs(collection(db, "tags"));
       let productIds = [];
-
       tagsSnap.forEach((docSnap) => {
         if (docSnap.data().title === "Featured Products 2") {
           productIds = docSnap.data().products || [];
         }
       });
-
       for (const productId of productIds) {
         const productRef = doc(db, "products", productId);
         const productDoc = await getDoc(productRef);
@@ -195,13 +291,23 @@ export default function Homepage() {
     return prods;
   };
 
+  // ------------------ Fetch Tag IDs for Featured Sections ------------------
   useEffect(() => {
-    // Fetch hero banner and tag banners
+    const fetchTagIds = async () => {
+      const tagId1 = await getTagIdByTitle("Featured Products");
+      const tagId2 = await getTagIdByTitle("Featured Products 2");
+      setFeaturedTagId(tagId1);
+      setFeaturedTagId2(tagId2);
+    };
+    fetchTagIds();
+  }, []);
+
+  // ------------------ Initial Data Fetch ------------------
+  useEffect(() => {
+    // Fetch hero banner and banner images concurrently
     Promise.all([fetchHeroBanner(), fetchBannerImages()]).catch((error) =>
       console.error("Error in banners:", error)
     );
-
-    // Fetch categories and both sets of featured products concurrently
     async function fetchData() {
       const [cats, prods, prods2] = await Promise.all([
         getCategoryImages(),
@@ -252,16 +358,42 @@ export default function Homepage() {
 
   return (
     <>
-      {/* Hero Banner */}
-      <img
-        src={heroBanner ? heroBanner : defaultHeroImg}
-        alt="Hero"
-        width="100%"
-        onError={(e) => {
-          console.log("Hero banner image not available, falling back to default.");
-          e.target.src = defaultHeroImg;
-        }}
-      />
+      {/* Hero Banner with SHOP NOW Button if Tag is available */}
+      <div style={{ position: "relative" }}>
+        <img
+          src={heroBanner ? heroBanner : defaultHeroImg}
+          alt="Hero"
+          width="100%"
+          onError={(e) => {
+            console.log("Hero banner image not available, falling back to default.");
+            e.target.src = defaultHeroImg;
+          }}
+        />
+        {heroBannerTag && (
+          <Button
+            variant="contained"
+            onClick={() =>
+              navigate("/tag-products", { state: { tagId: heroBannerTag } })
+            }
+            sx={{
+              position: "absolute",
+              bottom: "80px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: "#000",
+              color: "#fff",
+              textTransform: "none",
+              fontSize: "1.2rem",
+              paddingLeft: "30px",
+              paddingRight: "30px",
+              paddingTop: "20px",
+              paddingBottom: "20px",
+            }}
+          >
+            SHOP NOW
+          </Button>
+        )}
+      </div>
 
       {/* Info Sections */}
       <div className="container" style={{ padding: "70px 20px" }}>
@@ -325,48 +457,13 @@ export default function Homepage() {
             }}
           >
             {categories.map((cat, i) => (
-              <div
+              <CategoryCard
                 key={i}
-                style={{
-                  flex: "0 0 auto",
-                  width: "325px",
-                  marginRight: "20px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.02)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-                onClick={() => {
-                  navigate("/shopbycategory", { state: { category: cat } });
-                }}
-              >
-                <img
-                  src={cat.image || categoryPlaceholder}
-                  alt={cat.name}
-                  style={{
-                    width: "325px",
-                    height: "365px",
-                    objectFit: "cover",
-                    marginBottom: "10px",
-                  }}
-                />
-                <h3
-                  style={{
-                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                    fontWeight: "500",
-                    fontSize: "32px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {cat.name}
-                </h3>
-              </div>
+                category={cat}
+                onClick={() =>
+                  navigate("/shopbycategory", { state: { category: cat } })
+                }
+              />
             ))}
           </div>
         </div>
@@ -375,17 +472,42 @@ export default function Homepage() {
       {/* Featured Products Section 1 */}
       <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
         <div className="container" style={{ padding: "50px 20px" }}>
-          <h1
+          <div
             style={{
-              fontFamily: "Lora, serif",
-              fontWeight: "600",
-              fontSize: "48px",
-              textAlign: "left",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "50px",
             }}
           >
-            FEATURED PRODUCTS
-          </h1>
+            <h1
+              style={{
+                fontFamily: "Lora, serif",
+                fontWeight: "600",
+                fontSize: "48px",
+                margin: 0,
+              }}
+            >
+              FEATURED PRODUCTS
+            </h1>
+            {featuredTagId && (
+              <Button
+                variant="text"
+                onClick={() =>
+                  navigate("/tag-products", { state: { tagId: featuredTagId } })
+                }
+                sx={{
+                  textTransform: "none",
+                  fontFamily: "Plus Jakarta Sans, sans-serif",
+                  color: "#333",
+                  textDecoration: "underline",
+                  fontSize: "15px",
+                }}
+              >
+                View All
+              </Button>
+            )}
+          </div>
           <div
             style={{
               position: "relative",
@@ -577,26 +699,45 @@ export default function Homepage() {
       {/* Banners Section */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
         <div className="banner-grid">
-          {banners[0] && (
+          {banners.map((banner, i) => (
             <div
-              className="banner banner1"
-              onClick={() =>
-                banners[0].link
-                  ? window.open(banners[0].link, "_blank")
-                  : toast.info("Banner clicked!")
-              }
+              key={i}
+              className={`banner banner${i + 1}`}
+              onClick={() => {
+                if (banner.tagId) {
+                  navigate("/tag-products", { state: { tagId: banner.tagId } });
+                } else if (banner.link) {
+                  window.open(banner.link, "_blank");
+                } else {
+                  toast.info("Banner clicked!");
+                }
+              }}
               style={{
                 position: "relative",
                 overflow: "hidden",
                 cursor: "pointer",
                 transition: "transform 0.3s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.03)";
+                setBannerHover((prev) => {
+                  const updated = [...prev];
+                  updated[i] = true;
+                  return updated;
+                });
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                setBannerHover((prev) => {
+                  const updated = [...prev];
+                  updated[i] = false;
+                  return updated;
+                });
+              }}
             >
               <img
-                src={banners[0].imageLink}
-                alt="Banner 1"
+                src={banner.imageLink}
+                alt={`Banner ${i + 1}`}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -604,112 +745,76 @@ export default function Homepage() {
                   borderRadius: "8px",
                 }}
               />
-            </div>
-          )}
-          {banners[1] && (
-            <div
-              className="banner banner2"
-              onClick={() =>
-                banners[1].link
-                  ? window.open(banners[1].link, "_blank")
-                  : toast.info("Banner clicked!")
-              }
-              style={{
-                position: "relative",
-                overflow: "hidden",
-                cursor: "pointer",
-                transition: "transform 0.3s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              <img
-                src={banners[1].imageLink}
-                alt="Banner 2"
+              <div
                 style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "8px",
+                  backgroundColor: bannerHover[i] ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "background-color 0.3s",
                 }}
-              />
+              >
+                <span
+                  style={{
+                    color: "#fff",
+                    fontSize: "1.5rem",
+                    opacity: bannerHover[i] ? 1 : 0,
+                    transition: "opacity 0.3s",
+                    fontFamily: "Lora, serif",
+                  }}
+                >
+                  SHOP NOW →
+                </span>
+              </div>
             </div>
-          )}
-          {banners[2] && (
-            <div
-              className="banner banner3"
-              onClick={() =>
-                banners[2].link
-                  ? window.open(banners[2].link, "_blank")
-                  : toast.info("Banner clicked!")
-              }
-              style={{
-                position: "relative",
-                overflow: "hidden",
-                cursor: "pointer",
-                transition: "transform 0.3s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              <img
-                src={banners[2].imageLink}
-                alt="Banner 3"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
-              />
-            </div>
-          )}
-          {banners[3] && (
-            <div
-              className="banner banner4"
-              onClick={() =>
-                banners[3].link
-                  ? window.open(banners[3].link, "_blank")
-                  : toast.info("Banner clicked!")
-              }
-              style={{
-                position: "relative",
-                overflow: "hidden",
-                cursor: "pointer",
-                transition: "transform 0.3s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              <img
-                src={banners[3].imageLink}
-                alt="Banner 4"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
-              />
-            </div>
-          )}
+          ))}
         </div>
       </div>
 
       {/* Featured Products Section 2 */}
       <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
         <div className="container" style={{ padding: "50px 20px" }}>
-          <h1
+          <div
             style={{
-              fontFamily: "Lora, serif",
-              fontWeight: "600",
-              fontSize: "48px",
-              textAlign: "left",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "50px",
             }}
           >
-            FEATURED PRODUCTS
-          </h1>
+            <h1
+              style={{
+                fontFamily: "Lora, serif",
+                fontWeight: "600",
+                fontSize: "48px",
+                margin: 0,
+              }}
+            >
+              FEATURED PRODUCTS
+            </h1>
+            {featuredTagId2 && (
+              <Button
+                variant="text"
+                onClick={() =>
+                  navigate("/tag-products", { state: { tagId: featuredTagId2 } })
+                }
+                sx={{
+                  textTransform: "none",
+                  fontFamily: "Plus Jakarta Sans, sans-serif",
+                  color: "#333",
+                  textDecoration: "underline",
+                  fontSize: "15px",
+                }}
+              >
+                View All
+              </Button>
+            )}
+          </div>
           <div
             style={{
               position: "relative",
@@ -719,6 +824,7 @@ export default function Homepage() {
           >
             <div
               className="row no-scrollbar"
+              ref={productCarouselRef}
               style={{
                 display: "flex",
                 flexWrap: "nowrap",
@@ -898,10 +1004,7 @@ export default function Homepage() {
       </div>
 
       {/* Vastrahub App Section */}
-      <div
-        className="container-fluid"
-        style={{ backgroundColor: "#fff", padding: "50px 0" }}
-      >
+      <div className="container-fluid" style={{ backgroundColor: "#fff", padding: "50px 0" }}>
         <div
           className="container"
           style={{
@@ -964,10 +1067,7 @@ export default function Homepage() {
 
       {/* The Overlay if user clicks "Add to Cart" */}
       {overlayProduct && (
-        <SizeSelectorOverlay
-          product={overlayProduct}
-          onClose={closeOverlay}
-        />
+        <SizeSelectorOverlay product={overlayProduct} onClose={closeOverlay} />
       )}
     </>
   );

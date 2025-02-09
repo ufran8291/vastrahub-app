@@ -35,6 +35,7 @@ import RefundPolicy from "./Pages/RefundPolicy";
 import AboutUs from "./Pages/AboutUs";
 import TermsAndConditions from "./Pages/TermsAndConditions";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
+import TagProducts from "./Pages/TagProducts";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -143,6 +144,10 @@ function App() {
         {
           path: "/privacy-policy",
           element: <PrivacyPolicy />,
+        },
+        {
+          path: "/tag-products",
+          element: <TagProducts />,
         },
       ],
     },
