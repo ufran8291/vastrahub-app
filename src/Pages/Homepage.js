@@ -21,6 +21,9 @@ import mobileAppImage from "../assets/mobilepp.png";
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 import { Button } from "@mui/material";
+// import AnnouncementIcon from "@mui/icons-material/Announcement";
+import { TbSpeakerphone } from "react-icons/tb";
+
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -128,6 +131,7 @@ export default function Homepage() {
   const [featuredTagId2, setFeaturedTagId2] = useState(null); // Tag id for "Featured Products 2"
   // State for banner hover effects (an array of booleans)
   const [bannerHover, setBannerHover] = useState([]);
+  const [announcementText, setAnnouncementText] = useState("");
 
   const categoryCarouselRef = useRef(null);
   const productCarouselRef = useRef(null);
@@ -208,7 +212,21 @@ export default function Homepage() {
       console.error("Error fetching banner images:", error);
     }
   };
-
+// ------------------ Fetch Announcement ------------------
+const fetchAnnouncement = async () => {
+  try {
+    const announcementDocRef = doc(db, "banners", "announcement");
+    const announcementDocSnap = await getDoc(announcementDocRef);
+    if (announcementDocSnap.exists()) {
+      const data = announcementDocSnap.data();
+      setAnnouncementText(data.announcementText || "");
+    } else {
+      setAnnouncementText("");
+    }
+  } catch (error) {
+    console.error("Error fetching announcement:", error);
+  }
+};
   // ------------------ Fetch Categories ------------------
   const getCategoryImages = async () => {
     const cats = [];
@@ -305,7 +323,7 @@ export default function Homepage() {
   // ------------------ Initial Data Fetch ------------------
   useEffect(() => {
     // Fetch hero banner and banner images concurrently
-    Promise.all([fetchHeroBanner(), fetchBannerImages()]).catch((error) =>
+    Promise.all([fetchHeroBanner(), fetchBannerImages(), fetchAnnouncement()]).catch((error) =>
       console.error("Error in banners:", error)
     );
     async function fetchData() {
@@ -394,6 +412,34 @@ export default function Homepage() {
           </Button>
         )}
       </div>
+
+
+       {/* Announcement Section */}
+       {announcementText && (
+        <div
+          style={{
+            backgroundColor: "#000",
+            padding: "10px 20px",
+            margin: "0px 0",
+            borderRadius: "0px",
+          }}
+        >
+          <marquee
+            behavior="alternate"
+            direction="left"
+            style={{
+              color: "#fff",
+              fontFamily: "Lora, serif",
+              fontSize: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <TbSpeakerphone size={25} sx={{ mr: 5 }} style={{marginRight:'10px'}} />
+            {announcementText}
+          </marquee>
+        </div>
+      )}
 
       {/* Info Sections */}
       <div className="container" style={{ padding: "70px 20px" }}>
