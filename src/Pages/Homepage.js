@@ -20,10 +20,10 @@ import mobileAppImage from "../assets/mobilepp.png";
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
-import { Button } from "@mui/material";
+import { Button, CircularProgress, LinearProgress } from "@mui/material";
 // import AnnouncementIcon from "@mui/icons-material/Announcement";
 import { TbSpeakerphone } from "react-icons/tb";
-
+import {ReactTyped} from 'react-typed'
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -119,6 +119,7 @@ export default function Homepage() {
 
   // Loader state
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(true);
 
   // Local state variables
   const [categories, setCategories] = useState([]);
@@ -365,11 +366,17 @@ const fetchAnnouncement = async () => {
     setOverlayProduct(null);
   };
 
-  if (loading) {
+  if (loading||isTyping) {
     return (
       <div style={loaderStyles.container}>
+        <CircularProgress size={80} style={{color:'white',margin:'0px auto',marginTop:'0px',marginBottom:'75px'}}/>
         <h1 style={loaderStyles.text}>VastraHub</h1>
-        <h1 style={loaderStyles.text2}>VYAPAR KA NAYA TAREEKA</h1>
+        {/* <h1 style={loaderStyles.text2}>VYAPAR KA NAYA TAREEKA</h1> */}
+        <ReactTyped style={loaderStyles.text2} startWhenVisible strings={['VYAPAR KA NAYA TAREEKA']} typeSpeed={75} onComplete={()=>{
+          setTimeout(()=>{setIsTyping(false)},300)
+          }} />
+          {/* <LinearProgress style={{color:'white'}}/> */}
+      {/* <ReactTyped/> */}
       </div>
     );
   }
