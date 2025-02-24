@@ -6,9 +6,9 @@ import {
   Box,
   Card,
   CardContent,
-  CardActionArea,
-  Grid,
+  Button,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
@@ -31,7 +31,7 @@ export default function MyOrders() {
       return;
     }
     fetchOrders();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, navigate]);
 
   const fetchOrders = async () => {
     setLoadingOrders(true);
@@ -64,7 +64,7 @@ export default function MyOrders() {
 
   return (
     <Container sx={{ mt: 4, mb: 4, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-      <Typography variant="h4" align="center" gutterBottom sx={{ fontFamily: "Lora, serif" }}>
+      <Typography variant="h4" align="center" gutterBottom sx={{ fontFamily: "Lora, serif", mb: 3 }}>
         My Orders
       </Typography>
       {loadingOrders ? (
@@ -76,32 +76,48 @@ export default function MyOrders() {
           You have not placed any orders yet.
         </Typography>
       ) : (
-        <Grid container spacing={3}>
-          {orders.map((order) => (
-            <Grid item xs={12} sm={6} md={4} key={order.id}>
-              <Card>
-                <CardActionArea
-                  onClick={() => navigate("/order-details", { state: { orderId: order.id } })}
-                >
-                  <CardContent>
-                    <Typography variant="h6" sx={{ fontFamily: "Lora, serif" }}>
-                      Order #{order.id.substring(0, 8).toUpperCase()}
-                    </Typography>
-                    <Typography variant="body2">
-                      Status: {order.orderStatus}
-                    </Typography>
-                    <Typography variant="body2">
-                      Total: ₹{order.grandTotal.toFixed(2)}
-                    </Typography>
-                    <Typography variant="body2">
-                      Placed on: {formatDate(order.createdAt)}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        orders.map((order) => (
+          <Card
+            key={order.id}
+            sx={{
+              mb: 2,
+              p: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderRadius: "8px",
+              boxShadow: 2,
+            }}
+          >
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" sx={{ fontFamily: "Lora, serif" }}>
+                Order #{order.id.substring(0, 8).toUpperCase()}
+              </Typography>
+              <Typography variant="body2">
+                Status: {order.orderStatus}
+              </Typography>
+              <Typography variant="body2">
+                Grand Total: ₹{order.grandTotal.toFixed(2)}
+              </Typography>
+              <Typography variant="body2">
+                Placed on: {formatDate(order.createdAt)}
+              </Typography>
+            </Box>
+            <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
+            <Button
+              variant="contained"
+              onClick={() => navigate("/order-details", { state: { orderId: order.id } })}
+              sx={{
+                backgroundColor: "#000",
+                color: "#fff",
+                textTransform: "none",
+                fontWeight: "bold",
+              }}
+            >
+              View Details
+            </Button>
+          </Card>
+        ))
       )}
     </Container>
   );

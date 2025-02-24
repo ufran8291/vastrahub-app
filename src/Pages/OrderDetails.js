@@ -31,7 +31,7 @@ export default function OrderDetails() {
       return;
     }
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, navigate]);
 
   const fetchOrder = async () => {
     setLoadingOrder(true);
@@ -121,19 +121,21 @@ export default function OrderDetails() {
             <TableRow>
               <TableCell sx={{ fontWeight: "bold" }}>Product</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Size</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Quantity</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Boxes</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Pieces</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Line Total</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {order.orderItems.map((item, index) => {
-              const pricePerBox = item.boxPieces * item.pricePerPiece;
-              const lineTotal = pricePerBox * item.quantity;
+              // New calculation: lineTotal = noOfPieces * pricePerPiece
+              const lineTotal = item.noOfPieces * item.pricePerPiece;
               return (
                 <TableRow key={index}>
                   <TableCell>{item.productTitle}</TableCell>
                   <TableCell>{item.size}</TableCell>
                   <TableCell>{item.quantity} Boxes</TableCell>
+                  <TableCell>{item.noOfPieces}</TableCell>
                   <TableCell>₹{lineTotal.toFixed(2)}</TableCell>
                 </TableRow>
               );
