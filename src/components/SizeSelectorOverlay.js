@@ -23,6 +23,27 @@ export default function SizeSelectorOverlay({ product, onClose }) {
   // Count distinct sizes with quantity > 0
   const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
 
+  // Helper: Compute available boxes from piecesInStock and boxPieces
+  const computeTotalBoxes = (piecesInStock, boxPieces) => {
+    const pieces = piecesInStock || 0;
+    const boxPiecesVal = boxPieces || 1;
+    const fullBoxes = Math.floor(pieces / boxPiecesVal);
+    const remainder = pieces % boxPiecesVal;
+    return fullBoxes + (remainder > 0 ? 1 : 0);
+  };
+
+  // Helper: Compute total pieces selected based on the quantity (boxes)
+  const computeTotalPieces = (quantity, boxPieces, piecesInStock) => {
+    const fullBoxes = Math.floor((piecesInStock || 0) / (boxPieces || 1));
+    const remainder = (piecesInStock || 0) % (boxPieces || 1);
+    if (quantity <= fullBoxes) {
+      return quantity * boxPieces;
+    } else {
+      // When a partial box is added
+      return fullBoxes * boxPieces + remainder;
+    }
+  };
+
   useEffect(() => {
     async function initQuantities() {
       if (product && product.sizes) {
@@ -57,10 +78,21 @@ export default function SizeSelectorOverlay({ product, onClose }) {
   const handleIncrement = (idx) => {
     setQuantities((prev) => {
       const updated = [...prev];
-      const stock = updated[idx].boxesInStock || 0;
-      if (updated[idx].quantity < stock) {
+      const availableStock = computeTotalBoxes(updated[idx].piecesInStock, updated[idx].boxPieces);
+      if (updated[idx].quantity < availableStock) {
         updated[idx].quantity += 1;
       }
+      // Log calculation details
+      const fullBoxes = Math.floor((updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1));
+      const remainder = (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
+      const totalPiecesSelected = computeTotalPieces(
+        updated[idx].quantity,
+        updated[idx].boxPieces,
+        updated[idx].piecesInStock
+      );
+      console.log(
+        `After increment for size ${updated[idx].size}: quantity=${updated[idx].quantity}, totalPieces=${totalPiecesSelected} (fullBoxes=${fullBoxes}, remainder=${remainder})`
+      );
       return updated;
     });
   };
@@ -71,6 +103,17 @@ export default function SizeSelectorOverlay({ product, onClose }) {
       if (updated[idx].quantity > 0) {
         updated[idx].quantity -= 1;
       }
+      // Log calculation details
+      const fullBoxes = Math.floor((updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1));
+      const remainder = (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
+      const totalPiecesSelected = computeTotalPieces(
+        updated[idx].quantity,
+        updated[idx].boxPieces,
+        updated[idx].piecesInStock
+      );
+      console.log(
+        `After decrement for size ${updated[idx].size}: quantity=${updated[idx].quantity}, totalPieces=${totalPiecesSelected} (fullBoxes=${fullBoxes}, remainder=${remainder})`
+      );
       return updated;
     });
   };
@@ -88,39 +131,32 @@ export default function SizeSelectorOverlay({ product, onClose }) {
     try {
       const cartRef = collection(db, "users", uid, "cart");
       for (let sq of quantities) {
-        const existing = existingCartItems[sq.size];
         if (sq.quantity > 0) {
+          // Compute the total number of pieces for this size
+          const noOfPieces = computeTotalPieces(sq.quantity, sq.boxPieces, sq.piecesInStock);
+          const existing = existingCartItems[sq.size];
+          const cartData = {
+            productId: product.id,
+            productTitle: product.title,
+            size: sq.size,
+            pricePerPiece: sq.pricePerPiece,
+            boxPieces: sq.boxPieces,
+            quantity: sq.quantity, // boxes selected
+            noOfPieces, // total pieces calculated
+            updatedAt: new Date(),
+          };
           if (existing) {
             // Update the existing cart document.
             const docRef = doc(db, "users", uid, "cart", existing.docId);
-            await setDoc(
-              docRef,
-              {
-                productId: product.id,
-                productTitle: product.title,
-                size: sq.size,
-                pricePerPiece: sq.pricePerPiece,
-                boxPieces: sq.boxPieces,
-                quantity: sq.quantity,
-                updatedAt: new Date(),
-              },
-              { merge: true }
-            );
+            await setDoc(docRef, cartData, { merge: true });
           } else {
             // Create a new cart document.
             const newDocRef = doc(cartRef);
-            await setDoc(newDocRef, {
-              productId: product.id,
-              productTitle: product.title,
-              size: sq.size,
-              pricePerPiece: sq.pricePerPiece,
-              boxPieces: sq.boxPieces,
-              quantity: sq.quantity,
-              updatedAt: new Date(),
-            });
+            await setDoc(newDocRef, cartData);
           }
         } else {
           // If quantity is 0 and there is an existing cart document, remove it.
+          const existing = existingCartItems[sq.size];
           if (existing) {
             const docRef = doc(db, "users", uid, "cart", existing.docId);
             await deleteDoc(docRef);
@@ -174,69 +210,97 @@ export default function SizeSelectorOverlay({ product, onClose }) {
 
         {/* SCROLLABLE AREA */}
         <div style={{ maxHeight: "300px", overflowY: "auto", marginBottom: "20px" }}>
-          {quantities.map((sizeObj, idx) => (
-            <div
-              key={sizeObj.size}
-              style={{
-                borderBottom: "1px solid #eee",
-                padding: "8px 0",
-                marginBottom: "8px",
-              }}
-            >
-              <strong style={{ fontSize: "16px" }}>
-                Size: {sizeObj.size} (Stock: {sizeObj.boxesInStock})
-              </strong>
-              <div style={{ fontSize: "14px", color: "#555" }}>
-                Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
-              </div>
-
-              {/* Increment/Decrement Controls */}
+          {quantities.map((sizeObj, idx) => {
+            const availableStock = computeTotalBoxes(sizeObj.piecesInStock, sizeObj.boxPieces);
+            const fullBoxes = Math.floor((sizeObj.piecesInStock || 0) / (sizeObj.boxPieces || 1));
+            const remainder = (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
+            const tooltipText =
+              sizeObj.piecesInStock > 0
+                ? `${availableStock} box available (${fullBoxes} full` +
+                  (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
+                  `)`
+                : "Out of stock";
+            const totalPiecesSelected = computeTotalPieces(
+              sizeObj.quantity,
+              sizeObj.boxPieces,
+              sizeObj.piecesInStock
+            );
+            return (
               <div
+                key={sizeObj.size}
                 style={{
-                  marginTop: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
+                  borderBottom: "1px solid #eee",
+                  padding: "8px 0",
+                  marginBottom: "8px",
                 }}
               >
-                <button
-                  onClick={() => handleDecrement(idx)}
+                <strong style={{ fontSize: "16px" }}>
+                  Size: {sizeObj.size}{" "}
+                  <span title={tooltipText} style={{ fontWeight: "normal", fontSize: "14px", color: "#555" }}>
+                    (Stock: {availableStock})
+                  </span>
+                </strong>
+                <div style={{ fontSize: "14px", color: "#555" }}>
+                  Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
+                </div>
+                <div
                   style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: sizeObj.quantity > 0 ? "pointer" : "not-allowed",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: "6px",
                   }}
-                  disabled={sizeObj.quantity === 0}
                 >
-                  -
-                </button>
-
-                <span style={{ minWidth: "24px", textAlign: "center" }}>
-                  {sizeObj.quantity}
-                </span>
-
-                <button
-                  onClick={() => handleIncrement(idx)}
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                  }}
-                  disabled={sizeObj.quantity >= sizeObj.boxesInStock}
-                >
-                  +
-                </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button
+                      onClick={() => handleDecrement(idx)}
+                      style={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #333",
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "4px",
+                        fontSize: "16px",
+                        cursor: sizeObj.quantity > 0 ? "pointer" : "not-allowed",
+                      }}
+                      disabled={sizeObj.quantity === 0}
+                    >
+                      –
+                    </button>
+                    <span style={{ minWidth: "24px", textAlign: "center" }}>
+                      {sizeObj.quantity}
+                    </span>
+                    <button
+                      onClick={() => handleIncrement(idx)}
+                      style={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #333",
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "4px",
+                        fontSize: "16px",
+                        cursor: "pointer",
+                      }}
+                      disabled={sizeObj.quantity >= availableStock}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "12px", color: "#888" }}>
+                      Total Pieces: {totalPiecesSelected}
+                      {sizeObj.quantity === availableStock && remainder > 0 && (
+                        <>
+                          <br />
+                          Last box has only {remainder} pieces
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {distinctSelected < 2 && (
@@ -245,7 +309,6 @@ export default function SizeSelectorOverlay({ product, onClose }) {
           </p>
         )}
 
-        {/* ACTION BUTTONS */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button
             onClick={onClose}

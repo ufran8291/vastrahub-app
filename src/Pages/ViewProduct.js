@@ -17,28 +17,48 @@ import {
 const ViewProduct = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
-
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id || null;
-
   const productId = state?.productId || null;
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Carousel state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // Track how many boxes for each size (initialize later based on cart)
   const [sizesQuantity, setSizesQuantity] = useState([]);
-
-  // Magnifier
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [magnifierPos, setMagnifierPos] = useState({ x: 0, y: 0 });
   const [magnifierSize] = useState(150);
   const [zoomScale] = useState(2);
   const imgContainerRef = useRef(null);
+
+  // ---------------- Helper Functions ----------------
+  const computeTotalBoxes = (piecesInStock, boxPieces) => {
+    const pieces = piecesInStock || 0;
+    const boxPiecesVal = boxPieces || 1;
+    const fullBoxes = Math.floor(pieces / boxPiecesVal);
+    const remainder = pieces % boxPiecesVal;
+    return fullBoxes + (remainder > 0 ? 1 : 0);
+  };
+
+  const computeTotalPieces = (quantity, boxPieces, piecesInStock) => {
+    const fullBoxes = Math.floor((piecesInStock || 0) / (boxPieces || 1));
+    const remainder = (piecesInStock || 0) % (boxPieces || 1);
+    if (quantity <= fullBoxes) {
+      return quantity * boxPieces;
+    } else {
+      return fullBoxes * boxPieces + remainder;
+    }
+  };
+
+  const getSizeTotal = (sizeObj, boxesSelected) => {
+    if (boxesSelected === null || !sizeObj) return 0;
+    return boxesSelected * sizeObj.boxPieces * sizeObj.pricePerPiece;
+  };
+
+  const getCountDistinctSizesSelected = () => {
+    return sizesQuantity.filter((q) => q && q > 0).length;
+  };
 
   // ---------------- EFFECT: Fetch Product and Initialize Quantities ----------------
   useEffect(() => {
@@ -47,7 +67,6 @@ const ViewProduct = () => {
       navigate("/");
       return;
     }
-
     const fetchProduct = async () => {
       try {
         const docRef = doc(db, "products", productId);
@@ -55,13 +74,9 @@ const ViewProduct = () => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setProduct(data);
-
-          // Initialize quantity array for each size with 0 (if stock available)
           let initialQuantities = data.sizes && Array.isArray(data.sizes)
-            ? data.sizes.map((s) => (s.boxesInStock > 0 ? 0 : null))
+            ? data.sizes.map((s) => 0)
             : [];
-
-          // If logged in, fetch existing cart items for this product
           if (data.sizes && Array.isArray(data.sizes) && uid) {
             try {
               const cartRef = collection(db, "users", uid, "cart");
@@ -72,9 +87,7 @@ const ViewProduct = () => {
                 const cartData = docSnap.data();
                 mapping[cartData.size] = cartData.quantity;
               });
-              initialQuantities = data.sizes.map((s) =>
-                s.boxesInStock > 0 ? mapping[s.size] || 0 : null
-              );
+              initialQuantities = data.sizes.map((s) => mapping[s.size] || 0);
             } catch (error) {
               console.error("Error fetching cart items:", error);
             }
@@ -92,7 +105,6 @@ const ViewProduct = () => {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [productId, navigate, uid]);
 
@@ -105,7 +117,6 @@ const ViewProduct = () => {
     });
   }, [product]);
 
-  // =============== Carousel Handlers ===============
   const getAllImages = () => {
     if (!product) return [];
     return [product.coverImage, ...(product.additionalImages || [])].filter(Boolean);
@@ -123,7 +134,7 @@ const ViewProduct = () => {
     setCurrentImageIndex((prev) => (prev - 1 + totalImagesCount) % totalImagesCount);
   };
 
-  // =============== Size Selector Handlers ===============
+  // ---------------- Size Selector Handlers ----------------
   const handlePlus = (index) => {
     if (!isLoggedIn) return;
     setSizesQuantity((prev) => {
@@ -146,11 +157,6 @@ const ViewProduct = () => {
     });
   };
 
-  const getSizeTotal = (sizeObj, boxesSelected) => {
-    if (boxesSelected === null || !sizeObj) return 0;
-    return boxesSelected * sizeObj.boxPieces * sizeObj.pricePerPiece;
-  };
-
   const getAllSizesTotal = () => {
     if (!product?.sizes) return 0;
     return product.sizes.reduce((acc, sizeObj, i) => {
@@ -161,11 +167,7 @@ const ViewProduct = () => {
     }, 0);
   };
 
-  const getCountDistinctSizesSelected = () => {
-    return sizesQuantity.filter((q) => q && q > 0).length;
-  };
-
-  // =============== Add to Cart Handler ===============
+  // ---------------- Add to Cart Handler ----------------
   const handleAddToCart = async () => {
     if (!isLoggedIn) return;
     const distinctSizesSelected = getCountDistinctSizesSelected();
@@ -173,61 +175,46 @@ const ViewProduct = () => {
       toast.info("Please select at least 2 different sizes to add to cart.");
       return;
     }
-
     try {
       const cartRef = collection(db, "users", uid, "cart");
-      // Fetch existing cart items for this product
       const q = query(cartRef, where("productId", "==", productId));
       const snapshot = await getDocs(q);
       let mapping = {};
       snapshot.forEach((docSnap) => {
         mapping[docSnap.data().size] = { docId: docSnap.id, quantity: docSnap.data().quantity };
       });
-
       let anySelected = false;
       for (let i = 0; i < product.sizes.length; i++) {
         const sizeObj = product.sizes[i];
         const boxesSelected = sizesQuantity[i];
         if (boxesSelected > 0) anySelected = true;
         if (boxesSelected > 0) {
+          // Compute noOfPieces from the selected number of boxes
+          const noOfPieces = computeTotalPieces(boxesSelected, sizeObj.boxPieces, sizeObj.piecesInStock);
+          const cartData = {
+            productId: productId,
+            productTitle: product.title,
+            size: sizeObj.size,
+            pricePerPiece: sizeObj.pricePerPiece,
+            boxPieces: sizeObj.boxPieces,
+            quantity: boxesSelected,
+            noOfPieces, // Save the total number of pieces
+            updatedAt: new Date(),
+          };
           if (mapping[sizeObj.size]) {
-            // Update existing cart document
             const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);
-            await setDoc(
-              docRef,
-              {
-                productId: productId,
-                productTitle: product.title,
-                size: sizeObj.size,
-                pricePerPiece: sizeObj.pricePerPiece,
-                boxPieces: sizeObj.boxPieces,
-                quantity: boxesSelected,
-                updatedAt: new Date(),
-              },
-              { merge: true }
-            );
+            await setDoc(docRef, cartData, { merge: true });
           } else {
-            // Create a new cart document
             const newDocRef = doc(cartRef);
-            await setDoc(newDocRef, {
-              productId: productId,
-              productTitle: product.title,
-              size: sizeObj.size,
-              pricePerPiece: sizeObj.pricePerPiece,
-              boxPieces: sizeObj.boxPieces,
-              quantity: boxesSelected,
-              updatedAt: new Date(),
-            });
+            await setDoc(newDocRef, cartData);
           }
         } else {
-          // If quantity is 0 and an entry exists, remove it
           if (mapping[sizeObj.size]) {
             const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);
             await deleteDoc(docRef);
           }
         }
       }
-
       if (!anySelected) {
         toast.info("No valid boxes selected. Please pick at least one size with stock.");
         return;
@@ -239,7 +226,7 @@ const ViewProduct = () => {
     }
   };
 
-  // =============== Magnifier Handlers ===============
+  // ---------------- Magnifier Handlers ----------------
   const handleMouseEnter = () => {
     if (getCurrentImageUrl()) setShowMagnifier(true);
   };
@@ -249,11 +236,9 @@ const ViewProduct = () => {
     const { left, top, width, height } = imgContainerRef.current.getBoundingClientRect();
     const x = e.pageX - left - window.scrollX;
     const y = e.pageY - top - window.scrollY;
-
     const lensRadius = magnifierSize / 2;
     const clampedX = Math.max(lensRadius, Math.min(x, width - lensRadius));
     const clampedY = Math.max(lensRadius, Math.min(y, height - lensRadius));
-
     setMagnifierPos({ x: clampedX, y: clampedY });
   };
 
@@ -278,7 +263,7 @@ const ViewProduct = () => {
 
   const minPrice = (() => {
     if (!product.sizes) return null;
-    const valid = product.sizes.filter((s) => s.boxesInStock > 0);
+    const valid = product.sizes.filter((s) => computeTotalBoxes(s.piecesInStock, s.boxPieces) > 0);
     if (!valid.length) return null;
     return Math.min(...valid.map((s) => s.pricePerPiece));
   })();
@@ -505,12 +490,11 @@ const ViewProduct = () => {
         {product.sizes && product.sizes.length > 0 ? (
           <div style={{ border: "1px solid #ccc", borderRadius: "8px" }}>
             {product.sizes.map((sizeObj, index) => {
-              if (sizeObj.boxesInStock === 0) return null;
               const boxesSelected = sizesQuantity[index];
-              const totalForThisSize = isLoggedIn
-                ? getSizeTotal(sizeObj, boxesSelected)
-                : 0;
-
+              const totalForThisSize = isLoggedIn ? getSizeTotal(sizeObj, boxesSelected) : 0;
+              const availableBoxes = computeTotalBoxes(sizeObj.piecesInStock, sizeObj.boxPieces);
+              const totalPiecesSelected = computeTotalPieces(boxesSelected, sizeObj.boxPieces, sizeObj.piecesInStock);
+              const remainder = (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
               return (
                 <div
                   key={index}
@@ -518,10 +502,7 @@ const ViewProduct = () => {
                     display: "flex",
                     alignItems: "center",
                     padding: "10px",
-                    borderBottom:
-                      index !== product.sizes.length - 1
-                        ? "1px solid #eee"
-                        : "none",
+                    borderBottom: index !== product.sizes.length - 1 ? "1px solid #eee" : "none",
                   }}
                 >
                   <div style={{ flex: 1 }}>
@@ -554,7 +535,7 @@ const ViewProduct = () => {
                         marginBottom: "0px",
                       }}
                     >
-                      Boxes in Stock: {sizeObj.boxesInStock}
+                      Boxes in Stock: {computeTotalBoxes(sizeObj.piecesInStock, sizeObj.boxPieces)}
                     </p>
                   </div>
 
@@ -594,8 +575,7 @@ const ViewProduct = () => {
                       onClick={() => handlePlus(index)}
                       disabled={
                         !isLoggedIn ||
-                        (boxesSelected !== null &&
-                          boxesSelected >= sizeObj.boxesInStock)
+                        (boxesSelected !== null && boxesSelected >= availableBoxes)
                       }
                       style={{
                         background: "#fff",
@@ -622,6 +602,24 @@ const ViewProduct = () => {
                     >
                       {isLoggedIn ? `Total: ₹${totalForThisSize}` : "Total: --"}
                     </p>
+                    {isLoggedIn && (
+                      <p
+                        style={{
+                          fontFamily: "Plus Jakarta Sans, sans-serif",
+                          fontSize: "12px",
+                          color: "#888",
+                          margin: "0",
+                        }}
+                      >
+                        Total Pieces: {totalPiecesSelected}
+                        {boxesSelected === availableBoxes && remainder > 0 && (
+                          <>
+                            <br />
+                            Last box has only {remainder} pieces
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               );
@@ -679,7 +677,7 @@ const ViewProduct = () => {
       </div>
 
       {/* ---------- Grand total & "Add to Cart" ---------- */}
-      {product.sizes && product.sizes.some((s) => s.boxesInStock > 0) && (
+      {product.sizes && product.sizes.some((s) => computeTotalBoxes(s.piecesInStock, s.boxPieces) > 0) && (
         <div
           style={{
             display: "flex",

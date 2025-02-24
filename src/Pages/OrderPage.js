@@ -21,9 +21,6 @@ export default function OrderPage() {
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id;
-  // The Pay Later toggle will show only if isPremium is true.
-  // For testing, you can uncomment the next line to force it:
-  // const isPremium = true;
   const isPremium = firestoreUser?.isPremium; 
 
   // Order details – for this example, we fetch the latest cart items.
@@ -87,9 +84,8 @@ export default function OrderPage() {
     let total = 0;
     items.forEach((item) => {
       const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-      const boxes = item.quantity;
       const pricePerBox = item.boxPieces * item.pricePerPiece;
-      const lineTotal = pricePerBox * boxes;
+      const lineTotal = pricePerBox * item.quantity;
       const lineWithoutTax = lineTotal / (1 + gstRate / 100);
       const lineTax = lineTotal - lineWithoutTax;
       totalWithoutTax += lineWithoutTax;
@@ -122,23 +118,33 @@ export default function OrderPage() {
       toast.info("Your cart is empty.");
       return;
     }
-    // If user is premium and has not selected payLater, navigate to payment route
     if (isPremium && !payLater) {
       navigate("/payment", {
         state: { cartItems, subtotal, tax, grandTotal, address, transport, email, phone, gstinPan },
       });
       return;
     }
-    // Otherwise, place the order directly
     setPlacingOrder(true);
     try {
+      // Map each cart item to include all required fields (including noOfPieces and boxPieces)
       const orderItems = cartItems.map((item) => {
         const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
         const pricePerBox = item.boxPieces * item.pricePerPiece;
         const lineTotal = pricePerBox * item.quantity;
         const lineWithoutTax = lineTotal / (1 + gstRate / 100);
         const lineTax = lineTotal - lineWithoutTax;
-        return { ...item, lineTotal, lineWithoutTax, lineTax };
+        return {
+          productId: item.productId,
+          productTitle: item.productTitle,
+          size: item.size,
+          quantity: item.quantity, // number of boxes selected
+          noOfPieces: item.noOfPieces, // total pieces
+          boxPieces: item.boxPieces, // pieces per box
+          pricePerPiece: item.pricePerPiece,
+          lineTotal,
+          lineWithoutTax,
+          lineTax,
+        };
       });
       const orderData = {
         userId: uid,
@@ -158,7 +164,6 @@ export default function OrderPage() {
       };
 
       await addDoc(collection(db, "orders"), orderData);
-      // Clear cart after successful order placement
       await clearCart();
       toast.success(
         "Order placed successfully! You will be notified once your order is accepted. You can view your order from the My Orders section in your profile."
@@ -304,7 +309,7 @@ export default function OrderPage() {
                   {item.productTitle} - Size: {item.size}
                 </Typography>
                 <Typography variant="body2">
-                  Quantity: {item.quantity} Boxes
+                  {item.quantity} Boxes (No of Pieces: {item.noOfPieces})
                 </Typography>
               </Box>
               <Box>
@@ -328,7 +333,7 @@ export default function OrderPage() {
         </Box>
       </Box>
 
-      {/* Additional Order Action Button at bottom of scrollable content */}
+      {/* Additional Order Action Button */}
       <Box
         sx={{
           mb: 3,
@@ -377,7 +382,6 @@ export default function OrderPage() {
           zIndex: 1000,
         }}
       >
-        {/* Totals Summary on Left */}
         <Box sx={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
           <div>
             <strong>Total Without Tax:</strong> ₹{subtotal.toFixed(2)}
@@ -389,7 +393,6 @@ export default function OrderPage() {
             <strong>Grand Total:</strong> ₹{grandTotal.toFixed(2)}
           </div>
         </Box>
-        {/* Action Button on Right */}
         <Button
           variant="contained"
           onClick={handlePlaceOrder}

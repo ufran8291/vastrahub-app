@@ -9,210 +9,15 @@ import {
   getDoc,
   deleteDoc,
   setDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
 import { CircularProgress, Button } from "@mui/material";
 import { MdDelete, MdEdit } from "react-icons/md";
+import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 
-// ---------- EditOverlay Component (for editing cart product quantities) ----------
-function EditOverlay({ productData, existingLines, onClose, onConfirm }) {
-  /**
-   * productData: { id (productId), coverImage, title, sizes: [...] }
-   * existingLines: array of cart items for this product (the user's current selections).
-   */
-  const [quantities, setQuantities] = useState([]);
-
-  useEffect(() => {
-    if (productData?.sizes) {
-      const mapped = productData.sizes.map((sizeObj) => {
-        const existingLine = existingLines.find(
-          (line) => line.size === sizeObj.size
-        );
-        return {
-          ...sizeObj,
-          quantity: existingLine ? existingLine.quantity : 0,
-        };
-      });
-      setQuantities(mapped);
-    }
-  }, [productData, existingLines]);
-
-  const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
-
-  const handleIncrement = (idx) => {
-    setQuantities((prev) => {
-      const updated = [...prev];
-      const maxStock = updated[idx].boxesInStock || 0;
-      if (updated[idx].quantity < maxStock) {
-        updated[idx].quantity += 1;
-      }
-      return updated;
-    });
-  };
-
-  const handleDecrement = (idx) => {
-    setQuantities((prev) => {
-      const updated = [...prev];
-      if (updated[idx].quantity > 0) {
-        updated[idx].quantity -= 1;
-      }
-      return updated;
-    });
-  };
-
-  const handleConfirm = () => {
-    if (distinctSelected < 2) {
-      toast.info("Please select at least 2 different sizes for this product.");
-      return;
-    }
-    const updated = quantities.filter((q) => q.quantity > 0);
-    onConfirm(updated);
-  };
-
-  if (!productData) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        zIndex: 9999,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontFamily: "Plus Jakarta Sans, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "8px",
-          padding: "20px",
-          width: "400px",
-        }}
-      >
-        <h3
-          style={{
-            marginBottom: "10px",
-            fontFamily: "Lora, serif",
-            fontWeight: 600,
-            fontSize: "22px",
-          }}
-        >
-          Edit Cart Quantities
-        </h3>
-        <p style={{ marginBottom: "20px", fontSize: "16px", color: "#333" }}>
-          {productData.title}
-        </p>
-
-        {/* Scrollable section with increased padding */}
-        <div
-          style={{
-            maxHeight: "300px",
-            overflowY: "auto",
-            marginBottom: "20px",
-            padding: "10px",
-          }}
-        >
-          {quantities.map((sizeObj, idx) => (
-            <div
-              key={sizeObj.size}
-              style={{
-                borderBottom: "1px solid #eee",
-                padding: "12px 0",
-                marginBottom: "12px",
-              }}
-            >
-              <strong style={{ fontSize: "16px" }}>
-                Size: {sizeObj.size} (Stock: {sizeObj.boxesInStock})
-              </strong>
-              <div style={{ fontSize: "14px", color: "#555", marginBottom: "8px" }}>
-                Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <button
-                  onClick={() => handleDecrement(idx)}
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: sizeObj.quantity > 0 ? "pointer" : "not-allowed",
-                  }}
-                >
-                  -
-                </button>
-                <span style={{ minWidth: "24px", textAlign: "center" }}>
-                  {sizeObj.quantity}
-                </span>
-                <button
-                  onClick={() => handleIncrement(idx)}
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #333",
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "4px",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                  }}
-                  disabled={sizeObj.quantity >= sizeObj.boxesInStock}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {distinctSelected < 2 && (
-          <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>
-            You must select at least 2 different sizes.
-          </p>
-        )}
-
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#fff",
-              color: "#333",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "4px",
-              border: "1px solid #333",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#333",
-              color: "#fff",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "4px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------- MAIN COMPONENT: UserCart ----------
 export default function UserCart() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser } = useContext(GlobalContext);
@@ -225,8 +30,8 @@ export default function UserCart() {
   const [tax, setTax] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
-  // For the "Edit" overlay
-  const [editOverlayData, setEditOverlayData] = useState(null);
+  // For the "Edit" overlay using SizeSelectorOverlay
+  const [overlayProduct, setOverlayProduct] = useState(null);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -235,7 +40,6 @@ export default function UserCart() {
       return;
     }
     fetchCartItems();
-    // eslint-disable-next-line
   }, [isLoggedIn]);
 
   const fetchCartItems = async () => {
@@ -254,14 +58,12 @@ export default function UserCart() {
         const productSnap = await getDoc(productRef);
         if (productSnap.exists()) {
           const productData = productSnap.data();
-          const matchingSize = productData.sizes?.find(
-            (s) => s.size === item.size
-          );
+          const matchingSize = productData.sizes?.find((s) => s.size === item.size);
           if (matchingSize) {
             updatedItems.push({
               ...item,
               pricePerPiece: matchingSize.pricePerPiece,
-              boxPieces: matchingSize.boxPieces,
+              noOfPieces: item.noOfPieces,
               gst: productData.gst || 0,
               coverImage: productData.coverImage || "",
               productTitle: item.productTitle || productData.title,
@@ -286,9 +88,7 @@ export default function UserCart() {
     let total = 0;
     for (let item of items) {
       const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-      const boxes = item.quantity;
-      const pricePerBox = item.boxPieces * item.pricePerPiece;
-      const lineTotal = pricePerBox * boxes;
+      const lineTotal = item.pricePerPiece * item.boxPieces * item.quantity;
       const lineWithoutTax = lineTotal / (1 + gstRate / 100);
       const lineTax = lineTotal - lineWithoutTax;
       totalWithoutTax += lineWithoutTax;
@@ -334,7 +134,7 @@ export default function UserCart() {
     }
   };
 
-  // Open edit overlay
+  // Open edit overlay using SizeSelectorOverlay (reusing the same component)
   const openEditOverlay = (group) => {
     const productData = {
       id: group.productId,
@@ -342,48 +142,10 @@ export default function UserCart() {
       title: group.productTitle,
       sizes: group.allSizes,
     };
-    setEditOverlayData({
-      productData,
-      existingLines: group.lines,
-    });
+    setOverlayProduct(productData);
   };
 
-  // Handle edit confirm from overlay
-  const handleEditConfirm = async (updatedSelection) => {
-    if (!editOverlayData) return;
-    const db = getFirestore();
-    const { productData, existingLines } = editOverlayData;
-    try {
-      for (let line of existingLines) {
-        await deleteDoc(doc(db, "users", uid, "cart", line.cartItemId));
-      }
-      for (let sel of updatedSelection) {
-        if (sel.quantity > 0) {
-          const cartRef = collection(db, "users", uid, "cart");
-          const docRef = doc(cartRef);
-          await setDoc(docRef, {
-            productId: productData.id,
-            productTitle: productData.title,
-            size: sel.size,
-            pricePerPiece: sel.pricePerPiece,
-            boxPieces: sel.boxPieces,
-            quantity: sel.quantity,
-            updatedAt: new Date(),
-          });
-        }
-      }
-      toast.success("Cart updated successfully!");
-      setEditOverlayData(null);
-      fetchCartItems();
-    } catch (error) {
-      console.error("Error editing cart lines:", error);
-      toast.error("Failed to update cart.");
-    }
-  };
-
-  // ---------- Order Now button handler ----------
   const goToOrderPage = () => {
-    // Pass the current cart items and totals via state or use a global store
     navigate("/order");
   };
 
@@ -402,6 +164,16 @@ export default function UserCart() {
         <p>No items in your cart.</p>
       </div>
     );
+  }
+
+  let cartButtonTooltip = "";
+  const distinctSizesSelected = groupedCart.reduce(
+    (acc, group) => acc + group.lines.filter((line) => line.quantity > 0).length,
+    0
+  );
+  if (!isLoggedIn) cartButtonTooltip = "Please log in to add items to cart.";
+  else if (distinctSizesSelected < 2) {
+    cartButtonTooltip = "Please select at least 2 different sizes.";
   }
 
   return (
@@ -483,7 +255,7 @@ export default function UserCart() {
                     <p style={{ margin: 0, fontWeight: "bold" }}>
                       Size: {item.size}, Boxes: {item.quantity}
                     </p>
-                    <p style={{ margin: 0 }}>Pieces/Box: {item.boxPieces}</p>
+                    <p style={{ margin: 0 }}>No of Pieces: {item.noOfPieces}</p>
                     <p style={{ margin: 0 }}>Price/Piece: ₹{item.pricePerPiece}</p>
                   </div>
                   <div style={{ textAlign: "right", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
@@ -504,7 +276,7 @@ export default function UserCart() {
         ))}
       </div>
 
-      {/* Order Summary Section (at bottom of scrollable content) */}
+      {/* Order Summary Section */}
       <div
         style={{
           marginBottom: "30px",
@@ -535,9 +307,7 @@ export default function UserCart() {
               fontWeight: "bold",
               padding: "15px 30px",
               textTransform: "none",
-              "&:hover": {
-                backgroundColor: "#000",
-              },
+              "&:hover": { backgroundColor: "#000" },
             }}
           >
             Order Now
@@ -563,7 +333,6 @@ export default function UserCart() {
           fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
-        {/* Totals Summary on Left */}
         <div style={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
           <div>
             <strong>Total Without Tax:</strong> ₹{subtotal.toFixed(2)}
@@ -575,7 +344,6 @@ export default function UserCart() {
             <strong>Grand Total:</strong> ₹{grandTotal.toFixed(2)}
           </div>
         </div>
-        {/* Order Now Button on Right */}
         <Button
           variant="contained"
           onClick={goToOrderPage}
@@ -586,23 +354,24 @@ export default function UserCart() {
             fontWeight: "bold",
             padding: "15px 30px",
             textTransform: "none",
-            "&:hover": {
-              backgroundColor: "#000",
-            },
+            "&:hover": { backgroundColor: "#000" },
           }}
         >
           Order Now
         </Button>
       </div>
 
-      {editOverlayData && (
-        <EditOverlay
-          productData={editOverlayData.productData}
-          existingLines={editOverlayData.existingLines}
-          onClose={() => setEditOverlayData(null)}
-          onConfirm={handleEditConfirm}
+      {overlayProduct && (
+        <SizeSelectorOverlay
+          product={overlayProduct}
+          onClose={() => {
+            setOverlayProduct(null);
+            fetchCartItems();
+          }}
         />
       )}
     </div>
   );
 }
+
+// export default UserCart;

@@ -20,10 +20,9 @@ import mobileAppImage from "../assets/mobilepp.png";
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
-import { Button, CircularProgress, LinearProgress } from "@mui/material";
-// import AnnouncementIcon from "@mui/icons-material/Announcement";
+import { Button, CircularProgress, LinearProgress, Tooltip } from "@mui/material";
 import { TbSpeakerphone } from "react-icons/tb";
-import {ReactTyped} from 'react-typed'
+import {ReactTyped} from "react-typed";
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -197,7 +196,6 @@ export default function Homepage() {
           const bannerDocSnap = await getDoc(bannerDocRef);
           if (bannerDocSnap.exists()) {
             const data = bannerDocSnap.data();
-            // Include tagId if available
             return { id, imageLink: data.imageLink, link: data.link || null, tagId: data.tagId || null };
           } else {
             console.log(`Banner document ${id} does not exist.`);
@@ -207,27 +205,26 @@ export default function Homepage() {
       );
       const validBanners = fetchedBanners.filter((banner) => banner !== null);
       setBanners(validBanners);
-      // Initialize hover state for banners
       setBannerHover(new Array(validBanners.length).fill(false));
     } catch (error) {
       console.error("Error fetching banner images:", error);
     }
   };
-// ------------------ Fetch Announcement ------------------
-const fetchAnnouncement = async () => {
-  try {
-    const announcementDocRef = doc(db, "banners", "announcement");
-    const announcementDocSnap = await getDoc(announcementDocRef);
-    if (announcementDocSnap.exists()) {
-      const data = announcementDocSnap.data();
-      setAnnouncementText(data.announcementText || "");
-    } else {
-      setAnnouncementText("");
+  // ------------------ Fetch Announcement ------------------
+  const fetchAnnouncement = async () => {
+    try {
+      const announcementDocRef = doc(db, "banners", "announcement");
+      const announcementDocSnap = await getDoc(announcementDocRef);
+      if (announcementDocSnap.exists()) {
+        const data = announcementDocSnap.data();
+        setAnnouncementText(data.announcementText || "");
+      } else {
+        setAnnouncementText("");
+      }
+    } catch (error) {
+      console.error("Error fetching announcement:", error);
     }
-  } catch (error) {
-    console.error("Error fetching announcement:", error);
-  }
-};
+  };
   // ------------------ Fetch Categories ------------------
   const getCategoryImages = async () => {
     const cats = [];
@@ -323,7 +320,6 @@ const fetchAnnouncement = async () => {
 
   // ------------------ Initial Data Fetch ------------------
   useEffect(() => {
-    // Fetch hero banner and banner images concurrently
     Promise.all([fetchHeroBanner(), fetchBannerImages(), fetchAnnouncement()]).catch((error) =>
       console.error("Error in banners:", error)
     );
@@ -366,17 +362,20 @@ const fetchAnnouncement = async () => {
     setOverlayProduct(null);
   };
 
-  if (loading||isTyping) {
+  if (loading || isTyping) {
     return (
       <div style={loaderStyles.container}>
-        <CircularProgress size={80} style={{color:'white',margin:'0px auto',marginTop:'0px',marginBottom:'75px'}}/>
+        <CircularProgress size={80} style={{ color: 'white', margin: '0 auto', marginBottom: '75px' }} />
         <h1 style={loaderStyles.text}>VastraHub</h1>
-        {/* <h1 style={loaderStyles.text2}>VYAPAR KA NAYA TAREEKA</h1> */}
-        <ReactTyped style={loaderStyles.text2} startWhenVisible strings={['VYAPAR KA NAYA TAREEKA']} typeSpeed={75} onComplete={()=>{
-          setTimeout(()=>{setIsTyping(false)},300)
-          }} />
-          {/* <LinearProgress style={{color:'white'}}/> */}
-      {/* <ReactTyped/> */}
+        <ReactTyped
+          style={loaderStyles.text2}
+          startWhenVisible
+          strings={['VYAPAR KA NAYA TAREEKA']}
+          typeSpeed={75}
+          onComplete={() => {
+            setTimeout(() => { setIsTyping(false) }, 300)
+          }}
+        />
       </div>
     );
   }
@@ -420,15 +419,13 @@ const fetchAnnouncement = async () => {
         )}
       </div>
 
-
-       {/* Announcement Section */}
-       {announcementText && (
+      {/* Announcement Section */}
+      {announcementText && (
         <div
           style={{
             backgroundColor: "#000",
             padding: "10px 20px",
-            margin: "0px 0",
-            borderRadius: "0px",
+            margin: "0px",
           }}
         >
           <marquee
@@ -442,7 +439,7 @@ const fetchAnnouncement = async () => {
               alignItems: "center",
             }}
           >
-            <TbSpeakerphone size={25} sx={{ mr: 5 }} style={{marginRight:'10px'}} />
+            <TbSpeakerphone size={25} style={{ marginRight: "10px" }} />
             {announcementText}
           </marquee>
         </div>
@@ -658,44 +655,43 @@ const fetchAnnouncement = async () => {
                         gap: "10px",
                       }}
                     >
-                      {prod.sizes.map((sz, j) => (
-                        <div
-                          key={j}
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            border: `2px solid ${
-                              sz.boxesInStock > 0 ? "#333" : "#ccc"
-                            }`,
-                            backgroundColor: sz.boxesInStock > 0 ? "#fff" : "#f5f5f5",
-                            color: sz.boxesInStock > 0 ? "#333" : "#aaa",
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            position: "relative",
-                            fontFamily: "Plus Jakarta Sans, sans-serif",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            cursor: sz.boxesInStock > 0 ? "pointer" : "not-allowed",
-                            opacity: sz.boxesInStock > 0 ? 1 : 0.6,
-                          }}
-                        >
-                          {sz.size}
-                          {sz.boxesInStock === 0 && (
+                      {prod.sizes.map((sz, j) => {
+                        // Compute new stock details using pieces as unit
+                        const pieces = sz.piecesInStock || 0;
+                        const boxPiecesVal = sz.boxPieces || 1;
+                        const fullBoxes = Math.floor(pieces / boxPiecesVal);
+                        const remainder = pieces % boxPiecesVal;
+                        const totalBoxes = fullBoxes + (remainder > 0 ? 1 : 0);
+                        // Tooltip text shows detailed stock info
+                        const tooltipText =
+                          pieces > 0
+                            ? `${totalBoxes} box available (${fullBoxes} full` +
+                              (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
+                              `)`
+                            : "Out of stock";
+                        return (
+                          <Tooltip key={j} title={tooltipText} arrow>
                             <div
                               style={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "2px",
-                                backgroundColor: "#aaa",
-                                transform: "rotate(-45deg)",
-                                top: "50%",
+                                width: "40px",
+                                height: "40px",
+                                border: `2px solid ${
+                                  pieces > 0 ? "#333" : "#ccc"
+                                }`,
+                                backgroundColor: pieces > 0 ? "#fff" : "#f5f5f5",
+                                color: pieces > 0 ? "#333" : "#aaa",
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                objectFit: "contain",
                               }}
-                            />
-                          )}
-                        </div>
-                      ))}
+                            >
+                              {sz.size}
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
                     </div>
                   </div>
                   <div
@@ -748,7 +744,6 @@ const fetchAnnouncement = async () => {
           </div>
         </div>
       </div>
-
       {/* Banners Section */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
         <div className="banner-grid">
@@ -965,44 +960,42 @@ const fetchAnnouncement = async () => {
                         gap: "10px",
                       }}
                     >
-                      {prod.sizes.map((sz, j) => (
-                        <div
-                          key={j}
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            border: `2px solid ${
-                              sz.boxesInStock > 0 ? "#333" : "#ccc"
-                            }`,
-                            backgroundColor: sz.boxesInStock > 0 ? "#fff" : "#f5f5f5",
-                            color: sz.boxesInStock > 0 ? "#333" : "#aaa",
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            position: "relative",
-                            fontFamily: "Plus Jakarta Sans, sans-serif",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            cursor: sz.boxesInStock > 0 ? "pointer" : "not-allowed",
-                            opacity: sz.boxesInStock > 0 ? 1 : 0.6,
-                          }}
-                        >
-                          {sz.size}
-                          {sz.boxesInStock === 0 && (
+                      {prod.sizes.map((sz, j) => {
+                        // Compute new stock values using pieces as unit
+                        const pieces = sz.piecesInStock || 0;
+                        const boxPiecesVal = sz.boxPieces || 1;
+                        const fullBoxes = Math.floor(pieces / boxPiecesVal);
+                        const remainder = pieces % boxPiecesVal;
+                        const totalBoxes = fullBoxes + (remainder > 0 ? 1 : 0);
+                        const tooltipText =
+                          pieces > 0
+                            ? `${totalBoxes} box available (${fullBoxes} full` +
+                              (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
+                              `)`
+                            : "Out of stock";
+                        return (
+                          <Tooltip key={j} title={tooltipText} arrow>
                             <div
                               style={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "2px",
-                                backgroundColor: "#aaa",
-                                transform: "rotate(-45deg)",
-                                top: "50%",
+                                width: "40px",
+                                height: "40px",
+                                border: `2px solid ${
+                                  pieces > 0 ? "#333" : "#ccc"
+                                }`,
+                                backgroundColor: pieces > 0 ? "#fff" : "#f5f5f5",
+                                color: pieces > 0 ? "#333" : "#aaa",
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                               }}
-                            />
-                          )}
-                        </div>
-                      ))}
+                            >
+                              {sz.size}
+                            </div>
+                            
+                          </Tooltip>
+                        );
+                      })}
                     </div>
                   </div>
                   <div
@@ -1151,3 +1144,5 @@ const loaderStyles = {
     textAlign: "center",
   },
 };
+
+// export default Homepage;
