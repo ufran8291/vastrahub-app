@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
-import { CircularProgress, Button } from "@mui/material";
+import { CircularProgress, Button, Typography, Box } from "@mui/material";
 import { MdDelete, MdEdit } from "react-icons/md";
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 
@@ -53,6 +53,7 @@ export default function UserCart() {
         cartArr.push({ ...docSnap.data(), cartItemId: docSnap.id });
       });
       let updatedItems = [];
+      // For each cart item, fetch latest product details and update cart if necessary.
       for (let item of cartArr) {
         const productRef = doc(db, "products", item.productId);
         const productSnap = await getDoc(productRef);
@@ -60,13 +61,36 @@ export default function UserCart() {
           const productData = productSnap.data();
           const matchingSize = productData.sizes?.find((s) => s.size === item.size);
           if (matchingSize) {
+            // Extract latest values from product
+            const newGst = productData.gst || 0;
+            const newPricePerPiece = matchingSize.pricePerPiece;
+            const newCoverImage = productData.coverImage || "";
+            const newProductTitle = productData.title;
+            // Update the cart document if values differ
+            if (
+              item.gst !== newGst ||
+              item.pricePerPiece !== newPricePerPiece ||
+              item.coverImage !== newCoverImage ||
+              item.productTitle !== newProductTitle
+            ) {
+              await setDoc(
+                doc(db, "users", uid, "cart", item.cartItemId),
+                {
+                  gst: newGst,
+                  pricePerPiece: newPricePerPiece,
+                  coverImage: newCoverImage,
+                  productTitle: newProductTitle,
+                },
+                { merge: true }
+              );
+              // Also update in memory
+              item.gst = newGst;
+              item.pricePerPiece = newPricePerPiece;
+              item.coverImage = newCoverImage;
+              item.productTitle = newProductTitle;
+            }
             updatedItems.push({
               ...item,
-              pricePerPiece: matchingSize.pricePerPiece,
-              noOfPieces: item.noOfPieces,
-              gst: productData.gst || 0,
-              coverImage: productData.coverImage || "",
-              productTitle: item.productTitle || productData.title,
               allSizes: productData.sizes,
             });
           }
@@ -82,13 +106,15 @@ export default function UserCart() {
     }
   };
 
+  // Recalculate totals using lineTotal = noOfPieces * pricePerPiece
   const recalcTotals = (items) => {
     let totalWithoutTax = 0;
     let totalTax = 0;
     let total = 0;
     for (let item of items) {
       const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-      const lineTotal = item.pricePerPiece * item.boxPieces * item.quantity;
+      // Now lineTotal is computed as noOfPieces * pricePerPiece
+      const lineTotal = item.noOfPieces * item.pricePerPiece;
       const lineWithoutTax = lineTotal / (1 + gstRate / 100);
       const lineTax = lineTotal - lineWithoutTax;
       totalWithoutTax += lineWithoutTax;
@@ -236,7 +262,8 @@ export default function UserCart() {
             </div>
             {group.lines.map((item) => {
               const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-              const lineTotal = item.pricePerPiece * item.boxPieces * item.quantity;
+              // Now calculate lineTotal as (noOfPieces * pricePerPiece)
+              const lineTotal = item.noOfPieces * item.pricePerPiece;
               const lineWithoutTax = lineTotal / (1 + gstRate / 100);
               const lineTax = lineTotal - lineWithoutTax;
               return (
@@ -260,13 +287,13 @@ export default function UserCart() {
                   </div>
                   <div style={{ textAlign: "right", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
                     <p style={{ margin: 0 }}>
-                      Line Total: {lineTotal.toFixed(2)}₹ (incl. GST)
+                      Line Total: ₹{lineTotal.toFixed(2)} (incl. GST)
                     </p>
                     <p style={{ margin: 0 }}>
-                      Without Tax: {lineWithoutTax.toFixed(2)}₹
+                      Without Tax: ₹{lineWithoutTax.toFixed(2)}
                     </p>
                     <p style={{ margin: 0 }}>
-                      Tax: {lineTax.toFixed(2)}₹ ({gstRate}%)
+                      Tax: ₹{lineTax.toFixed(2)} ({gstRate}%)
                     </p>
                   </div>
                 </div>
@@ -277,26 +304,29 @@ export default function UserCart() {
       </div>
 
       {/* Order Summary Section */}
-      <div
-        style={{
-          marginBottom: "30px",
-          padding: "20px",
+      <Box
+        sx={{
+          mb: 10,
+          p: 3,
           border: "1px solid #1976d2",
           borderRadius: "8px",
-          fontFamily: "Plus Jakarta Sans, sans-serif",
           backgroundColor: "#f8f8f8",
+          fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
-        <div style={{ marginBottom: "10px", fontSize: "0.9rem" }}>
+        <Typography variant="h6" gutterBottom>
+          Order Summary
+        </Typography>
+        <Box sx={{ mb: 1, fontSize: "0.9rem" }}>
           <strong>Total Without Tax:</strong> ₹{subtotal.toFixed(2)}
-        </div>
-        <div style={{ marginBottom: "10px", fontSize: "0.9rem" }}>
+        </Box>
+        <Box sx={{ mb: 1, fontSize: "0.9rem" }}>
           <strong>Total Tax:</strong> ₹{tax.toFixed(2)}
-        </div>
-        <div style={{ marginBottom: "10px", fontSize: "0.9rem" }}>
+        </Box>
+        <Box sx={{ mb: 1, fontSize: "0.9rem" }}>
           <strong>Grand Total:</strong> ₹{grandTotal.toFixed(2)}
-        </div>
-        <div style={{ marginTop: "20px" }}>
+        </Box>
+        <Box sx={{ mt: 2 }}>
           <Button
             variant="contained"
             onClick={goToOrderPage}
@@ -312,12 +342,12 @@ export default function UserCart() {
           >
             Order Now
           </Button>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Fixed Bottom Bar */}
-      <div
-        style={{
+      <Box
+        sx={{
           position: "fixed",
           bottom: 0,
           left: 0,
@@ -333,7 +363,7 @@ export default function UserCart() {
           fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
-        <div style={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
+        <Box sx={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
           <div>
             <strong>Total Without Tax:</strong> ₹{subtotal.toFixed(2)}
           </div>
@@ -343,7 +373,7 @@ export default function UserCart() {
           <div>
             <strong>Grand Total:</strong> ₹{grandTotal.toFixed(2)}
           </div>
-        </div>
+        </Box>
         <Button
           variant="contained"
           onClick={goToOrderPage}
@@ -359,7 +389,7 @@ export default function UserCart() {
         >
           Order Now
         </Button>
-      </div>
+      </Box>
 
       {overlayProduct && (
         <SizeSelectorOverlay

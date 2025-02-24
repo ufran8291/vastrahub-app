@@ -1,20 +1,12 @@
-// src/Pages/TagProducts.js
 import React, { useState, useEffect } from "react";
-import {
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardMedia,
-  CardContent,
-  Button,
-  CircularProgress
-} from "@mui/material";
-import { doc, getDoc } from "firebase/firestore";
+import { Container, Typography, Grid, CircularProgress } from "@mui/material";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
+import ProductCard from "../components/ProductCard";
+import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 
 export default function TagProducts() {
   const navigate = useNavigate();
@@ -23,6 +15,7 @@ export default function TagProducts() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [overlayProduct, setOverlayProduct] = useState(null);
 
   useEffect(() => {
     if (!tagId) {
@@ -37,16 +30,12 @@ export default function TagProducts() {
   const fetchProductsByTag = async (tagId) => {
     setLoading(true);
     try {
-      // First, get the tag document using the tagId as the document id
       const tagDocRef = doc(db, "tags", tagId);
       const tagDocSnap = await getDoc(tagDocRef);
       if (tagDocSnap.exists()) {
         const tagData = tagDocSnap.data();
-        // Assume the tag document contains a "products" array with product IDs
         const productIds = tagData.products || [];
-        console.log(productIds)
         const fetchedProducts = [];
-        // Iterate over each productId to fetch the corresponding product document
         for (const productId of productIds) {
           const productDocRef = doc(db, "products", productId);
           const productDocSnap = await getDoc(productDocRef);
@@ -55,7 +44,7 @@ export default function TagProducts() {
             fetchedProducts.push({
               id: productId,
               title: productData.title,
-              coverImage: productData.coverImage || productPlaceholder,
+              image: productData.coverImage || productPlaceholder,
               price: productData.sizes?.[0]?.pricePerPiece || 0,
               sizes: productData.sizes || [],
               fabric: productData.fabric || "",
@@ -74,16 +63,16 @@ export default function TagProducts() {
     }
   };
 
+  const handleViewProduct = (id) => {
+    navigate("/view-product", { state: { productId: id } });
+  };
+
+  const handleAddToCart = (product) => {
+    setOverlayProduct(product);
+  };
+
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      {/* <Typography
-        variant="h4"
-        align="center"
-        gutterBottom
-        sx={{ fontFamily: "Lora, serif" }}
-      >
-        Products for Tag: {tagId}
-      </Typography> */}
+    <div container sx={{ mt: 4, mb: 4,  fontFamily: "Plus Jakarta Sans, sans-serif", }}>
       {loading ? (
         <CircularProgress sx={{ display: "block", margin: "auto" }} />
       ) : products.length === 0 ? (
@@ -91,43 +80,25 @@ export default function TagProducts() {
           No products found for this tag.
         </Typography>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={2} sx={{ marginTop: "30px" }}>
           {products.map((prod) => (
-            <Grid item xs={12} sm={6} md={4} key={prod.id}>
-              <Card>
-                <CardMedia
-                  component="img"
-                  height="250"
-                  image={prod.coverImage}
-                  alt={prod.title}
-                />
-                <CardContent>
-                  <Typography
-                    variant="h6"
-                    sx={{ fontFamily: "Lora, serif", mb: 1 }}
-                  >
-                    {prod.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {prod.fabric}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    From ₹ {prod.price}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    onClick={() =>
-                      navigate("/view-product", { state: { productId: prod.id } })
-                    }
-                  >
-                    View More
-                  </Button>
-                </CardContent>
-              </Card>
+            <Grid  item xs={6} md={4} key={prod.id}>
+              <ProductCard
+                product={prod}
+                onView={() => handleViewProduct(prod.id)}
+                onAdd={() => handleAddToCart(prod)}
+              />
             </Grid>
           ))}
         </Grid>
       )}
-    </Container>
+
+      {overlayProduct && (
+        <SizeSelectorOverlay
+          product={overlayProduct}
+          onClose={() => setOverlayProduct(null)}
+        />
+      )}
+    </div>
   );
 }

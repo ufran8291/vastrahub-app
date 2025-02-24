@@ -23,6 +23,7 @@ import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 import { Button, CircularProgress, LinearProgress, Tooltip } from "@mui/material";
 import { TbSpeakerphone } from "react-icons/tb";
 import {ReactTyped} from "react-typed";
+import ProductCard from "../components/ProductCard";
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -575,171 +576,15 @@ export default function Homepage() {
               }}
             >
               {featuredProducts.map((prod, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: "0 0 auto",
-                    width: "430px",
-                    marginRight: "10px",
-                    textAlign: "left",
-                    padding: "10px",
-                    height: "550px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    paddingBottom: "20px",
-                  }}
-                >
-                  <div>
-                    <img
-                      src={prod.image}
-                      alt={prod.title}
-                      style={{
-                        width: "100%",
-                        height: "250px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                        marginBottom: "10px",
-                      }}
-                    />
-                    <h3
-                      style={{
-                        fontFamily: "Lora, serif",
-                        fontWeight: "500",
-                        fontSize: "20px",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      {prod.title}
-                    </h3>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                          fontSize: "16px",
-                          fontWeight: "400",
-                        }}
-                      >
-                        {prod.fabric}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                          fontSize: "16px",
-                          fontWeight: "400",
-                        }}
-                      >
-                        From ₹ {prod.price}
-                      </p>
-                    </div>
-                    <p
-                      style={{
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "16px",
-                        fontWeight: "500",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      Available Sizes:
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "10px",
-                      }}
-                    >
-                      {prod.sizes.map((sz, j) => {
-                        // Compute new stock details using pieces as unit
-                        const pieces = sz.piecesInStock || 0;
-                        const boxPiecesVal = sz.boxPieces || 1;
-                        const fullBoxes = Math.floor(pieces / boxPiecesVal);
-                        const remainder = pieces % boxPiecesVal;
-                        const totalBoxes = fullBoxes + (remainder > 0 ? 1 : 0);
-                        // Tooltip text shows detailed stock info
-                        const tooltipText =
-                          pieces > 0
-                            ? `${totalBoxes} box available (${fullBoxes} full` +
-                              (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
-                              `)`
-                            : "Out of stock";
-                        return (
-                          <Tooltip key={j} title={tooltipText} arrow>
-                            <div
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                border: `2px solid ${
-                                  pieces > 0 ? "#333" : "#ccc"
-                                }`,
-                                backgroundColor: pieces > 0 ? "#fff" : "#f5f5f5",
-                                color: pieces > 0 ? "#333" : "#aaa",
-                                borderRadius: "8px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                objectFit: "contain",
-                              }}
-                            >
-                              {sz.size}
-                            </div>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "15px",
-                      display: "flex",
-                      gap: "10px",
-                    }}
-                  >
-                    <button
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: "#fff",
-                        color: "#333",
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        borderRadius: "0px",
-                        border: "solid 1px #333",
-                        cursor: "pointer",
-                      }}
-                      onClick={() =>
-                        navigate("/view-product", { state: { productId: prod.id } })
-                      }
-                    >
-                      View More
-                    </button>
-                    <button
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: "#333",
-                        color: "#fff",
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        borderRadius: "0px",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleAddToCartClick(prod)}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))}
+      <ProductCard
+        key={i}
+        product={prod}
+        onView={() =>
+          navigate("/view-product", { state: { productId: prod.id } })
+        }
+        onAdd={() => handleAddToCartClick(prod)}
+      />
+    ))}
             </div>
           </div>
         </div>
@@ -880,170 +725,15 @@ export default function Homepage() {
               }}
             >
               {featuredProducts2.map((prod, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: "0 0 auto",
-                    width: "430px",
-                    marginRight: "10px",
-                    textAlign: "left",
-                    padding: "10px",
-                    height: "550px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    paddingBottom: "20px",
-                  }}
-                >
-                  <div>
-                    <img
-                      src={prod.image}
-                      alt={prod.title}
-                      style={{
-                        width: "100%",
-                        height: "250px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                        marginBottom: "10px",
-                      }}
-                    />
-                    <h3
-                      style={{
-                        fontFamily: "Lora, serif",
-                        fontWeight: "500",
-                        fontSize: "20px",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      {prod.title}
-                    </h3>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                          fontSize: "16px",
-                          fontWeight: "400",
-                        }}
-                      >
-                        {prod.fabric}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                          fontSize: "16px",
-                          fontWeight: "400",
-                        }}
-                      >
-                        From ₹ {prod.price}
-                      </p>
-                    </div>
-                    <p
-                      style={{
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "16px",
-                        fontWeight: "500",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      Available Sizes:
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "10px",
-                      }}
-                    >
-                      {prod.sizes.map((sz, j) => {
-                        // Compute new stock values using pieces as unit
-                        const pieces = sz.piecesInStock || 0;
-                        const boxPiecesVal = sz.boxPieces || 1;
-                        const fullBoxes = Math.floor(pieces / boxPiecesVal);
-                        const remainder = pieces % boxPiecesVal;
-                        const totalBoxes = fullBoxes + (remainder > 0 ? 1 : 0);
-                        const tooltipText =
-                          pieces > 0
-                            ? `${totalBoxes} box available (${fullBoxes} full` +
-                              (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
-                              `)`
-                            : "Out of stock";
-                        return (
-                          <Tooltip key={j} title={tooltipText} arrow>
-                            <div
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                border: `2px solid ${
-                                  pieces > 0 ? "#333" : "#ccc"
-                                }`,
-                                backgroundColor: pieces > 0 ? "#fff" : "#f5f5f5",
-                                color: pieces > 0 ? "#333" : "#aaa",
-                                borderRadius: "8px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              {sz.size}
-                            </div>
-                            
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "15px",
-                      display: "flex",
-                      gap: "10px",
-                    }}
-                  >
-                    <button
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: "#fff",
-                        color: "#333",
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        borderRadius: "0px",
-                        border: "solid 1px #333",
-                        cursor: "pointer",
-                      }}
-                      onClick={() =>
-                        navigate("/view-product", { state: { productId: prod.id } })
-                      }
-                    >
-                      View More
-                    </button>
-                    <button
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        backgroundColor: "#333",
-                        color: "#fff",
-                        fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        borderRadius: "0px",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleAddToCartClick(prod)}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))}
+      <ProductCard
+        key={i}
+        product={prod}
+        onView={() =>
+          navigate("/view-product", { state: { productId: prod.id } })
+        }
+        onAdd={() => handleAddToCartClick(prod)}
+      />
+    ))}
             </div>
           </div>
         </div>

@@ -21,7 +21,7 @@ export default function OrderPage() {
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id;
-  const isPremium = firestoreUser?.isPremium; 
+  const isPremium = firestoreUser?.isPremium;
 
   // Order details – for this example, we fetch the latest cart items.
   const [cartItems, setCartItems] = useState([]);
@@ -78,20 +78,23 @@ export default function OrderPage() {
     }
   };
 
+  // Calculate totals using: 
+  // lineTotal = noOfPieces * pricePerPiece
+  // lineWithoutTax = lineTotal / (1 + gstRate/100)
+  // lineTax = lineTotal - lineWithoutTax
   const recalcTotals = (items) => {
     let totalWithoutTax = 0;
     let totalTax = 0;
     let total = 0;
-    items.forEach((item) => {
+    for (let item of items) {
       const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-      const pricePerBox = item.boxPieces * item.pricePerPiece;
-      const lineTotal = pricePerBox * item.quantity;
+      const lineTotal = item.noOfPieces * item.pricePerPiece;
       const lineWithoutTax = lineTotal / (1 + gstRate / 100);
       const lineTax = lineTotal - lineWithoutTax;
       totalWithoutTax += lineWithoutTax;
       totalTax += lineTax;
       total += lineTotal;
-    });
+    }
     setSubtotal(+totalWithoutTax.toFixed(2));
     setTax(+totalTax.toFixed(2));
     setGrandTotal(+total.toFixed(2));
@@ -126,11 +129,10 @@ export default function OrderPage() {
     }
     setPlacingOrder(true);
     try {
-      // Map each cart item to include all required fields (including noOfPieces and boxPieces)
+      // Map each cart item to include all required fields (lineTotal calculated as noOfPieces * pricePerPiece)
       const orderItems = cartItems.map((item) => {
         const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-        const pricePerBox = item.boxPieces * item.pricePerPiece;
-        const lineTotal = pricePerBox * item.quantity;
+        const lineTotal = item.noOfPieces * item.pricePerPiece;
         const lineWithoutTax = lineTotal / (1 + gstRate / 100);
         const lineTax = lineTotal - lineWithoutTax;
         return {
@@ -159,7 +161,7 @@ export default function OrderPage() {
         alternatePhone: alternatePhone.trim(),
         gstinPan,
         payLater, // true or false
-        orderStatus: "ACCEPTED",
+        orderStatus: "ORDER PLACED",
         createdAt: new Date(),
       };
 
@@ -291,8 +293,10 @@ export default function OrderPage() {
         </Typography>
         {cartItems.map((item) => {
           const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-          const pricePerBox = item.boxPieces * item.pricePerPiece;
-          const lineTotal = pricePerBox * item.quantity;
+          // Line total calculated as (noOfPieces * pricePerPiece)
+          const lineTotal = item.noOfPieces * item.pricePerPiece;
+          const lineWithoutTax = lineTotal / (1 + gstRate / 100);
+          const lineTax = lineTotal - lineWithoutTax;
           return (
             <Box
               key={item.cartItemId}
@@ -380,6 +384,7 @@ export default function OrderPage() {
           justifyContent: "space-between",
           boxShadow: "0 -2px 6px rgba(0,0,0,0.1)",
           zIndex: 1000,
+          fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
         <Box sx={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
