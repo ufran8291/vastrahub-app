@@ -36,6 +36,7 @@ import AboutUs from "./Pages/AboutUs";
 import TermsAndConditions from "./Pages/TermsAndConditions";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import TagProducts from "./Pages/TagProducts";
+import CustomCursor from "./components/CustomCursor";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -177,6 +178,7 @@ export const ProtectedRoute = ({ condition, children }) => {
 function AppWithProvider() {
   return (
     <GlobalProvider>
+      <CustomCursor/>
       <App />
     </GlobalProvider>
   );
