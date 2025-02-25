@@ -1,11 +1,32 @@
 // src/Components/Footer.js
-import React from 'react';
+import React, { useState } from 'react';
 import '../App.css';
 import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function Footer() {
   const navigate = useNavigate();
+  const [phoneNumberUser, setPhoneNumberUser] = useState('');
+
+  // This function is triggered when the arrow button is clicked.
+  const handleBroadcastSubmit = () => {
+    // Validate that the phone number has exactly 10 digits
+    if (phoneNumberUser.trim().length !== 10) {
+      toast.error("Please enter a valid 10-digit phone number.");
+      return;
+    }
+    // Prepend the country code (here "91" for India)
+    const phoneWithCountry = "91" + phoneNumberUser.trim();
+    // Replace with your actual WhatsApp broadcast channel link if needed
+    const broadcastLink = "https://chat.whatsapp.com/yourBroadcastLink"; 
+    const message = encodeURIComponent(
+      `Hello! I would like to join your WhatsApp broadcast channel to receive the latest updates on offers and new arrivals. My phone number is ${phoneWithCountry}. Thank you!`
+    );
+    // Construct the WhatsApp URL (this example sends the message to your own WhatsApp number)
+    const waUrl = `https://api.whatsapp.com/send?phone=+917757838011&text=${message}`;
+    window.open(waUrl, '_blank');
+  };
 
   return (
     <footer style={{ backgroundColor: '#161515', color: '#fff', padding: '40px 20px', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
@@ -14,8 +35,12 @@ export default function Footer() {
         <div className="top-footer d-flex justify-content-between" style={{ marginBottom: '30px' }}>
           {/* WhatsApp Broadcast Section */}
           <div>
-            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>WHATSAPP BROADCAST</h4>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '10px' }}>Join our WhatsApp Broadcast</p>
+            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>
+              WHATSAPP BROADCAST
+            </h4>
+            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '10px' }}>
+              Join our WhatsApp Broadcast to receive the latest updates on offers and new arrivals.
+            </p>
             <div
               style={{
                 display: 'flex',
@@ -29,6 +54,9 @@ export default function Footer() {
               <input
                 type="text"
                 placeholder="Enter your phone number"
+                value={phoneNumberUser}
+                onChange={(e) => setPhoneNumberUser(e.target.value)}
+                maxLength={10}
                 style={{
                   flex: 1,
                   border: 'none',
@@ -41,6 +69,7 @@ export default function Footer() {
                 }}
               />
               <button
+                onClick={handleBroadcastSubmit}
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
