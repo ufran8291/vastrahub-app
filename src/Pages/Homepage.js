@@ -56,6 +56,7 @@ function CategoryCard({ category, onClick }) {
         textAlign: "left",
         cursor: "pointer",
         position: "relative",
+        //  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)"
       }}
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
@@ -63,11 +64,12 @@ function CategoryCard({ category, onClick }) {
           src={category.image || categoryPlaceholder}
           alt={category.name}
           style={{
-            width: "325px",
+            width: "300px",
             height: "365px",
-            objectFit: "cover",
+            objectFit: "contain",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
+
           }}
         />
         <div
@@ -104,6 +106,80 @@ function CategoryCard({ category, onClick }) {
           fontSize: "32px",
           textTransform: "uppercase",
           marginTop: "10px",
+        }}
+      >
+        {category.name}
+      </h3>
+    </div>
+  );
+}
+// Local Component: CategoryCard with image hover overlay effect
+function CategoryCard2({ category, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      style={{
+        flex: "0 0 auto",
+        width: "325px",
+        marginRight: "20px",
+        textAlign: "left",
+        cursor: "pointer",
+        position: "relative",
+        //  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)"
+      }}
+    >
+      <div style={{ position: "relative", overflow: "hidden" }}>
+        <img
+          src={category.image || categoryPlaceholder}
+          alt={category.name}
+          style={{
+            width: "300px",
+            height: "365px",
+            objectFit: "contain",
+            transition: "transform 0.3s",
+            transform: hover ? "scale(1.05)" : "scale(1)",
+
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: hover ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.3s",
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontSize: "1.5rem",
+              opacity: hover ? 1 : 0,
+              transition: "opacity 0.3s",
+              fontFamily: "Lora, serif",
+            }}
+          >
+            SHOP NOW →
+          </span>
+        </div>
+      </div>
+      <h3
+        style={{
+          fontFamily: "Plus Jakarta Sans, sans-serif",
+          fontWeight: "500",
+          fontSize: "32px",
+          textTransform: "uppercase",
+          marginTop: "10px",
+          color:'#fff',
+          textAlign:'center'
         }}
       >
         {category.name}
@@ -485,7 +561,7 @@ export default function Homepage() {
       </div>
 
       {/* Categories Section */}
-      <div className="container" style={{ padding: "50px 20px" }}>
+      {/* <div className="container" style={{ padding: "50px 20px" }}>
         <h1
           style={{
             fontFamily: "Lora, serif",
@@ -518,6 +594,47 @@ export default function Homepage() {
             ))}
           </div>
         </div>
+      </div> */}
+
+
+        {/* Categories Section */}
+        <div className="container-fluid" style={{backgroundColor:'#000'}} >
+      <div className="container" style={{ padding: "50px 20px" }}>
+        <h1
+          style={{
+            fontFamily: "Lora, serif",
+            fontWeight: "600",
+            fontSize: "48px",
+            textAlign: "left",
+            marginBottom: "50px",
+            color:"#fff"
+          }}
+        >
+          SHOP BY CATEGORY
+        </h1>
+        <div style={{ position: "relative", overflow: "hidden" }}>
+          <div
+            className="row no-scrollbar"
+            ref={categoryCarouselRef}
+            style={{
+              display: "flex",
+              flexWrap: "nowrap",
+              overflowX: "scroll",
+              
+            }}
+          >
+            {categories.map((cat, i) => (
+              <CategoryCard2
+                key={i}
+                category={cat}
+                onClick={() =>
+                  navigate("/shopbycategory", { state: { category: cat } })
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </div>
       </div>
 
       {/* Featured Products Section 1 */}
