@@ -1,3 +1,4 @@
+// src/Pages/ShopByCategory.js
 import React, { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -5,17 +6,19 @@ import {
   getDocs,
   query,
   where,
-  doc,
-  getDoc,
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
-import { Grid } from "@mui/material";
+import { Grid, Box, Typography } from "@mui/material";
 import ProductCard from "../components/ProductCard";
 import categoryPlaceholder from "../assets/categoryplaceholder.png";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 import { GlobalContext } from "../Context/GlobalContext";
+
+// Framer Motion & React Awesome Reveal
+import { motion } from "framer-motion";
+import { Fade } from "react-awesome-reveal";
 
 export default function ShopByCategory() {
   const navigate = useNavigate();
@@ -60,6 +63,7 @@ export default function ShopByCategory() {
             }
           }
         });
+        // Include any default subcategories from the category
         catSubCategories.forEach((sc) => subcatSet.add(sc));
         setAllSubcatsFromProducts([...subcatSet]);
       } catch (error) {
@@ -97,89 +101,92 @@ export default function ShopByCategory() {
     setOverlayProduct(product);
   };
 
+  // Motion variants for subcategory buttons
+  const subcatVariants = {
+    hover: { scale: 1.05 },
+    tap: { scale: 0.95 },
+  };
+
   return (
     <div style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "20px",
-          marginBottom: "30px",
-        }}
-      >
-        <div style={{ flex: "1 1 300px", maxWidth: "400px" }}>
-          <img
-            src={category.image || categoryPlaceholder}
-            alt={category.name}
-            style={{
-              width: "100%",
-              borderRadius: "100%",
-              objectFit: "contain",
-              maxHeight: "300px",
-            }}
-          />
-        </div>
-        <div style={{ flex: "1 1 300px", minWidth: "280px" }}>
-          <h1
-            style={{
-              fontFamily: "Lora, serif",
-              fontWeight: "600",
-              fontSize: "36px",
-              textTransform: "uppercase",
-              marginBottom: "20px",
-            }}
-          >
-            Shop for {category.name || "Category"}
-          </h1>
-          <p style={{ fontSize: "16px", color: "#666", marginBottom: "10px" }}>
-            Filter by subcategory:
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            {allSubcatsFromProducts.length === 0 ? (
-              <p style={{ color: "#666", textAlign: "center" }}>
-                No subcategories found for this category.
-              </p>
-            ) : (
-              allSubcatsFromProducts.map((sub) => {
-                const isActive = selectedSubcats.includes(sub);
-                return (
-                  <div
-                    key={sub}
-                    onClick={() => handleToggleSubcat(sub)}
-                    style={{
-                      padding: "8px 16px",
-                      border: `1px solid ${isActive ? "#333" : "#ccc"}`,
-                      backgroundColor: isActive ? "#333" : "#fff",
-                      color: isActive ? "#fff" : "#333",
-                      borderRadius: "20px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      userSelect: "none",
-                      transition: "background-color 0.3s, color 0.3s",
-                    }}
-                  >
-                    {sub}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
+      <Fade triggerOnce>
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "20px", mb: 4 }}>
+          <Box sx={{ flex: "1 1 300px", maxWidth: "400px" }}>
+            <img
+              src={category.image || categoryPlaceholder}
+              alt={category.name}
+              style={{
+                width: "100%",
+                borderRadius: "100%",
+                objectFit: "contain",
+                maxHeight: "300px",
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: "1 1 300px", minWidth: "280px" }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontFamily: "Lora, serif",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                mb: 2,
+              }}
+            >
+              Shop for {category.name || "Category"}
+            </Typography>
+            <Typography variant="body1" sx={{ fontSize: "16px", color: "#666", mb: 1 }}>
+              Filter by subcategory:
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {allSubcatsFromProducts.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "#666", textAlign: "center" }}>
+                  No subcategories found for this category.
+                </Typography>
+              ) : (
+                allSubcatsFromProducts.map((sub) => {
+                  const isActive = selectedSubcats.includes(sub);
+                  return (
+                    <motion.div
+                      key={sub}
+                      variants={subcatVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      onClick={() => handleToggleSubcat(sub)}
+                      style={{
+                        padding: "8px 16px",
+                        border: `1px solid ${isActive ? "#333" : "#ccc"}`,
+                        backgroundColor: isActive ? "#333" : "#fff",
+                        color: isActive ? "#fff" : "#333",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        userSelect: "none",
+                        transition: "background-color 0.3s, color 0.3s",
+                      }}
+                    >
+                      {sub}
+                    </motion.div>
+                  );
+                })
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Fade>
 
       {filteredProducts.length === 0 ? (
-        <p
-          style={{
+        <Typography
+          variant="body1"
+          sx={{
             color: "#666",
             textAlign: "center",
-            marginTop: "100px",
-            marginBottom: "100px",
+            my: 8,
           }}
         >
           No products match the selected category/subcategory filters.
-        </p>
+        </Typography>
       ) : (
         <Grid container spacing={2}>
           {filteredProducts.map((prod) => (
@@ -190,6 +197,7 @@ export default function ShopByCategory() {
                   title: prod.title,
                   fabric: prod.fabric,
                   image: prod.coverImage || productPlaceholder,
+            additionalImages:prod.additionalImages || [productPlaceholder],
                   price:
                     prod.sizes && prod.sizes.length > 0
                       ? prod.sizes[0].pricePerPiece

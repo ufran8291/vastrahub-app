@@ -24,6 +24,7 @@ import { Button, CircularProgress, LinearProgress, Tooltip } from "@mui/material
 import { TbSpeakerphone } from "react-icons/tb";
 import {ReactTyped} from "react-typed";
 import ProductCard from "../components/ProductCard";
+import Squares from "../Bits/Squares";
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -151,11 +152,12 @@ function CategoryCard2({ category, onClick }) {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: hover ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+            backgroundColor: hover ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             transition: "background-color 0.3s",
+            // borderRadius:"100%"
           }}
         >
           <span
@@ -340,6 +342,7 @@ export default function Homepage() {
             id: productId,
             title: data.title,
             image: data.coverImage || productPlaceholder,
+            additionalImages:data.additionalImages || [productPlaceholder],
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
@@ -372,6 +375,8 @@ export default function Homepage() {
             id: productId,
             title: data.title,
             image: data.coverImage || productPlaceholder,
+            // additionalImage : data.additionalImages[0]||productPlaceholder,
+            additionalImages:data.additionalImages || [productPlaceholder],
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
@@ -598,44 +603,61 @@ export default function Homepage() {
 
 
         {/* Categories Section */}
-        <div className="container-fluid" style={{backgroundColor:'#000'}} >
-      <div className="container" style={{ padding: "50px 20px" }}>
-        <h1
-          style={{
-            fontFamily: "Lora, serif",
-            fontWeight: "600",
-            fontSize: "48px",
-            textAlign: "left",
-            marginBottom: "50px",
-            color:"#fff"
-          }}
-        >
-          SHOP BY CATEGORY
-        </h1>
-        <div style={{ position: "relative", overflow: "hidden" }}>
-          <div
-            className="row no-scrollbar"
-            ref={categoryCarouselRef}
-            style={{
-              display: "flex",
-              flexWrap: "nowrap",
-              overflowX: "scroll",
-              
-            }}
-          >
-            {categories.map((cat, i) => (
-              <CategoryCard2
-                key={i}
-                category={cat}
-                onClick={() =>
-                  navigate("/shopbycategory", { state: { category: cat } })
-                }
-              />
-            ))}
-          </div>
-        </div>
+       {/* Categories Section */}
+<div
+  className="container-fluid"
+  style={{
+    backgroundColor: "#000",
+    position: "relative", // Needed for absolute positioning of Squares
+    minHeight: "80vh",
+    overflow: "hidden",
+  }}
+>
+  {/* Squares rendered as background */}
+  <Squares
+    speed={0.6}
+    squareSize={25}
+    direction="diagonal" // up, down, left, right, diagonal
+    borderColor="#333"
+    hoverFillColor="#fff"
+    className="squares-background"  // Custom class name
+  />
+  {/* Category content appears above the squares */}
+  <div className="container" style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}>
+    <h1
+      style={{
+        fontFamily: "Lora, serif",
+        fontWeight: "600",
+        fontSize: "48px",
+        textAlign: "left",
+        marginBottom: "50px",
+        color: "#fff",
+      }}
+    >
+      SHOP BY CATEGORY
+    </h1>
+    <div style={{ position: "relative", overflow: "hidden" }}>
+      <div
+        className="row no-scrollbar"
+        ref={categoryCarouselRef}
+        style={{
+          display: "flex",
+          flexWrap: "nowrap",
+          overflowX: "scroll",
+        }}
+      >
+        {categories.map((cat, i) => (
+          <CategoryCard2
+            key={i}
+            category={cat}
+            onClick={() => navigate("/shopbycategory", { state: { category: cat } })}
+          />
+        ))}
       </div>
-      </div>
+    </div>
+  </div>
+</div>
+
 
       {/* Featured Products Section 1 */}
       <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
