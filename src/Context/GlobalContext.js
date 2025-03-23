@@ -1,7 +1,15 @@
 // src/Context/GlobalContext.js
 import React, { createContext, useState, useEffect } from "react";
-import { auth } from "../Configs/FirebaseConfig";
+import { auth, db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  updateDoc,
+} from "firebase/firestore";
 
 export const GlobalContext = createContext();
 
@@ -32,47 +40,14 @@ export const GlobalProvider = ({ children }) => {
     }
   };
 
-  // New function: sendSMStoUserPhone
-  const sendSMStoUserPhone = async (message) => {
-    if (!currentUser || !currentUser.phoneNumber) {
-      console.error("No user or phone number available");
-      toast.error("Unable to send SMS: No phone number available");
-      return;
-    }
-    const phoneNumber = currentUser.phoneNumber;
-    try {
-      const response = await fetch("https://api.msg91.com/api/sendhttp.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        // Construct the request payload as URL-encoded parameters.
-        body: new URLSearchParams({
-          authkey: "YOUR_MSG91_API_KEY", // Replace with your Msg91 API key
-          mobiles: phoneNumber,          // Ensure this is in the required format (include country code if needed)
-          message: message,
-          sender: "VASTRA",              // Customize your sender ID (usually 6 characters)
-          route: "4",                    // As per your Msg91 settings
-          country: "91",                 // Country code (for India)
-        }).toString(),
-      });
-      if (!response.ok) {
-        throw new Error("SMS sending failed");
-      }
-      const result = await response.text();
-      console.log("SMS sent successfully:", result);
-      return result;
-    } catch (error) {
-      console.error("Error sending SMS:", error);
-      toast.error("Error sending SMS");
-    }
-  };
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
       if (user) {
-        console.log("GlobalContext: Detected sign-in with phone:", user.phoneNumber);
+        console.log(
+          "GlobalContext: Detected sign-in with phone:",
+          user.phoneNumber
+        );
       } else {
         console.log("GlobalContext: Detected sign-out.");
       }
@@ -82,12 +57,190 @@ export const GlobalProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // New function to fetch stock data from the new API endpoint.
+  const fetchGoFrugalItems = async () => {
+    try {
+      const response = await fetch(
+        "https://fetchitems-k4uu64ikma-uc.a.run.app/"
+      );
+      console.log("Stock fetch response:", response);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error: ${response.status} - ${response.statusText}\nResponse: ${errorText}`
+        );
+      }
+      const data = await response.json();
+      return data.stock || data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Function to call the syncStockData function (for updating piecesInStock)
+  const syncStockData = async () => {
+    try {
+      const response = await fetch(
+        "https://syncstockdata-k4uu64ikma-uc.a.run.app",
+        {
+          method: "POST",
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error: ${response.status} - ${response.statusText}\nResponse: ${errorText}`
+        );
+      }
+      const resultText = await response.text();
+      return resultText;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Updated function: Accepts an array of inventoryIds, fetches stock data,
+  // and then updates each product's sizes with the matching piecesInStock.
+  const syncStockDataForIds = async (inventoryIds) => {
+    try {
+      // Fetch stock from the new endpoint.
+      const items = await fetchGoFrugalItems();
+      if (!Array.isArray(items)) {
+        throw new Error("Expected stock array from GoFrugal API.");
+      }
+
+      let updateCount = 0;
+      const dbInstance = getFirestore();
+      const productsSnapshot = await getDocs(
+        collection(dbInstance, "products")
+      );
+
+      // Loop through each product in Firestore.
+      for (const docSnap of productsSnapshot.docs) {
+        const productData = docSnap.data();
+        if (!productData.sizes || !Array.isArray(productData.sizes)) continue;
+
+        let updated = false;
+        // Update sizes where the inventoryId matches the stock record's itemReferenceCode.
+        const updatedSizes = productData.sizes.map((size) => {
+          if (inventoryIds.includes(Number(size.inventoryId))) {
+            const matchingItem = items.find(
+              (item) =>
+                String(item.itemReferenceCode) === String(size.inventoryId)
+            );
+            if (matchingItem && typeof matchingItem.stock === "number") {
+              updated = true;
+              return { ...size, piecesInStock: matchingItem.stock };
+            }
+          }
+          return size;
+        });
+
+        if (updated) {
+          await updateDoc(doc(dbInstance, "products", docSnap.id), {
+            sizes: updatedSizes,
+          });
+          updateCount++;
+        }
+      }
+      return updateCount;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const checkStockAvailability = async (inventoryIds) => {
+    try {
+      // Check store status
+      const storeDoc = await getDoc(doc(db, "banners", "other-data"));
+      let isStoreOpen = false;
+      if (storeDoc.exists()) {
+        isStoreOpen = storeDoc.data().isStoreOpen;
+      }
+      if (isStoreOpen) {
+        // If store is open, first sync stock.
+        await syncStockData();
+      }
+      // Then, fetch products from Firestore and extract available pieces.
+      const availableStock = {};
+      const productsSnapshot = await getDocs(collection(db, "products"));
+      productsSnapshot.forEach((docSnap) => {
+        const product = docSnap.data();
+        if (product.sizes && Array.isArray(product.sizes)) {
+          product.sizes.forEach((size) => {
+            const invId = Number(size.inventoryId);
+            if (inventoryIds.includes(invId)) {
+              // If multiple products share the same inventoryId, we assume the latest value.
+              availableStock[invId] = size.piecesInStock;
+            }
+          });
+        }
+      });
+      return availableStock;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // New function to call our email Cloud Function.
+  const sendEmail = async ({ email, subject, content }) => {
+    try {
+      const response = await fetch(
+        "https://sendemail-k4uu64ikma-uc.a.run.app",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, subject, content }),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error: ${response.status} - ${response.statusText}\n${errorText}`
+        );
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const createSalesOrder = async (orderData) => {
+    try {
+      const response = await fetch(
+        "https://createsalesorder-k4uu64ikma-uc.a.run.app",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderData),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error: ${response.status} - ${response.statusText}\n${errorText}`
+        );
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const globalContextValue = {
-    currentUser,         // Firebase Auth user object
-    firestoreUser,       // Firestore user data
+    currentUser, // Firebase Auth user object
+    firestoreUser, // Firestore user data
     updateFirestoreUser, // Function to update Firestore user data
-    signOutUser,         // Function to sign out the user
-    sendSMStoUserPhone,  // New function to send an SMS to the user's phone
+    signOutUser,
+
+    fetchGoFrugalItems,
+    syncStockData,
+    syncStockDataForIds,
+    checkStockAvailability,
+    sendEmail,
+    createSalesOrder, // Function to sign out the user
   };
 
   return (
