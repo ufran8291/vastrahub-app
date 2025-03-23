@@ -1,13 +1,16 @@
 // src/Pages/HelpPage.js
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "@mui/material";
 
-// Import icons from react-icons (feel free to choose your preferred icons)
-import { FiPhone } from "react-icons/fi";      // Phone icon
-import { FaWhatsapp } from "react-icons/fa";   // WhatsApp icon
-import { MdEmail } from "react-icons/md";       // Email icon
+// Import icons from react-icons
+import { FiPhone } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
+
+// Framer Motion & React Awesome Reveal
+import { motion } from "framer-motion";
+import { Fade } from "react-awesome-reveal";
 
 // Styling objects
 const containerStyle = {
@@ -79,16 +82,40 @@ const buttonStyle = {
   border: "none",
   borderRadius: "4px",
   cursor: "pointer",
-  transition: "background-color 0.3s",
 };
 
 const buttonHoverStyle = {
   backgroundColor: "#555",
 };
 
-// HelpSection component
-const HelpSection = ({ Icon, title, description, highlight, onAction, actionLabel, tooltip }) => (
-  <div style={sectionStyle}>
+// Motion variants for help sections
+const sectionVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i = 1) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.2, type: "spring", stiffness: 100 },
+  }),
+};
+
+// HelpSection component with motion on the button
+const HelpSection = ({
+  Icon,
+  title,
+  description,
+  highlight,
+  onAction,
+  actionLabel,
+  tooltip,
+  index,
+}) => (
+  <motion.div
+    custom={index}
+    initial="hidden"
+    animate="visible"
+    variants={sectionVariants}
+    style={sectionStyle}
+  >
     <Icon style={iconStyle} />
     <div style={contentStyle}>
       <h3 style={headingStyle}>{title}</h3>
@@ -97,20 +124,15 @@ const HelpSection = ({ Icon, title, description, highlight, onAction, actionLabe
       </p>
     </div>
     <Tooltip title={tooltip} arrow>
-      <button
+      <motion.button
+        whileHover={buttonHoverStyle}
         style={buttonStyle}
         onClick={onAction}
-        onMouseEnter={(e) =>
-          Object.assign(e.currentTarget.style, buttonHoverStyle)
-        }
-        onMouseLeave={(e) =>
-          Object.assign(e.currentTarget.style, { backgroundColor: "#333" })
-        }
       >
         {actionLabel}
-      </button>
+      </motion.button>
     </Tooltip>
-  </div>
+  </motion.div>
 );
 
 const HelpPage = () => {
@@ -127,7 +149,6 @@ const HelpPage = () => {
   };
 
   const handleWhatsApp = () => {
-    // Remove any non-numeric characters before constructing URL
     const numericNumber = whatsappNumber.replace(/\D/g, "");
     window.open(`https://wa.me/${numericNumber}`, "_blank");
   };
@@ -138,14 +159,19 @@ const HelpPage = () => {
 
   return (
     <>
-      {/* Header / Loader (Full Black Screen with Centered Text) */}
-      <div style={headerStyle}>
-        <h1 style={headerTextStyle}>VastraHub : Vyapar ka Naya Tareeka</h1>
-      </div>
+      {/* Header */}
+      <Fade triggerOnce>
+        <div style={headerStyle}>
+          <h1 style={headerTextStyle}>
+            VastraHub : Vyapar ka Naya Tareeka
+          </h1>
+        </div>
+      </Fade>
 
       {/* Main Content */}
       <div style={containerStyle}>
         <HelpSection
+          index={1}
           Icon={FiPhone}
           title="Call Us"
           description="Have a query or need assistance? Reach out to us at"
@@ -155,6 +181,7 @@ const HelpPage = () => {
           tooltip="Click to call us"
         />
         <HelpSection
+          index={2}
           Icon={FaWhatsapp}
           title="Chat with Us on WhatsApp"
           description="Get instant support. Chat with our team at"
@@ -164,6 +191,7 @@ const HelpPage = () => {
           tooltip="Click to open WhatsApp chat"
         />
         <HelpSection
+          index={3}
           Icon={MdEmail}
           title="Write an Email"
           description="Prefer writing? Email us at"
