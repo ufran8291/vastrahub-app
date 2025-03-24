@@ -174,6 +174,11 @@ export default function UserCart() {
   };
 
   const goToOrderPage = () => {
+    if (grandTotal < 10000) {
+      toast.info(`Please add more items worth ₹${10000-grandTotal}`);
+      toast.error("Minimum order value is ₹10,000 to proceed.");
+      return;
+    }
     navigate("/order");
   };
 
