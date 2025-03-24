@@ -580,7 +580,7 @@ export default function Homepage() {
           speed={0.6}
           squareSize={30}
           direction="diagonal"
-          borderColor="#222"
+          borderColor="#000"
           hoverFillColor="#fff"
           className="squares-background"
         />

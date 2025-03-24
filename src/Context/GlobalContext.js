@@ -234,7 +234,6 @@ export const GlobalProvider = ({ children }) => {
     firestoreUser, // Firestore user data
     updateFirestoreUser, // Function to update Firestore user data
     signOutUser,
-
     fetchGoFrugalItems,
     syncStockData,
     syncStockDataForIds,

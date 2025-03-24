@@ -1,4 +1,3 @@
-// src/components/SizeSelectorOverlay.js
 import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import { GlobalContext } from "../Context/GlobalContext";
@@ -10,15 +9,18 @@ import {
   setDoc,
   deleteDoc,
   doc,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
-
+import {CircularProgress} from '@mui/material'
 export default function SizeSelectorOverlay({ product, onClose }) {
-  const { firestoreUser } = useContext(GlobalContext);
+  const { firestoreUser, syncStockDataForIds } = useContext(GlobalContext);
   const uid = firestoreUser?.id;
   const [quantities, setQuantities] = useState([]);
   // We'll store any existing cart items for this product keyed by size.
   const [existingCartItems, setExistingCartItems] = useState({});
+  // Local state for syncing stock data.
+  const [syncing, setSyncing] = useState(true);
 
   // Count distinct sizes with quantity > 0
   const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
@@ -44,6 +46,48 @@ export default function SizeSelectorOverlay({ product, onClose }) {
     }
   };
 
+  // Sync stock for the current product's sizes if the store is open.
+  useEffect(() => {
+    async function syncProductStock() {
+      if (product && product.sizes && product.sizes.length > 0) {
+        try {
+          // Check store status
+          const storeDoc = await getDoc(doc(db, "banners", "other-data"));
+          let isStoreOpen = false;
+          if (storeDoc.exists()) {
+            isStoreOpen = storeDoc.data().isStoreOpen;
+          }
+          if (!isStoreOpen) {
+            console.log("Store is closed. Skipping stock sync.");
+            setSyncing(false);
+            return;
+          }
+        } catch (err) {
+          console.error("Error checking store status:", err);
+          toast.error("Error checking store status: " + err.message);
+          setSyncing(false);
+          return;
+        }
+        // Get inventory IDs from product sizes.
+        const inventoryIds = product.sizes.map((s) => Number(s.inventoryId));
+        try {
+          console.log("Syncing stock for inventory IDs:", inventoryIds);
+          await syncStockDataForIds(inventoryIds);
+          console.log("Stock sync complete.");
+        } catch (err) {
+          console.error("Error syncing stock data for product:", err);
+          toast.error("Error syncing stock data.");
+        } finally {
+          setSyncing(false);
+        }
+      } else {
+        setSyncing(false);
+      }
+    }
+    syncProductStock();
+  }, [product, syncStockDataForIds]);
+
+  // Fetch existing cart items for this product.
   useEffect(() => {
     async function initQuantities() {
       if (product && product.sizes) {
@@ -172,6 +216,27 @@ export default function SizeSelectorOverlay({ product, onClose }) {
   };
 
   if (!product) return null;
+
+  // Show loader overlay until stock sync (if applicable) is complete.
+  if (syncing) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          zIndex: 9999,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress size={80} />
+        <p style={{ color: "#fff", marginTop: "16px" }}>Getting stock data...</p>
+      </div>
+    );
+  }
 
   return (
     <div
