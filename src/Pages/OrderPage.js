@@ -10,7 +10,13 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { useNavigate } from "react-router-dom";
@@ -111,7 +117,9 @@ export default function OrderPage() {
       const snapshot = await getDocs(cartRef);
       const deletePromises = [];
       snapshot.forEach((docSnap) => {
-        deletePromises.push(deleteDoc(doc(db, "users", uid, "cart", docSnap.id)));
+        deletePromises.push(
+          deleteDoc(doc(db, "users", uid, "cart", docSnap.id))
+        );
       });
       await Promise.all(deletePromises);
     } catch (error) {
@@ -127,9 +135,19 @@ export default function OrderPage() {
     }
     if (isPremium && !payLater) {
       navigate("/payment", {
-        state: { cartItems, subtotal, tax, grandTotal, address, transport, email, phone, gstinPan },
+        state: {
+          cartItems,
+          subtotal,
+          tax,
+          grandTotal,
+          address,
+          transport,
+          email,
+          phone,
+          gstinPan,
+        },
       });
-      return;
+      return; 
     }
     setPlacingOrder(true);
     try {
@@ -206,9 +224,16 @@ export default function OrderPage() {
   }
 
   return (
-    <Container sx={{ mt: 4, mb: 10, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+    <Container
+      sx={{ mt: 4, mb: 10, fontFamily: "Plus Jakarta Sans, sans-serif" }}
+    >
       <Fade triggerOnce>
-        <Typography variant="h4" align="center" gutterBottom sx={{ fontFamily: "Lora, serif" }}>
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
+          sx={{ fontFamily: "Lora, serif" }}
+        >
           Review Your Order
         </Typography>
       </Fade>
@@ -289,7 +314,8 @@ export default function OrderPage() {
           )}
           {isPremium && payLater && (
             <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              You have selected Pay Later. We will contact you regarding payment.
+              You have selected Pay Later. We will contact you regarding
+              payment.
             </Typography>
           )}
         </Box>
@@ -342,9 +368,13 @@ export default function OrderPage() {
             );
           })}
           <Box sx={{ mt: 2 }}>
-            <Typography variant="h6">Subtotal: ₹{subtotal.toFixed(2)}</Typography>
+            <Typography variant="h6">
+              Subtotal: ₹{subtotal.toFixed(2)}
+            </Typography>
             <Typography variant="h6">Total Tax: ₹{tax.toFixed(2)}</Typography>
-            <Typography variant="h6">Grand Total: ₹{grandTotal.toFixed(2)}</Typography>
+            <Typography variant="h6">
+              Grand Total: ₹{grandTotal.toFixed(2)}
+            </Typography>
           </Box>
         </Box>
       </motion.div>
