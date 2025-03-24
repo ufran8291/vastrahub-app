@@ -137,7 +137,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
                   `)`
                 : "Out of stock";
             return (
-              <Tooltip key={j} title={tooltipText} arrow>
+              // <Tooltip key={j} title={tooltipText} arrow>
                 <div
                   style={{
                     width: "40px",
@@ -154,7 +154,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
                 >
                   {sz.size}
                 </div>
-              </Tooltip>
+              // </Tooltip>
             );
           })}
         </div>

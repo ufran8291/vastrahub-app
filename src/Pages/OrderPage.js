@@ -16,6 +16,10 @@ import { GlobalContext } from "../Context/GlobalContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+// Framer Motion & React Awesome Reveal
+import { motion } from "framer-motion";
+import { Fade } from "react-awesome-reveal";
+
 export default function OrderPage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser } = useContext(GlobalContext);
@@ -78,7 +82,7 @@ export default function OrderPage() {
     }
   };
 
-  // Calculate totals using: 
+  // Calculate totals using:
   // lineTotal = noOfPieces * pricePerPiece
   // lineWithoutTax = lineTotal / (1 + gstRate/100)
   // lineTax = lineTotal - lineWithoutTax
@@ -129,7 +133,6 @@ export default function OrderPage() {
     }
     setPlacingOrder(true);
     try {
-      // Map each cart item to include all required fields (lineTotal calculated as noOfPieces * pricePerPiece)
       const orderItems = cartItems.map((item) => {
         const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
         const lineTotal = item.noOfPieces * item.pricePerPiece;
@@ -139,9 +142,9 @@ export default function OrderPage() {
           productId: item.productId,
           productTitle: item.productTitle,
           size: item.size,
-          quantity: item.quantity, // number of boxes selected
-          noOfPieces: item.noOfPieces, // total pieces
-          boxPieces: item.boxPieces, // pieces per box
+          quantity: item.quantity,
+          noOfPieces: item.noOfPieces,
+          boxPieces: item.boxPieces,
           pricePerPiece: item.pricePerPiece,
           lineTotal,
           lineWithoutTax,
@@ -160,7 +163,7 @@ export default function OrderPage() {
         phone: phone.trim(),
         alternatePhone: alternatePhone.trim(),
         gstinPan,
-        payLater, // true or false
+        payLater,
         orderStatus: "ORDER PLACED",
         createdAt: new Date(),
       };
@@ -184,6 +187,16 @@ export default function OrderPage() {
     navigate("/cart");
   };
 
+  // Motion variants for form sections and summary
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.15, type: "spring", stiffness: 100 },
+    }),
+  };
+
   if (loadingCart) {
     return (
       <Container sx={{ mt: 4, textAlign: "center" }}>
@@ -194,180 +207,176 @@ export default function OrderPage() {
 
   return (
     <Container sx={{ mt: 4, mb: 10, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-      <Typography variant="h4" align="center" gutterBottom sx={{ fontFamily: "Lora, serif" }}>
-        Review Your Order
-      </Typography>
+      <Fade triggerOnce>
+        <Typography variant="h4" align="center" gutterBottom sx={{ fontFamily: "Lora, serif" }}>
+          Review Your Order
+        </Typography>
+      </Fade>
 
       {/* User & Order Details Form */}
-      <Box
-        sx={{
-          mb: 3,
-          p: 3,
-          border: "1px solid #e0e0e0",
-          borderRadius: "8px",
-          backgroundColor: "#fafafa",
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Your Details
-        </Typography>
-        <TextField
-          fullWidth
-          label="Address"
-          variant="outlined"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Preferred Transport"
-          variant="outlined"
-          value={transport}
-          onChange={(e) => setTransport(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Email"
-          variant="outlined"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Phone Number"
-          variant="outlined"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Alternate Phone (Optional)"
-          variant="outlined"
-          value={alternatePhone}
-          onChange={(e) => setAlternatePhone(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="GSTIN/PAN"
-          variant="outlined"
-          value={gstinPan}
-          disabled
-          sx={{ mb: 2 }}
-        />
-        {isPremium && (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={payLater}
-                onChange={(e) => setPayLater(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Pay Later Option"
-          />
-        )}
-        {isPremium && payLater && (
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-            You have selected Pay Later. We will contact you regarding payment.
-          </Typography>
-        )}
-      </Box>
-
-      {/* Order Summary */}
-      <Box
-        sx={{
-          mb: 10,
-          p: 3,
-          border: "1px solid #1976d2",
-          borderRadius: "8px",
-          backgroundColor: "#f8f8f8",
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Order Summary
-        </Typography>
-        {cartItems.map((item) => {
-          const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-          // Line total calculated as (noOfPieces * pricePerPiece)
-          const lineTotal = item.noOfPieces * item.pricePerPiece;
-          const lineWithoutTax = lineTotal / (1 + gstRate / 100);
-          const lineTax = lineTotal - lineWithoutTax;
-          return (
-            <Box
-              key={item.cartItemId}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                mb: 1,
-                p: 1,
-                borderBottom: "1px solid #f0f0f0",
-              }}
-            >
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                  {item.productTitle} - Size: {item.size}
-                </Typography>
-                <Typography variant="body2">
-                  {item.quantity} Boxes (No of Pieces: {item.noOfPieces})
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2">
-                  Line Total: ₹{lineTotal.toFixed(2)}
-                </Typography>
-              </Box>
-            </Box>
-          );
-        })}
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6">
-            Subtotal: ₹{subtotal.toFixed(2)}
-          </Typography>
-          <Typography variant="h6">
-            Total Tax: ₹{tax.toFixed(2)}
-          </Typography>
-          <Typography variant="h6">
-            Grand Total: ₹{grandTotal.toFixed(2)}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Additional Order Action Button */}
-      <Box
-        sx={{
-          mb: 3,
-          display: "flex",
-          justifyContent: "flex-start",
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={handlePlaceOrder}
-          disabled={placingOrder}
+      <motion.div initial="hidden" animate="visible" variants={sectionVariants}>
+        <Box
           sx={{
-            backgroundColor: "#000",
-            color: "#fff",
-            fontSize: "1.2rem",
-            fontWeight: "bold",
-            padding: "15px 30px",
-            textTransform: "none",
-            "&:hover": { backgroundColor: "#000" },
+            mb: 3,
+            p: 3,
+            border: "1px solid #e0e0e0",
+            borderRadius: "8px",
+            backgroundColor: "#fafafa",
           }}
         >
-          {placingOrder ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : isPremium && payLater ? (
-            "Place Order"
-          ) : (
-            "Make Payment"
+          <Typography variant="h6" gutterBottom>
+            Your Details
+          </Typography>
+          <TextField
+            fullWidth
+            label="Address"
+            variant="outlined"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Preferred Transport"
+            variant="outlined"
+            value={transport}
+            onChange={(e) => setTransport(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Email"
+            variant="outlined"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Phone Number"
+            variant="outlined"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Alternate Phone (Optional)"
+            variant="outlined"
+            value={alternatePhone}
+            onChange={(e) => setAlternatePhone(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="GSTIN/PAN"
+            variant="outlined"
+            value={gstinPan}
+            disabled
+            sx={{ mb: 2 }}
+          />
+          {isPremium && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={payLater}
+                  onChange={(e) => setPayLater(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Pay Later Option"
+            />
           )}
-        </Button>
-      </Box>
+          {isPremium && payLater && (
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              You have selected Pay Later. We will contact you regarding payment.
+            </Typography>
+          )}
+        </Box>
+      </motion.div>
+
+      {/* Order Summary */}
+      <motion.div initial="hidden" animate="visible" variants={sectionVariants}>
+        <Box
+          sx={{
+            mb: 10,
+            p: 3,
+            border: "1px solid #1976d2",
+            borderRadius: "8px",
+            backgroundColor: "#f8f8f8",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Order Summary
+          </Typography>
+          {cartItems.map((item) => {
+            const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
+            const lineTotal = item.noOfPieces * item.pricePerPiece;
+            const lineWithoutTax = lineTotal / (1 + gstRate / 100);
+            const lineTax = lineTotal - lineWithoutTax;
+            return (
+              <Box
+                key={item.cartItemId}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                  p: 1,
+                  borderBottom: "1px solid #f0f0f0",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                    {item.productTitle} - Size: {item.size}
+                  </Typography>
+                  <Typography variant="body2">
+                    {item.quantity} Boxes (No of Pieces: {item.noOfPieces})
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2">
+                    Line Total: ₹{lineTotal.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6">Subtotal: ₹{subtotal.toFixed(2)}</Typography>
+            <Typography variant="h6">Total Tax: ₹{tax.toFixed(2)}</Typography>
+            <Typography variant="h6">Grand Total: ₹{grandTotal.toFixed(2)}</Typography>
+          </Box>
+        </Box>
+      </motion.div>
+
+      {/* Order Action Button */}
+      <motion.div initial="hidden" animate="visible" variants={sectionVariants}>
+        <Box sx={{ mb: 3, display: "flex", justifyContent: "flex-start" }}>
+          <Button
+            variant="contained"
+            onClick={handlePlaceOrder}
+            disabled={placingOrder}
+            sx={{
+              backgroundColor: "#000",
+              color: "#fff",
+              fontSize: "1.2rem",
+              fontWeight: "bold",
+              py: 1.5,
+              px: 3,
+              textTransform: "none",
+              "&:hover": { backgroundColor: "#000" },
+            }}
+          >
+            {placingOrder ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : isPremium && payLater ? (
+              "Place Order"
+            ) : (
+              "Make Payment"
+            )}
+          </Button>
+        </Box>
+      </motion.div>
 
       {/* Fixed Bottom Bar */}
       <Box
@@ -378,7 +387,7 @@ export default function OrderPage() {
           right: 0,
           background: "#fff",
           borderTop: "1px solid #ddd",
-          padding: "15px 30px",
+          p: "15px 30px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -407,7 +416,8 @@ export default function OrderPage() {
             color: "#fff",
             fontSize: "1.2rem",
             fontWeight: "bold",
-            padding: "15px 30px",
+            py: 1.5,
+            px: 3,
             textTransform: "none",
             "&:hover": { backgroundColor: "#000" },
           }}

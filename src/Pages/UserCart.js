@@ -9,14 +9,17 @@ import {
   getDoc,
   deleteDoc,
   setDoc,
-  query,
-  where,
 } from "firebase/firestore";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
 import { CircularProgress, Button, Typography, Box } from "@mui/material";
 import { MdDelete, MdEdit } from "react-icons/md";
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
+
+// Framer Motion & React Awesome Reveal
+import { motion } from "framer-motion";
+import { Fade } from "react-awesome-reveal";
+import CartImage from '../assets/cartimage.png';
 
 export default function UserCart() {
   const navigate = useNavigate();
@@ -29,7 +32,6 @@ export default function UserCart() {
   const [subtotal, setSubtotal] = useState(0);
   const [tax, setTax] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
-
   // For the "Edit" overlay using SizeSelectorOverlay
   const [overlayProduct, setOverlayProduct] = useState(null);
 
@@ -40,6 +42,7 @@ export default function UserCart() {
       return;
     }
     fetchCartItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
   const fetchCartItems = async () => {
@@ -113,7 +116,6 @@ export default function UserCart() {
     let total = 0;
     for (let item of items) {
       const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-      // Now lineTotal is computed as noOfPieces * pricePerPiece
       const lineTotal = item.noOfPieces * item.pricePerPiece;
       const lineWithoutTax = lineTotal / (1 + gstRate / 100);
       const lineTax = lineTotal - lineWithoutTax;
@@ -175,41 +177,79 @@ export default function UserCart() {
     navigate("/order");
   };
 
+  // Motion variants for group cards
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.15, type: "spring", stiffness: 100 },
+    }),
+  };
+
   if (loading) {
     return (
-      <div style={{ padding: "60px", textAlign: "center" }}>
+      <Box sx={{ padding: "60px", textAlign: "center" }}>
         <CircularProgress />
-      </div>
+      </Box>
     );
   }
 
   if (!cartItems.length) {
     return (
-      <div style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-        <h2>Your Cart</h2>
-        <p>No items in your cart.</p>
-      </div>
+      <Box
+        sx={{
+          padding: "30px",
+          fontFamily: "Plus Jakarta Sans, sans-serif",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          minHeight: "60vh",
+        }}
+      >
+        <img src={CartImage} alt="Empty Cart" style={{ maxWidth: "300px", marginBottom: "20px" }} />
+        <Typography variant="h5" sx={{ mb: 2, fontFamily: "Lora, serif" }}>
+          Your cart is empty.
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3, color: "#666" }}>
+          Looks like you haven't added any products yet.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/")}
+          sx={{
+            backgroundColor: "#000",
+            color: "#fff",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+            py: 1.5,
+            px: 3,
+            textTransform: "none",
+            "&:hover": { backgroundColor: "#333" },
+          }}
+        >
+          Shop Now
+        </Button>
+      </Box>
     );
   }
 
-  let cartButtonTooltip = "";
-  const distinctSizesSelected = groupedCart.reduce(
-    (acc, group) => acc + group.lines.filter((line) => line.quantity > 0).length,
-    0
-  );
-  if (!isLoggedIn) cartButtonTooltip = "Please log in to add items to cart.";
-  else if (distinctSizesSelected < 2) {
-    cartButtonTooltip = "Please select at least 2 different sizes.";
-  }
-
   return (
-    <div style={{ padding: "30px", paddingBottom: "180px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-      <h2 style={{ marginBottom: "20px", fontFamily: "Lora, serif" }}>Your Cart</h2>
+    <Box sx={{ padding: "30px", pb: "180px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+      <Typography variant="h4" sx={{ mb: 3, fontFamily: "Lora, serif" }}>
+        Your Cart
+      </Typography>
 
-      <div style={{ marginBottom: "30px" }}>
-        {groupedCart.map((group) => (
-          <div
+      <Fade cascade triggerOnce>
+        {groupedCart.map((group, index) => (
+          <motion.div
             key={group.productId}
+            custom={index}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
             style={{
               marginBottom: "20px",
               padding: "20px",
@@ -217,7 +257,7 @@ export default function UserCart() {
               borderRadius: "8px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
               <img
                 src={group.coverImage}
                 alt={group.productTitle}
@@ -229,79 +269,86 @@ export default function UserCart() {
                   marginRight: "15px",
                 }}
               />
-              <h3 style={{ margin: 0, flex: 1, fontFamily: "Lora, serif" }}>{group.productTitle}</h3>
-              <div style={{ display: "flex", gap: "10px", marginLeft: "auto" }}>
-                <button
+              <Typography
+                variant="h6"
+                sx={{ flex: 1, fontFamily: "Lora, serif", m: 0 }}
+              >
+                {group.productTitle}
+              </Typography>
+              <Box sx={{ display: "flex", gap: "10px", ml: "auto" }}>
+                <Button
+                  variant="outlined"
                   onClick={() => openEditOverlay(group)}
-                  style={{
-                    background: "#fff",
-                    border: "1px solid #333",
-                    cursor: "pointer",
-                    padding: "6px 12px",
-                    fontSize: "14px",
+                  startIcon={<MdEdit />}
+                  sx={{
+                    textTransform: "none",
+                    borderColor: "#333",
+                    color: "#333",
                     fontFamily: "Plus Jakarta Sans, sans-serif",
                   }}
                 >
-                  <MdEdit /> Edit
-                </button>
-                <button
+                  Edit
+                </Button>
+                <Button
+                  variant="outlined"
                   onClick={() => removeEntireProduct(group.productId)}
-                  style={{
-                    background: "#fff",
-                    border: "1px solid #333",
-                    cursor: "pointer",
-                    padding: "6px 12px",
-                    fontSize: "14px",
+                  startIcon={<MdDelete />}
+                  sx={{
+                    textTransform: "none",
+                    borderColor: "#d00",
                     color: "#d00",
                     fontFamily: "Plus Jakarta Sans, sans-serif",
                   }}
                 >
-                  <MdDelete /> Remove
-                </button>
-              </div>
-            </div>
+                  Remove
+                </Button>
+              </Box>
+            </Box>
             {group.lines.map((item) => {
               const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
-              // Now calculate lineTotal as (noOfPieces * pricePerPiece)
               const lineTotal = item.noOfPieces * item.pricePerPiece;
               const lineWithoutTax = lineTotal / (1 + gstRate / 100);
               const lineTax = lineTotal - lineWithoutTax;
               return (
-                <div
+                <Box
                   key={item.cartItemId}
-                  style={{
+                  sx={{
                     display: "flex",
                     justifyContent: "space-between",
-                    padding: "12px",
+                    p: 1.5,
                     border: "1px solid #eee",
                     borderRadius: "4px",
-                    marginBottom: "12px",
+                    mb: 1.5,
                   }}
                 >
-                  <div style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-                    <p style={{ margin: 0, fontWeight: "bold" }}>
+                  <Box>
+                    <Typography sx={{ m: 0, fontWeight: "bold" }}>
                       Size: {item.size}, Boxes: {item.quantity}
-                    </p>
-                    <p style={{ margin: 0 }}>No of Pieces: {item.noOfPieces}</p>
-                    <p style={{ margin: 0 }}>Price/Piece: ₹{item.pricePerPiece}</p>
-                  </div>
-                  <div style={{ textAlign: "right", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
-                    <p style={{ margin: 0 }}>
+                    </Typography>
+                    <Typography sx={{ m: 0 }}>
+                      No of Pieces: {item.noOfPieces}
+                    </Typography>
+                    <Typography sx={{ m: 0 }}>
+                      Price/Piece: ₹{item.pricePerPiece}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: "right" }}>
+                    <Typography sx={{ m: 0 }}>
                       Line Total: ₹{lineTotal.toFixed(2)} (incl. GST)
-                    </p>
-                    <p style={{ margin: 0 }}>
+                    </Typography>
+                    <Typography sx={{ m: 0 }}>
                       Without Tax: ₹{lineWithoutTax.toFixed(2)}
-                    </p>
-                    <p style={{ margin: 0 }}>
+                    </Typography>
+                    <Typography sx={{ m: 0 }}>
                       Tax: ₹{lineTax.toFixed(2)} ({gstRate}%)
-                    </p>
-                  </div>
-                </div>
+                    </Typography>
+                  </Box>
+                </Box>
               );
             })}
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </Fade>
 
       {/* Order Summary Section */}
       <Box
@@ -311,7 +358,6 @@ export default function UserCart() {
           border: "1px solid #1976d2",
           borderRadius: "8px",
           backgroundColor: "#f8f8f8",
-          fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
         <Typography variant="h6" gutterBottom>
@@ -335,9 +381,10 @@ export default function UserCart() {
               color: "#fff",
               fontSize: "1.2rem",
               fontWeight: "bold",
-              padding: "15px 30px",
+              py: 1.5,
+              px: 3,
               textTransform: "none",
-              "&:hover": { backgroundColor: "#000" },
+              "&:hover": { backgroundColor: "#333" },
             }}
           >
             Order Now
@@ -354,13 +401,12 @@ export default function UserCart() {
           right: 0,
           background: "#fff",
           borderTop: "1px solid #ddd",
-          padding: "15px 30px",
+          p: "15px 30px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           boxShadow: "0 -2px 6px rgba(0,0,0,0.1)",
           zIndex: 1000,
-          fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
         <Box sx={{ textAlign: "left", fontSize: "0.9rem", lineHeight: "1.4" }}>
@@ -382,9 +428,10 @@ export default function UserCart() {
             color: "#fff",
             fontSize: "1.2rem",
             fontWeight: "bold",
-            padding: "15px 30px",
+            py: 1.5,
+            px: 3,
             textTransform: "none",
-            "&:hover": { backgroundColor: "#000" },
+            "&:hover": { backgroundColor: "#333" },
           }}
         >
           Order Now
@@ -400,8 +447,6 @@ export default function UserCart() {
           }}
         />
       )}
-    </div>
+    </Box>
   );
 }
-
-// export default UserCart;

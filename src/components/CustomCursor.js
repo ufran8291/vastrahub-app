@@ -66,13 +66,13 @@ const CustomCursor = () => {
           width: 40,
           height: 40,
           borderRadius: "50%",
-          backgroundColor: active ? "#FF4081" : "#3F51B5",
-          mixBlendMode: "difference",
+          backgroundColor: active ? "#0A79DF" : "#000000",
+          // mixBlendMode: "difference",
         }}
         animate={{
           x: position.x - 20,
           y: position.y - 20,
-          scale: active ? 1.8 : 1,
+          scale: active ? 0.3 : 1,
           rotate: active ? 45 : 0,
           opacity: 1,
         }}
@@ -90,8 +90,8 @@ const CustomCursor = () => {
           width: 8,
           height: 8,
           borderRadius: "50%",
-          backgroundColor: active ? "#FF4081" : "#3F51B5",
-          mixBlendMode: "difference",
+          backgroundColor: active ? "#000000" : "#000000",
+          // mixBlendMode: "difference",
         }}
         animate={{
           x: position.x - 4,

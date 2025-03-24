@@ -22,9 +22,12 @@ import mobileAppImage from "../assets/mobilepp.png";
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 import { Button, CircularProgress, LinearProgress, Tooltip } from "@mui/material";
 import { TbSpeakerphone } from "react-icons/tb";
-import {ReactTyped} from "react-typed";
+import { ReactTyped } from "react-typed";
 import ProductCard from "../components/ProductCard";
 import Squares from "../Bits/Squares";
+import ScrollFloat from "../Bits/ScrollFloat";
+// Import ScrollFloat component
+// import ScrollFloat from "../components/ScrollFloat";
 
 // Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
@@ -57,7 +60,6 @@ function CategoryCard({ category, onClick }) {
         textAlign: "left",
         cursor: "pointer",
         position: "relative",
-        //  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)"
       }}
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
@@ -70,7 +72,6 @@ function CategoryCard({ category, onClick }) {
             objectFit: "contain",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
-
           }}
         />
         <div
@@ -114,7 +115,8 @@ function CategoryCard({ category, onClick }) {
     </div>
   );
 }
-// Local Component: CategoryCard with image hover overlay effect
+
+// Local Component: CategoryCard2 with image hover overlay effect
 function CategoryCard2({ category, onClick }) {
   const [hover, setHover] = useState(false);
   return (
@@ -129,7 +131,6 @@ function CategoryCard2({ category, onClick }) {
         textAlign: "left",
         cursor: "pointer",
         position: "relative",
-        //  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)"
       }}
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
@@ -142,7 +143,6 @@ function CategoryCard2({ category, onClick }) {
             objectFit: "contain",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
-
           }}
         />
         <div
@@ -157,7 +157,6 @@ function CategoryCard2({ category, onClick }) {
             alignItems: "center",
             justifyContent: "center",
             transition: "background-color 0.3s",
-            // borderRadius:"100%"
           }}
         >
           <span
@@ -180,8 +179,8 @@ function CategoryCard2({ category, onClick }) {
           fontSize: "32px",
           textTransform: "uppercase",
           marginTop: "10px",
-          color:'#fff',
-          textAlign:'center'
+          color: "#fff",
+          textAlign: "center",
         }}
       >
         {category.name}
@@ -202,13 +201,12 @@ export default function Homepage() {
   // Local state variables
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [featuredProducts2, setFeaturedProducts2] = useState([]); // Second set of featured products
-  const [heroBanner, setHeroBanner] = useState(null); // Hero banner image URL
-  const [heroBannerTag, setHeroBannerTag] = useState(null); // Tag id from hero banner (if available)
-  const [banners, setBanners] = useState([]); // Banner images (for banner-1 to banner-4)
-  const [featuredTagId, setFeaturedTagId] = useState(null); // Tag id for "Featured Products"
-  const [featuredTagId2, setFeaturedTagId2] = useState(null); // Tag id for "Featured Products 2"
-  // State for banner hover effects (an array of booleans)
+  const [featuredProducts2, setFeaturedProducts2] = useState([]);
+  const [heroBanner, setHeroBanner] = useState(null);
+  const [heroBannerTag, setHeroBannerTag] = useState(null);
+  const [banners, setBanners] = useState([]);
+  const [featuredTagId, setFeaturedTagId] = useState(null);
+  const [featuredTagId2, setFeaturedTagId2] = useState(null);
   const [bannerHover, setBannerHover] = useState([]);
   const [announcementText, setAnnouncementText] = useState("");
 
@@ -289,6 +287,7 @@ export default function Homepage() {
       console.error("Error fetching banner images:", error);
     }
   };
+
   // ------------------ Fetch Announcement ------------------
   const fetchAnnouncement = async () => {
     try {
@@ -304,6 +303,7 @@ export default function Homepage() {
       console.error("Error fetching announcement:", error);
     }
   };
+
   // ------------------ Fetch Categories ------------------
   const getCategoryImages = async () => {
     const cats = [];
@@ -342,7 +342,7 @@ export default function Homepage() {
             id: productId,
             title: data.title,
             image: data.coverImage || productPlaceholder,
-            additionalImages:data.additionalImages || [productPlaceholder],
+            additionalImages: data.additionalImages || [productPlaceholder],
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
@@ -375,8 +375,7 @@ export default function Homepage() {
             id: productId,
             title: data.title,
             image: data.coverImage || productPlaceholder,
-            // additionalImage : data.additionalImages[0]||productPlaceholder,
-            additionalImages:data.additionalImages || [productPlaceholder],
+            additionalImages: data.additionalImages || [productPlaceholder],
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
@@ -455,7 +454,7 @@ export default function Homepage() {
           strings={['VYAPAR KA NAYA TAREEKA']}
           typeSpeed={75}
           onComplete={() => {
-            setTimeout(() => { setIsTyping(false) }, 300)
+            setTimeout(() => { setIsTyping(false) }, 300);
           }}
         />
       </div>
@@ -542,6 +541,7 @@ export default function Homepage() {
                 style={{ height: "80px", marginBottom: "20px" }}
               />
               <h2
+                className="scroll-float"
                 style={{
                   fontFamily: "Lora, serif",
                   fontWeight: "600",
@@ -566,98 +566,51 @@ export default function Homepage() {
       </div>
 
       {/* Categories Section */}
-      {/* <div className="container" style={{ padding: "50px 20px" }}>
-        <h1
-          style={{
-            fontFamily: "Lora, serif",
-            fontWeight: "600",
-            fontSize: "48px",
-            textAlign: "left",
-            marginBottom: "50px",
-          }}
-        >
-          SHOP BY CATEGORY
-        </h1>
-        <div style={{ position: "relative", overflow: "hidden" }}>
-          <div
-            className="row no-scrollbar"
-            ref={categoryCarouselRef}
-            style={{
-              display: "flex",
-              flexWrap: "nowrap",
-              overflowX: "scroll",
-            }}
-          >
-            {categories.map((cat, i) => (
-              <CategoryCard
-                key={i}
-                category={cat}
-                onClick={() =>
-                  navigate("/shopbycategory", { state: { category: cat } })
-                }
-              />
-            ))}
-          </div>
-        </div>
-      </div> */}
-
-
-        {/* Categories Section */}
-       {/* Categories Section */}
-<div
-  className="container-fluid"
-  style={{
-    backgroundColor: "#000",
-    position: "relative", // Needed for absolute positioning of Squares
-    minHeight: "80vh",
-    overflow: "hidden",
-  }}
->
-  {/* Squares rendered as background */}
-  <Squares
-    speed={0.6}
-    squareSize={25}
-    direction="diagonal" // up, down, left, right, diagonal
-    borderColor="#333"
-    hoverFillColor="#fff"
-    className="squares-background"  // Custom class name
-  />
-  {/* Category content appears above the squares */}
-  <div className="container" style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}>
-    <h1
-      style={{
-        fontFamily: "Lora, serif",
-        fontWeight: "600",
-        fontSize: "48px",
-        textAlign: "left",
-        marginBottom: "50px",
-        color: "#fff",
-      }}
-    >
-      SHOP BY CATEGORY
-    </h1>
-    <div style={{ position: "relative", overflow: "hidden" }}>
       <div
-        className="row no-scrollbar"
-        ref={categoryCarouselRef}
+        className="container-fluid"
         style={{
-          display: "flex",
-          flexWrap: "nowrap",
-          overflowX: "scroll",
+          backgroundColor: "#000",
+          position: "relative",
+          minHeight: "80vh",
+          overflow: "hidden",
         }}
       >
-        {categories.map((cat, i) => (
-          <CategoryCard2
-            key={i}
-            category={cat}
-            onClick={() => navigate("/shopbycategory", { state: { category: cat } })}
-          />
-        ))}
+        {/* Squares rendered as background */}
+        <Squares
+          speed={0.6}
+          squareSize={30}
+          direction="diagonal"
+          borderColor="#222"
+          hoverFillColor="#fff"
+          className="squares-background"
+        />
+        {/* Category content appears above the squares */}
+        <div className="container" style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}>
+          {/* Replace the plain heading with ScrollFloat */}
+          <ScrollFloat containerClassName="" textClassName="" styles={{ color: "#fff", fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px", textAlign: "left", marginBottom: "50px" }}>
+            SHOP BY CATEGORY
+          </ScrollFloat>
+          <div style={{ position: "relative", overflow: "hidden" }}>
+            <div
+              className="row no-scrollbar"
+              ref={categoryCarouselRef}
+              style={{
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "scroll",
+              }}
+            >
+              {categories.map((cat, i) => (
+                <CategoryCard2
+                  key={i}
+                  category={cat}
+                  onClick={() => navigate("/shopbycategory", { state: { category: cat } })}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
-
 
       {/* Featured Products Section 1 */}
       <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
@@ -670,16 +623,9 @@ export default function Homepage() {
               marginBottom: "50px",
             }}
           >
-            <h1
-              style={{
-                fontFamily: "Lora, serif",
-                fontWeight: "600",
-                fontSize: "48px",
-                margin: 0,
-              }}
-            >
+            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px" }}>
               FEATURED PRODUCTS
-            </h1>
+            </ScrollFloat>
             {featuredTagId && (
               <Button
                 variant="text"
@@ -715,19 +661,20 @@ export default function Homepage() {
               }}
             >
               {featuredProducts.map((prod, i) => (
-      <ProductCard
-        key={i}
-        product={prod}
-        onView={() =>
-          navigate("/view-product", { state: { productId: prod.id } })
-        }
-        onAdd={() => handleAddToCartClick(prod)}
-      />
-    ))}
+                <ProductCard
+                  key={i}
+                  product={prod}
+                  onView={() =>
+                    navigate("/view-product", { state: { productId: prod.id } })
+                  }
+                  onAdd={() => handleAddToCartClick(prod)}
+                />
+              ))}
             </div>
           </div>
         </div>
       </div>
+
       {/* Banners Section */}
       <div className="container-fluid" style={{ padding: "50px 20px" }}>
         <div className="banner-grid">
@@ -819,16 +766,9 @@ export default function Homepage() {
               marginBottom: "50px",
             }}
           >
-            <h1
-              style={{
-                fontFamily: "Lora, serif",
-                fontWeight: "600",
-                fontSize: "48px",
-                margin: 0,
-              }}
-            >
+            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px" }}>
               FEATURED PRODUCTS
-            </h1>
+            </ScrollFloat>
             {featuredTagId2 && (
               <Button
                 variant="text"
@@ -864,15 +804,15 @@ export default function Homepage() {
               }}
             >
               {featuredProducts2.map((prod, i) => (
-      <ProductCard
-        key={i}
-        product={prod}
-        onView={() =>
-          navigate("/view-product", { state: { productId: prod.id } })
-        }
-        onAdd={() => handleAddToCartClick(prod)}
-      />
-    ))}
+                <ProductCard
+                  key={i}
+                  product={prod}
+                  onView={() =>
+                    navigate("/view-product", { state: { productId: prod.id } })
+                  }
+                  onAdd={() => handleAddToCartClick(prod)}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -891,20 +831,9 @@ export default function Homepage() {
           }}
         >
           <div style={{ maxWidth: "50%" }}>
-            <h2
-              style={{
-                fontFamily: "Lora",
-                fontStyle: "normal",
-                fontWeight: "600",
-                fontSize: "48px",
-                lineHeight: "61px",
-                letterSpacing: "0.03em",
-                textTransform: "uppercase",
-                marginBottom: "30px",
-              }}
-            >
+            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora", fontWeight: "600", fontSize: "48px", lineHeight: "61px", letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: "30px" }}>
               Download the Vastrahub App Today
-            </h2>
+            </ScrollFloat>
             <p style={{ fontSize: "18px", fontWeight: "400", marginBottom: "50px" }}>
               Download the VastraHub app to streamline your shopping experience.
               Access exclusive deals, manage orders easily, and connect directly
@@ -973,5 +902,3 @@ const loaderStyles = {
     textAlign: "center",
   },
 };
-
-// export default Homepage;

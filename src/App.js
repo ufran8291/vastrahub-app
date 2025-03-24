@@ -27,7 +27,7 @@ import HelpPage from "./Pages/HelpPage";
 import OrderPage from "./Pages/OrderPage";
 import OrderSuccess from "./Pages/OrderSuccess";
 // import MyOrders from "./Pages/MyOrders";
-import MyOders from './Pages/MyOders'
+import MyOders from './Pages/MyOders';
 import OrderDetails from "./Pages/OrderDetails";
 import RefundPolicy from "./Pages/RefundPolicy";
 
@@ -37,6 +37,24 @@ import TermsAndConditions from "./Pages/TermsAndConditions";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import TagProducts from "./Pages/TagProducts";
 import CustomCursor from "./components/CustomCursor";
+
+import { motion } from "framer-motion";
+
+// A helper component that adds a smooth transition to its children.
+const PageTransition = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    transition={{ duration: 0.3 }}
+    style={{ height: "100%" }}
+  >
+    {children}
+  </motion.div>
+);
+
+// A helper function to wrap a component with PageTransition.
+const withTransition = (component) => <PageTransition>{component}</PageTransition>;
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -55,101 +73,98 @@ function App() {
         {
           // Homepage (protected)
           path: "/",
-          element: (
-            // <ProtectedRoute condition={!!userAuth.currentUser}>
-              <Homepage />
-            // </ProtectedRoute>
-          ),
+          element: withTransition(<Homepage />),
         },
         {
           path: "/signin",
-          element: <SignIn />,
+          element: withTransition(<SignIn />),
         },
         {
           path: "/otp-verify",
-          element: <OTPVerification />,
+          element: withTransition(<OTPVerification />),
         },
         {
           path: "/register",
-          element: <NewUser />,
+          element: withTransition(<NewUser />),
         },
         {
           path: "/registration-success",
-          element: <RegistrationSuccess />,
+          element: withTransition(<RegistrationSuccess />),
         },
         {
           path: "/request-pending",
-          element: <RequestPending />,
+          element: withTransition(<RequestPending />),
         },
         {
           path: "/request-rejected",
-          element: <RequestRejected />,
+          element: withTransition(<RequestRejected />),
         },
         {
           path: "/blocked-user",
-          element: <BlockedUser />,
+          element: withTransition(<BlockedUser />),
         },
         {
           path: "/view-product",
-          element: <ViewProduct />,
+          element: withTransition(<ViewProduct />),
         },
         {
           path: "/search-products",
-          element: <SearchProducts />,
+          element: withTransition(<SearchProducts />),
         },
         {
           path: "/user-cart",
-          element: <UserCart />,
+          element: withTransition(<UserCart />),
         },
         {
           path: "/my-profile",
-          element: <MyProfile />,
+          element: withTransition(<MyProfile />),
         },
         {
           path: "/shopbycategory",
-          element: <ShopByCategory />,
+          element: withTransition(<ShopByCategory />),
         },
         {
           path: "/help",
-          element: <HelpPage />,
+          element: withTransition(<HelpPage />),
         },
         {
           path: "/order",
-          element: <OrderPage />,
+          element: withTransition(<OrderPage />),
         },
         {
           path: "/order-success",
-          element: <OrderSuccess />,
+          element: withTransition(<OrderSuccess />),
         },
         {
           path: "/order-details",
-          element: <OrderDetails />,
+          element: withTransition(<OrderDetails />),
         },
         {
           path: "/my-orders",
-          element: <MyOders />,
+          element: withTransition(<MyOders />),
         },
         {
           path: "/refund-policy",
-          element: <RefundPolicy />,
+          element: withTransition(<RefundPolicy />),
         },
         // New pages added:
         {
           path: "/about-us",
-          element: <AboutUs />,
+          element: withTransition(<AboutUs />),
         },
         {
           path: "/terms-and-conditions",
-          element: <TermsAndConditions />,
+          element: withTransition(<TermsAndConditions />),
         },
         {
           path: "/privacy-policy",
-          element: <PrivacyPolicy />,
+          element: withTransition(<PrivacyPolicy />),
         },
         {
           path: "/tag-products",
-          element: <TagProducts />,
+          element: withTransition(<TagProducts />),
         },
+       
       ],
     },
   ]);
@@ -178,7 +193,7 @@ export const ProtectedRoute = ({ condition, children }) => {
 function AppWithProvider() {
   return (
     <GlobalProvider>
-      <CustomCursor/>
+      <CustomCursor />
       <App />
     </GlobalProvider>
   );
