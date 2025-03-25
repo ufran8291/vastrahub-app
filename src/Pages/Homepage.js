@@ -26,6 +26,9 @@ import { ReactTyped } from "react-typed";
 import ProductCard from "../components/ProductCard";
 import Squares from "../Bits/Squares";
 import ScrollFloat from "../Bits/ScrollFloat";
+import ScrollVelocity from "../Bits/ScrollVelocity";
+import RotatingText from "../Bits/RotatingText";
+import { color } from "framer-motion";
 // Import ScrollFloat component
 // import ScrollFloat from "../components/ScrollFloat";
 
@@ -463,7 +466,7 @@ export default function Homepage() {
 
   return (
     <>
-      {/* Hero Banner with SHOP NOW Button if Tag is available */}
+                            {/* Hero Banner with Rotating Text and SHOP NOW Button */}
       <div style={{ position: "relative" }}>
         <img
           src={heroBanner ? heroBanner : defaultHeroImg}
@@ -474,6 +477,64 @@ export default function Homepage() {
             e.target.src = defaultHeroImg;
           }}
         />
+        {/* Centered Text Overlay Container */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "180px", 
+            left:'8vw',// adjust vertical position as needed
+            // left: "40%",
+            // transform: "translateX(-40%)",
+            display: "flex",
+            alignItems: "center",
+            // backgroundColor:'#333',
+            width:'100%',
+            gap: "10px", // reduced gap to bring texts closer
+          }}
+        >
+          {/* Fixed Text */}
+          <div>
+
+          <div>
+            <span
+              style={{
+                fontFamily: "Lora, serif",
+                fontSize: "58px", // unified font size
+                fontWeight: "600",
+                color: "#fff",
+              }}
+            >
+              VASTRAHUB :
+            </span>
+          </div>
+          {/* Rotating Text */}
+          <div>
+            <RotatingText
+              texts={[
+                "VYAPAR KA NAYA TAREEKA",
+                "ONLINE B2B GARMENT STORE",
+                "MANUFACTURER & DISTRIBUTOR"
+              ]}
+              rotationInterval={5000}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-120%", opacity: 0 }}
+              staggerDuration={0.05}
+              splitBy="characters"
+              mainClassName="rotating-text"
+              style={{
+                // fontFamily: "Lora, serif",
+          fontFamily: "Plus Jakarta Sans, sans-serif",
+
+                fontSize: "38px", // unified font size
+                fontWeight: "600",
+                color: "#c5c5fc",
+              }}
+            />
+          </div>
+          </div>
+        </div>
         {heroBannerTag && (
           <Button
             variant="contained"
@@ -482,9 +543,9 @@ export default function Homepage() {
             }
             sx={{
               position: "absolute",
-              bottom: "80px",
-              left: "50%",
-              transform: "translateX(-50%)",
+              bottom: "70px", // position button below the texts
+              left: "8vw",
+              // transform: "translateX(-50%)",
               backgroundColor: "#000",
               color: "#fff",
               textTransform: "none",
@@ -499,6 +560,7 @@ export default function Homepage() {
           </Button>
         )}
       </div>
+
 
       {/* Announcement Section */}
       {announcementText && (
@@ -817,6 +879,44 @@ export default function Homepage() {
           </div>
         </div>
       </div>
+      {/* Brands Section using ScrollVelocity */}
+      <div
+        className="container-fluid"
+        style={{
+          backgroundColor: "#000",
+          padding: "50px 20px",
+          overflow: "hidden",
+        }}
+      >
+        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1, paddingBottom:'60px' }}>
+          {/* You can optionally add a heading */}
+          <h2
+            style={{
+              fontFamily: "Lora, serif",
+              fontWeight: "600",
+              fontSize: "38px",
+              color: "#fff",
+              marginBottom: "40px",
+
+            }}
+          >
+            BRANDS AVAILABLE
+          </h2>
+          <ScrollVelocity
+            texts={[
+              "Array | Folk Club | Fashionology | Fashion Trail |"," Be Indian | American Fit | Foggy | Macpi |"," D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |"," High Density | Purple Haze | Maniac | Grow Up |"," Ice Tees | Striker | A1 Bright | Raffal |"
+            ]}
+            velocity={80}
+            damping={50}
+            stiffness={400}
+            numCopies={6}
+            // Optionally override the CSS classes or styles via props
+            parallaxClassName="parallax"
+            scrollerClassName="scroller"
+            scrollerStyle={{ color: "#c5c5fc" }} 
+          />
+        </div>
+      </div>
 
       {/* Vastrahub App Section */}
       <div className="container-fluid" style={{ backgroundColor: "#fff", padding: "50px 0" }}>
@@ -831,8 +931,8 @@ export default function Homepage() {
           }}
         >
           <div style={{ maxWidth: "50%" }}>
-            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora", fontWeight: "600", fontSize: "48px", lineHeight: "61px", letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: "30px" }}>
-              Download the Vastrahub App Today
+            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora", fontWeight: "600", fontSize: "38px", lineHeight: "61px", letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: "20px",textAlign:'left' }}>
+              Download the VastraHub   App Today
             </ScrollFloat>
             <p style={{ fontSize: "18px", fontWeight: "400", marginBottom: "50px" }}>
               Download the VastraHub app to streamline your shopping experience.
