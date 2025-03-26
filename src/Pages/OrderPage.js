@@ -332,6 +332,8 @@ export default function OrderPage() {
         : "431001";
   
     // Build the base order object.
+    const currentDateTime = new Date();
+
     const orderData = {
       userId: uid,
       userName: firestoreUser.name,
@@ -353,8 +355,8 @@ export default function OrderPage() {
       gst: tax,
       grandTotal: grandTotal,
       orderStatus: "", // will be set below
-      orderType: "ecommerct-website",
-      createdAt: currentISODate,
+      orderType: "ecommerce-website",
+      createdAt: currentDateTime,
       paymentDone: false,
     };
   
