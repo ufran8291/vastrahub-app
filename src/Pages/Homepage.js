@@ -481,7 +481,7 @@ export default function Homepage() {
         <div
           style={{
             position: "absolute",
-            bottom: "180px", 
+            bottom: "21x0px", 
             left:'8vw',// adjust vertical position as needed
             // left: "40%",
             // transform: "translateX(-40%)",
@@ -543,7 +543,7 @@ export default function Homepage() {
             }
             sx={{
               position: "absolute",
-              bottom: "70px", // position button below the texts
+              bottom: "100px", // position button below the texts
               left: "8vw",
               // transform: "translateX(-50%)",
               backgroundColor: "#000",
@@ -558,6 +558,7 @@ export default function Homepage() {
           >
             SHOP NOW
           </Button>
+          
         )}
       </div>
 

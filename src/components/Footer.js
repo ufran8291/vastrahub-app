@@ -1,31 +1,44 @@
 // src/Components/Footer.js
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import '../App.css';
 import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { GlobalContext } from '../Context/GlobalContext';
 
 export default function Footer() {
   const navigate = useNavigate();
+  const { sendEmail } = useContext(GlobalContext);
   const [phoneNumberUser, setPhoneNumberUser] = useState('');
 
+  // Validate phone number: allow an optional country code (starting with +) followed by 10 digits.
+  const validatePhoneNumber = (phone) => {
+    const trimmed = phone.trim();
+    // Regex: Optional '+' and 1-3 digits (country code), optional dash or space, then 10 digits.
+    const regex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
+    return regex.test(trimmed);
+  };
+
   // This function is triggered when the arrow button is clicked.
-  const handleBroadcastSubmit = () => {
-    // Validate that the phone number has exactly 10 digits
-    if (phoneNumberUser.trim().length !== 10) {
-      toast.error("Please enter a valid 10-digit phone number.");
+  const handleBroadcastSubmit = async () => {
+    if (!validatePhoneNumber(phoneNumberUser)) {
+      toast.error("Please enter a valid phone number, with or without a country code.");
       return;
     }
-    // Prepend the country code (here "91" for India)
-    const phoneWithCountry = "91" + phoneNumberUser.trim();
-    // Replace with your actual WhatsApp broadcast channel link if needed
-    const broadcastLink = "https://chat.whatsapp.com/yourBroadcastLink"; 
-    const message = encodeURIComponent(
-      `Hello! I would like to join your WhatsApp broadcast channel to receive the latest updates on offers and new arrivals. My phone number is ${phoneWithCountry}. Thank you!`
-    );
-    // Construct the WhatsApp URL (this example sends the message to your own WhatsApp number)
-    const waUrl = `https://api.whatsapp.com/send?phone=+917757838011&text=${message}`;
-    window.open(waUrl, '_blank');
+    const subject = "Broadcast Channel Request";
+    const content = `The phone number ${phoneNumberUser.trim()} wants to join the WhatsApp broadcast channel.`;
+    try {
+      const emailResponse = await sendEmail({
+        email: "talbanimohit28@gmail.com",
+        subject,
+        content,
+      });
+      console.log("Email sent response:", emailResponse);
+      toast.success("Your request has been sent successfully!");
+    } catch (error) {
+      console.error("Error sending broadcast request email:", error);
+      toast.error("Failed to send request. Please try again later.");
+    }
   };
 
   return (
@@ -56,7 +69,6 @@ export default function Footer() {
                 placeholder="Enter your phone number"
                 value={phoneNumberUser}
                 onChange={(e) => setPhoneNumberUser(e.target.value)}
-                maxLength={10}
                 style={{
                   flex: 1,
                   border: 'none',
@@ -65,7 +77,6 @@ export default function Footer() {
                   padding: '10px',
                   fontSize: '12px',
                   outline: 'none',
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
                 }}
               />
               <button
@@ -105,7 +116,7 @@ export default function Footer() {
                   fontSize: '15px',
                   cursor: 'pointer',
                 }}
-                onClick={() => navigate("/help")}
+                onClick={() => navigate("/careers")}
               >
                 Careers
               </li>
@@ -116,7 +127,7 @@ export default function Footer() {
                   fontSize: '15px',
                   cursor: 'pointer',
                 }}
-                onClick={() => navigate("/help")}
+                onClick={() => navigate("/contact-us")}
               >
                 Contact Us
               </li>
@@ -174,14 +185,11 @@ export default function Footer() {
 
         {/* Social Icons and Payment Methods */}
         <div className="socials-payment d-flex justify-content-between align-items-center" style={{ marginTop:'50px', marginBottom: '50px' }}>
-          {/* Social Icons */}
           <div className="social-icons d-flex">
             <FaInstagram style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
             <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
             <FaFacebook style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
           </div>
-
-          {/* Payment Methods (Placeholder Icons) */}
           <div className="payment-methods d-flex">
             <FaInstagram style={{ fontSize: '24px', marginRight: '15px' }} />
             <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px' }} />
