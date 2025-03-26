@@ -16,6 +16,8 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
@@ -52,6 +54,13 @@ export default function OrderPage() {
   const [grandTotal, setGrandTotal] = useState(0);
 
   const [placingOrder, setPlacingOrder] = useState(false);
+  const {
+    syncStockData,
+    checkStockAvailability,
+    sendEmail,
+    syncStockDataForIds,
+    createSalesOrder,
+  } = useContext(GlobalContext); 
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -127,31 +136,132 @@ export default function OrderPage() {
     }
   };
 
-  // Place order handler – if payLater is selected, place order immediately; if not, navigate to payment.
   const handlePlaceOrder = async () => {
-    if (!cartItems.length) {
-      toast.info("Your cart is empty.");
+    // 1. Check if user is logged in.
+    if (!isLoggedIn) {
+      toast.info("Please log in to place an order.");
+      navigate("/otp-verify");
       return;
     }
-    if (isPremium && !payLater) {
-      navigate("/payment", {
-        state: {
-          cartItems,
-          subtotal,
-          tax,
-          grandTotal,
-          address,
-          transport,
-          email,
-          phone,
-          gstinPan,
-        },
-      });
-      return; 
+    
+    // 2. Validate cart items:
+    //    - Ensure there are at least 2 boxes ordered overall.
+    //    - Ensure grand total is >= ₹10,000.
+    const totalBoxesOrdered = cartItems.reduce(
+      (sum, item) => sum + Number(item.quantity),
+      0
+    );
+    if (totalBoxesOrdered < 2) {
+      toast.error("Please order at least 2 boxes in total.");
+      return;
     }
-    setPlacingOrder(true);
+    if (grandTotal < 10000) {
+      toast.error("Grand total must be at least ₹10,000.");
+      return;
+    }
+  
+    // 3. Confirm stock availability for each item in the cart.
+    //    Use cloud function if store is open; if not or if an error occurs,
+    //    fall back to checking stock directly from Firestore.
+    let stockCheckPassed = true;
     try {
-      const orderItems = cartItems.map((item) => {
+      // First, get store status from Firestore.
+      const storeDoc = await getDoc(doc(db, "banners", "other-data"));
+      let storeOpen = false;
+      if (storeDoc.exists()) {
+        storeOpen = storeDoc.data().isStoreOpen;
+      }
+      if (storeOpen) {
+        try {
+          const inventoryIds = Array.from(
+            new Set(cartItems.map((item) => Number(item.inventoryId)))
+          );
+          console.log("Extracted inventoryIds:", inventoryIds);
+  
+          const availableStock = await checkStockAvailability(inventoryIds);
+          console.log("Available stock from cloud function:", availableStock);
+  
+          // Validate each cart item using the cloud function data.
+          for (const item of cartItems) {
+            const invId = Number(item.inventoryId);
+            const available = availableStock[invId];
+            if (available === undefined) {
+              toast.error(`No stock info for ${item.productTitle} (Size: ${item.size}).`);
+              console.log(`Stock check failed: no stock info for ${item.productTitle} (Size: ${item.size}).`);
+              stockCheckPassed = false;
+              break;
+            }
+            if (available < item.noOfPieces) {
+              toast.error(`Insufficient stock for ${item.productTitle} (Size: ${item.size}).`);
+              console.log(`Stock check failed: insufficient stock for ${item.productTitle} (Size: ${item.size}).`);
+              stockCheckPassed = false;
+              break;
+            }
+          }
+        } catch (cloudErr) {
+          console.error("Error using cloud function for stock check:", cloudErr);
+          toast.info("Falling back to Firestore for stock verification...");
+          stockCheckPassed = await firestoreStockCheck();
+        }
+      } else {
+        console.log("Store is closed. Using Firestore for stock verification...");
+        stockCheckPassed = await firestoreStockCheck();
+      }
+    } catch (error) {
+      console.error("Error in stock check process:", error);
+      toast.info("Falling back to Firestore for stock verification...");
+      stockCheckPassed = await firestoreStockCheck();
+    }
+    if (!stockCheckPassed) return;
+  
+    // Helper function to perform Firestore-based stock check.
+    async function firestoreStockCheck() {
+      let allPassed = true;
+      for (const item of cartItems) {
+        const productRef = doc(db, "products", item.productId);
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) {
+          toast.error(`Product ${item.productTitle} not found in Firestore.`);
+          allPassed = false;
+          break;
+        }
+        const productData = productSnap.data();
+        // Find the size object in the product's sizes array matching the cart item’s size.
+        const sizeObj = productData.sizes.find((s) => s.size === item.size);
+        if (!sizeObj) {
+          toast.error(`Size ${item.size} not available for ${item.productTitle}.`);
+          allPassed = false;
+          break;
+        }
+        if (sizeObj.piecesInStock < item.noOfPieces) {
+          toast.error(`Insufficient stock for ${item.productTitle} (Size: ${item.size}).`);
+          allPassed = false;
+          break;
+        }
+        console.log(
+          `Firestore check passed for ${item.productTitle} (Size: ${item.size}): requested ${item.noOfPieces}, available ${sizeObj.piecesInStock}`
+        );
+      }
+      return allPassed;
+    }
+  
+    // 4. Prepare order totals and the order object.
+    // Ensure each order item has an inventoryId. If missing, fetch it from the product's sizes.
+    const orderItemsData = await Promise.all(
+      cartItems.map(async (item) => {
+        let invId = item.inventoryId;
+        // If inventoryId is undefined, fetch it from the product document.
+        if (!invId) {
+          const prodRef = doc(db, "products", item.productId);
+          const prodSnap = await getDoc(prodRef);
+          if (prodSnap.exists()) {
+            const productData = prodSnap.data();
+            const sizeObj = productData.sizes.find((s) => s.size === item.size);
+            if (sizeObj) {
+              invId = sizeObj.inventoryId;
+            }
+          }
+        }
         const gstRate = isNaN(item.gst) ? 0 : Number(item.gst);
         const lineTotal = item.noOfPieces * item.pricePerPiece;
         const lineWithoutTax = lineTotal / (1 + gstRate / 100);
@@ -167,39 +277,243 @@ export default function OrderPage() {
           lineTotal,
           lineWithoutTax,
           lineTax,
+          inventoryId: invId, // Use the fetched or existing inventoryId.
         };
-      });
-      const orderData = {
-        userId: uid,
-        orderItems,
-        subtotal,
-        gst: tax,
-        grandTotal,
-        address: address.trim(),
-        transport,
-        email: email.trim(),
-        phone: phone.trim(),
-        alternatePhone: alternatePhone.trim(),
-        gstinPan,
-        payLater,
-        orderStatus: "ORDER PLACED",
-        createdAt: new Date(),
-      };
-
-      await addDoc(collection(db, "orders"), orderData);
-      await clearCart();
-      toast.success(
-        "Order placed successfully! You will be notified once your order is accepted. You can view your order from the My Orders section in your profile."
-      );
-      navigate("/order-success");
-    } catch (error) {
-      console.error("Error placing order:", error);
-      toast.error("Failed to place order: " + error.message);
-    } finally {
-      setPlacingOrder(false);
+      })
+    );
+  
+    const currentISODate = new Date().toISOString();
+    // Determine shipping state code dynamically based on user's state.
+    const stateCodes = {
+      "Himachal Pradesh": 2,
+      "Punjab": 3,
+      "Chandigarh": 4,
+      "Uttarakhand": 5,
+      "Haryana": 6,
+      "Delhi": 7,
+      "Rajasthan": 8,
+      "Uttar Pradesh": 9,
+      "Bihar": 10,
+      "Sikkim": 11,
+      "Arunanchal Pradesh": 12,
+      "Nagaland": 13,
+      "Manipur": 14,
+      "Mizoram": 15,
+      "Tripura": 16,
+      "Meghalaya": 17,
+      "Assam": 18,
+      "West Bengal": 19,
+      "Jharkhand": 20,
+      "Odisha": 21,
+      "Chattisgarh": 22,
+      "Madhya Pradesh": 23,
+      "Gujarat": 24,
+      "Dadra And Nagar Haveli And Daman And Diu": 26,
+      "Maharashtra": 27,
+      "Andhra Pradesh": 28,
+      "Karnataka": 29,
+      "Goa": 30,
+      "Lakshadweep": 31,
+      "Kerela": 32,
+      "Tamil Nadu": 33,
+      "Puducherry": 34,
+      "Andaman and Nicobar Islands": 35,
+      "Telangana": 36,
+      "Andhra Pradesh": 37,
+      "Ladakh": 38,
+      "Other Territory": 97,
+    };
+    const shippingStateCode = stateCodes[firestoreUser.state] || 14; // Default to 14 if state not found.
+  
+    // Use user's saved pincode if valid; otherwise default to "431001".
+    const pincode =
+      (firestoreUser.pincode && firestoreUser.pincode.length === 6)
+        ? firestoreUser.pincode
+        : "431001";
+  
+    // Build the base order object.
+    const orderData = {
+      userId: uid,
+      userName: firestoreUser.name,
+      userBusinessName: firestoreUser.businessName || "N/A",
+      userEmail: firestoreUser.email,
+      userPhone: firestoreUser.primaryPhone,
+      userAlternatePhone: firestoreUser.alternatePhone || "",
+      userGstinPan: firestoreUser.gstin || firestoreUser.pan || "",
+      userAddress: firestoreUser.address || "",
+      transport: firestoreUser.transportService || "N/A",
+      paymentMode: "", // will be set below
+      shippingCountry: "India",
+      shippingPincode: pincode,
+      shippingStateCode: shippingStateCode,
+      orderRemarks: `PAN: ${firestoreUser.pan || "N/A"} GST: ${firestoreUser.gstin || "N/A"}`,
+      Channel: "E-Commerce API",
+      orderItems: orderItemsData,
+      subtotal: subtotal,
+      gst: tax,
+      grandTotal: grandTotal,
+      orderStatus: "", // will be set below
+      orderType: "ecommerct-website",
+      createdAt: currentISODate,
+      paymentDone: false,
+    };
+  
+    // 5. Branch based on whether the payment mode is "Pay Later" or not.
+    if (payLater) {
+      // For Pay Later: Save order immediately.
+      orderData.paymentMode = "Dashboard";
+      orderData.orderStatus = "ORDERED";
+      orderData.paymentDone = true;
+  
+      try {
+        // Save order to Firestore.
+        console.log("Saving order (Pay Later)...", orderData);
+        const orderDocRef = await addDoc(collection(db, "orders"), orderData);
+        console.log("Order saved in Firestore with id:", orderDocRef.id);
+  
+        // Prepare payload for cloud function.
+        const newOrderPayload = {
+          onlineReferenceNo: Number((orderData.userPhone + Date.now()).slice(0, 15)),
+          createdAt: currentISODate,
+          totalTaxAmount: Number(orderData.gst),
+          totalDiscountAmount: 0.0,
+          status: "pending",
+          totalQuantity: orderData.orderItems.reduce(
+            (sum, item) => sum + Number(item.noOfPieces),
+            0
+          ),
+          totalAmount: Number(orderData.grandTotal),
+          paymentMode: orderData.paymentMode,
+          shippingId: orderData.userId,
+          shippingName: orderData.userName,
+          shippingAddress1: orderData.userAddress,
+          shippingCountry: orderData.shippingCountry,
+          shippingPincode: orderData.shippingPincode,
+          shippingMobile: orderData.userPhone,
+          shippingStateCode: Number(orderData.shippingStateCode),
+          shipmentItems: orderData.orderItems.length,
+          customerName: orderData.userName,
+          customerMobile: orderData.userPhone,
+          customerEmail: orderData.userEmail,
+          orderRemarks: orderData.orderRemarks,
+          Channel: orderData.Channel,
+          orderItems: orderData.orderItems.map((item, index) => ({
+            rowNo: index + 1,
+            // Use inventoryId for both itemId and itemReferenceCode.
+            itemId: Number(item.inventoryId),
+            itemReferenceCode: String(item.inventoryId),
+            salePrice: Number(item.pricePerPiece),
+            quantity: Number(item.noOfPieces),
+            itemAmount: Number(item.noOfPieces) * Number(item.pricePerPiece),
+            taxPercentage: Number(item.gst),
+            discountPercentage: 0.0,
+          })),
+        };
+        console.log("Payload to Cloud Function (Pay Later):", newOrderPayload);
+  
+        // Check if store is open before calling cloud function.
+        const storeDoc = await getDoc(doc(db, "banners", "other-data"));
+        let isStoreOpen = false;
+        if (storeDoc.exists()) {
+          isStoreOpen = storeDoc.data().isStoreOpen;
+        }
+        console.log("Store open status:", isStoreOpen);
+  
+        let createSalesOrderResponse;
+        if (isStoreOpen) {
+          try {
+            createSalesOrderResponse = await createSalesOrder(newOrderPayload);
+            console.log("Cloud Function response:", createSalesOrderResponse);
+          } catch (err) {
+            console.error("Error calling createSalesOrder cloud function:", err);
+          }
+        } else {
+          console.log("Store is closed. Skipping cloud function call.");
+        }
+  
+        // If store is closed or cloud function call failed, save order to unsync-orders and manually update stock.
+        if (!isStoreOpen || !createSalesOrderResponse || createSalesOrderResponse.error) {
+          console.log("Falling back to unsynced orders.");
+          await addDoc(collection(db, "unsync-orders"), {
+            ...newOrderPayload,
+            firestoreOrderId: orderDocRef.id,
+            error: createSalesOrderResponse ? createSalesOrderResponse.error : "Store closed or cloud function call failed",
+            createdAt: new Date().toISOString(),
+          });
+  
+          // Manually update stock for each ordered item.
+          for (const item of cartItems) {
+            const productRef = doc(db, "products", item.productId);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+              const productData = productSnap.data();
+              const updatedSizes = productData.sizes.map((size) => {
+                if (size.size === item.size) {
+                  const newPieces = size.piecesInStock - item.noOfPieces;
+                  return {
+                    ...size,
+                    piecesInStock: newPieces,
+                    boxesInStock:
+                      Math.floor(newPieces / size.boxPieces) +
+                      (newPieces % size.boxPieces > 0 ? 1 : 0),
+                  };
+                }
+                return size;
+              });
+              await setDoc(productRef, { sizes: updatedSizes }, { merge: true });
+              console.log(`Updated stock for productId: ${item.productId}`);
+            }
+          }
+        }
+  
+        // Send confirmation email.
+        try {
+          const emailSubject = "Order Confirmation - Your Order is Placed";
+          const emailContent = `Hello ${orderData.userName},
+  
+  Thank you for your order!
+  
+  Your order has been placed successfully. You can view the order details in your profile.
+  
+  Warm regards,
+  The VastraHub Team`;
+          await sendEmail({
+            email: orderData.userEmail,
+            subject: emailSubject,
+            content: emailContent,
+          });
+          toast.info("Order confirmation email sent.");
+        } catch (emailErr) {
+          console.error("Error sending confirmation email:", emailErr);
+          toast.error("Order placed but failed to send confirmation email.");
+        }
+  
+        toast.success("Order placed successfully!");
+        navigate("/");
+      } catch (error) {
+        console.error("Error placing order:", error);
+        toast.error("Failed to place order: " + error.message);
+      } finally {
+        setPlacingOrder(false);
+      }
+    } else {
+      // 6. Else branch: Payment mode is not Pay Later.
+      // Save order with payment mode "pending" and payment status "PG", then redirect to payment page.
+      try {
+        orderData.paymentMode = "pending";
+        orderData.orderStatus = "PG";
+        orderData.paymentDone = false;
+        const orderDocRef = await addDoc(collection(db, "orders"), orderData);
+        console.log("Order saved (PG mode) with id:", orderDocRef.id);
+        navigate("/payment", { state: orderData });
+      } catch (error) {
+        console.error("Error saving order for payment:", error);
+        toast.error("Failed to save order for payment: " + error.message);
+      }
     }
   };
-
+  
+  
   // Cancel button: return to cart page
   const handleCancel = () => {
     navigate("/cart");
