@@ -1,3 +1,4 @@
+// src/Pages/TagProducts.js
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Grid, CircularProgress } from "@mui/material";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
@@ -45,9 +46,16 @@ export default function TagProducts() {
               id: productId,
               title: productData.title,
               image: productData.coverImage || productPlaceholder,
-              price: productData.sizes?.[0]?.pricePerPiece || 0,
-              sizes: productData.sizes || [],
+              price:
+                productData.sizes && productData.sizes.length > 0
+                  ? productData.sizes[0].pricePerPiece
+                  : 0,
+              sizes:
+                productData.sizes && productData.sizes.length > 0
+                  ? productData.sizes
+                  : [],
               fabric: productData.fabric || "",
+              additionalImages: productData.additionalImages || [productPlaceholder],
             });
           }
         }
@@ -72,17 +80,17 @@ export default function TagProducts() {
   };
 
   return (
-    <div container sx={{ mt: 4, mb: 4,  fontFamily: "Plus Jakarta Sans, sans-serif", }}>
+    <div style={{ padding:"0px 40px", marginTop: "32px", marginBottom: "32px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
       {loading ? (
-        <CircularProgress sx={{ display: "block", margin: "auto" }} />
+        <CircularProgress style={{ display: "block", margin: "auto" }} />
       ) : products.length === 0 ? (
         <Typography variant="body1" align="center">
           No products found for this tag.
         </Typography>
       ) : (
-        <Grid container spacing={2} sx={{ marginTop: "30px" }}>
+        <Grid container spacing={2} style={{ marginTop: "30px" }}>
           {products.map((prod) => (
-            <Grid  item xs={6} md={4} key={prod.id}>
+            <Grid item xs={6} md={4} key={prod.id}>
               <ProductCard
                 product={prod}
                 onView={() => handleViewProduct(prod.id)}
