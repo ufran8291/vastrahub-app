@@ -481,7 +481,7 @@ export default function Homepage() {
         <div
           style={{
             position: "absolute",
-            bottom: "21x0px", 
+            bottom: "210px", 
             left:'8vw',// adjust vertical position as needed
             // left: "40%",
             // transform: "translateX(-40%)",
@@ -535,7 +535,7 @@ export default function Homepage() {
           </div>
           </div>
         </div>
-        {heroBannerTag && (
+        {heroBannerTag ?
           <Button
             variant="contained"
             onClick={() =>
@@ -557,9 +557,30 @@ export default function Homepage() {
             }}
           >
             SHOP NOW
+          </Button>:<Button
+            variant="contained"
+            onClick={() =>
+              navigate("/about-us")
+            }
+            sx={{
+              position: "absolute",
+              bottom: "100px", // position button below the texts
+              left: "8vw",
+              // transform: "translateX(-50%)",
+              backgroundColor: "#000",
+              color: "#fff",
+              textTransform: "none",
+              fontSize: "1.2rem",
+              paddingLeft: "30px",
+              paddingRight: "30px",
+              paddingTop: "20px",
+              paddingBottom: "20px",
+            }}
+          >
+            ABOUT US
           </Button>
           
-        )}
+        }
       </div>
 
 

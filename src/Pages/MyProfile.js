@@ -427,7 +427,7 @@ export default function MyProfile() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/help")}
+                onClick={() => navigate("/contact")}
                 style={{
                   flex: "1 1 200px",
                   minWidth: "200px",

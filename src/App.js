@@ -124,7 +124,7 @@ function App() {
           element: withTransition(<ShopByCategory />),
         },
         {
-          path: "/help",
+          path: "/contact",
           element: withTransition(<HelpPage />),
         },
         {

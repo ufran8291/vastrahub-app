@@ -29,7 +29,7 @@ export default function Footer() {
     const content = `The phone number ${phoneNumberUser.trim()} wants to join the WhatsApp broadcast channel.`;
     try {
       const emailResponse = await sendEmail({
-        email: "talbanimohit28@gmail.com",
+        email: "vastrahub.store@gmail.com",
         subject,
         content,
       });
@@ -116,7 +116,7 @@ export default function Footer() {
                   fontSize: '15px',
                   cursor: 'pointer',
                 }}
-                onClick={() => navigate("/careers")}
+                onClick={() => navigate("/contact")}
               >
                 Careers
               </li>
@@ -127,7 +127,7 @@ export default function Footer() {
                   fontSize: '15px',
                   cursor: 'pointer',
                 }}
-                onClick={() => navigate("/contact-us")}
+                onClick={() => navigate("/contact")}
               >
                 Contact Us
               </li>
@@ -178,17 +178,26 @@ export default function Footer() {
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>CONTACT</h4>
             <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Friday</p>
             <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>9am–5pm IST or email anytime!</p>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>hello@vastrahubl.com</p>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px' }}>+91234567890</p>
+            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>vastrahub.store@gmail.com</p>
+            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px' }}>+918275334335</p>
           </div>
         </div>
 
         {/* Social Icons and Payment Methods */}
         <div className="socials-payment d-flex justify-content-between align-items-center" style={{ marginTop:'50px', marginBottom: '50px' }}>
           <div className="social-icons d-flex">
-            <FaInstagram style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
-            <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
-            <FaFacebook style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} />
+            <FaInstagram 
+              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
+              onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")}
+            />
+            <FaWhatsapp 
+              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
+              onClick={() => window.open("https://wa.me/918275334335", "_blank")}
+            />
+            <FaFacebook 
+              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
+              onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")}
+            />
           </div>
           <div className="payment-methods d-flex">
             <FaInstagram style={{ fontSize: '24px', marginRight: '15px' }} />
@@ -203,7 +212,10 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="bottom-footer d-flex justify-content-between align-items-center">
           <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px' }}>© 2024 VastraHub Clothing</p>
-          <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px' }}>
+          <p
+            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px', cursor: 'pointer' }}
+            onClick={() => window.location.href = "https://visionforgetech.web.app/"}
+          >
             Made with <span style={{ color: 'red' }}>❤️</span> by VisionForge
           </p>
         </div>

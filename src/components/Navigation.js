@@ -140,19 +140,19 @@ export default function Navigation() {
               src={callIcon}
               alt="Call"
               style={{ height: "16px", marginRight: "8px", cursor: "pointer" }}
-              onClick={() => window.open("tel:+917757838011")}
+              onClick={() => window.open("tel:+918275334335")}
             />
           </Tooltip>
-          <Tooltip title="Click to call +91 7757838011" arrow>
+          <Tooltip title="Click to call +91 8275334335" arrow>
             <span
               style={{
                 fontSize: 12,
                 cursor: "pointer",
                 textDecoration: "underline",
               }}
-              onClick={() => window.open("tel:+917757838011")}
+              onClick={() => window.open("tel:+918275334335")}
             >
-              Call us on +91 7757838011
+              Call us on +91 8275334335
             </span>
           </Tooltip>
         </div>
@@ -177,7 +177,7 @@ export default function Navigation() {
               style={{ margin: "0 8px", cursor: "pointer" }}
               alt="WhatsApp"
               onClick={() =>
-                window.open("https://wa.me/917757838011", "_blank")
+                window.open("https://wa.me/918275334335", "_blank")
               }
             />
           </Tooltip>
