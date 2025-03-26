@@ -491,6 +491,7 @@ export default function OrderPage() {
         }
   
         toast.success("Order placed successfully!");
+        await clearCart();
         navigate("/");
       } catch (error) {
         console.error("Error placing order:", error);
@@ -507,6 +508,7 @@ export default function OrderPage() {
         orderData.paymentDone = false;
         const orderDocRef = await addDoc(collection(db, "orders"), orderData);
         console.log("Order saved (PG mode) with id:", orderDocRef.id);
+        // TODO: handle payment here 
         navigate("/payment", { state: orderData });
       } catch (error) {
         console.error("Error saving order for payment:", error);
