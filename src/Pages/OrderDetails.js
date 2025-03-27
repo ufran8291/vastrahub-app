@@ -135,16 +135,16 @@ export default function OrderDetails() {
             <Typography variant="h6">Shipping Details</Typography>
           </Box>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="body1">Address: {order.address}</Typography>
+          <Typography variant="body1">Address: {order.userAddress}</Typography>
           <Typography variant="body1">Transport: {order.transport}</Typography>
-          <Typography variant="body1">Email: {order.email}</Typography>
-          <Typography variant="body1">Phone: {order.phone}</Typography>
+          <Typography variant="body1">Email: {order.userEmail}</Typography>
+          <Typography variant="body1">Phone: {order.userPhone}</Typography>
           {order.alternatePhone && (
             <Typography variant="body1">
-              Alternate Phone: {order.alternatePhone}
+              Alternate Phone: {order.userAlternatePhone}
             </Typography>
           )}
-          <Typography variant="body1">GSTIN/PAN: {order.gstinPan}</Typography>
+          <Typography variant="body1">GSTIN/PAN: {order.userGstinPan}</Typography>
           {order.payLater && (
             <Typography variant="body1" sx={{ color: "green", fontWeight: "bold" }}>
               Payment Method: Pay Later

@@ -57,6 +57,15 @@ export default function MyOrders() {
         id: docSnap.id,
         ...docSnap.data(),
       }));
+  
+      // Optionally, sort manually if needed:
+      fetchedOrders.sort((a, b) => {
+        // Convert createdAt to Date objects if they're Firestore Timestamps.
+        const dateA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+        const dateB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+        return dateB - dateA; // descending order: latest first
+      });
+  
       setOrders(fetchedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -65,6 +74,7 @@ export default function MyOrders() {
       setLoadingOrders(false);
     }
   };
+  
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";

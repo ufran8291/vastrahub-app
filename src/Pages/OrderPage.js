@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   Button,
   CircularProgress,
+  Backdrop, // <-- Import Backdrop from MUI
 } from "@mui/material";
 import {
   collection,
@@ -53,14 +54,17 @@ export default function OrderPage() {
   const [tax, setTax] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
+  // Order placement state
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [orderStatus, setOrderStatus] = useState(""); // new state for dynamic status messages
+
   const {
     syncStockData,
     checkStockAvailability,
     sendEmail,
     syncStockDataForIds,
     createSalesOrder,
-  } = useContext(GlobalContext); 
+  } = useContext(GlobalContext);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -137,10 +141,16 @@ export default function OrderPage() {
   };
 
   const handlePlaceOrder = async () => {
+    // Begin order placement process and show overlay loader
+    setPlacingOrder(true);
+    setOrderStatus("Validating order details...");
+    
     // 1. Check if user is logged in.
     if (!isLoggedIn) {
       toast.info("Please log in to place an order.");
       navigate("/otp-verify");
+      setPlacingOrder(false);
+      setOrderStatus("");
       return;
     }
     
@@ -153,16 +163,19 @@ export default function OrderPage() {
     );
     if (totalBoxesOrdered < 2) {
       toast.error("Please order at least 2 boxes in total.");
+      setPlacingOrder(false);
+      setOrderStatus("");
       return;
     }
     if (grandTotal < 10000) {
       toast.error("Grand total must be at least ₹10,000.");
+      setPlacingOrder(false);
+      setOrderStatus("");
       return;
     }
   
     // 3. Confirm stock availability for each item in the cart.
-    //    Use cloud function if store is open; if not or if an error occurs,
-    //    fall back to checking stock directly from Firestore.
+    setOrderStatus("Verifying stock availability...");
     let stockCheckPassed = true;
     try {
       // First, get store status from Firestore.
@@ -212,7 +225,11 @@ export default function OrderPage() {
       toast.info("Falling back to Firestore for stock verification...");
       stockCheckPassed = await firestoreStockCheck();
     }
-    if (!stockCheckPassed) return;
+    if (!stockCheckPassed) {
+      setPlacingOrder(false);
+      setOrderStatus("");
+      return;
+    }
   
     // Helper function to perform Firestore-based stock check.
     async function firestoreStockCheck() {
@@ -246,7 +263,7 @@ export default function OrderPage() {
     }
   
     // 4. Prepare order totals and the order object.
-    // Ensure each order item has an inventoryId. If missing, fetch it from the product's sizes.
+    setOrderStatus("Preparing order details...");
     const orderItemsData = await Promise.all(
       cartItems.map(async (item) => {
         let invId = item.inventoryId;
@@ -333,7 +350,6 @@ export default function OrderPage() {
   
     // Build the base order object.
     const currentDateTime = new Date();
-
     const orderData = {
       userId: uid,
       userName: firestoreUser.name,
@@ -362,6 +378,7 @@ export default function OrderPage() {
   
     // 5. Branch based on whether the payment mode is "Pay Later" or not.
     if (payLater) {
+      setOrderStatus("Placing your order (Pay Later)...");
       // For Pay Later: Save order immediately.
       orderData.paymentMode = "Dashboard";
       orderData.orderStatus = "ORDERED";
@@ -391,7 +408,6 @@ export default function OrderPage() {
           shippingAddress1: orderData.userAddress,
           shippingCountry: orderData.shippingCountry,
           shippingPincode: orderData.shippingPincode,
-          shippingMobile: orderData.userPhone,
           shippingStateCode: Number(orderData.shippingStateCode),
           shipmentItems: orderData.orderItems.length,
           customerName: orderData.userName,
@@ -423,6 +439,7 @@ export default function OrderPage() {
   
         let createSalesOrderResponse;
         if (isStoreOpen) {
+          setOrderStatus("Processing order via cloud function...");
           try {
             createSalesOrderResponse = await createSalesOrder(newOrderPayload);
             console.log("Cloud Function response:", createSalesOrderResponse);
@@ -469,6 +486,7 @@ export default function OrderPage() {
         }
   
         // Send confirmation email.
+        setOrderStatus("Sending confirmation email...");
         try {
           const emailSubject = "Order Confirmation - Your Order is Placed";
           const emailContent = `Hello ${orderData.userName},
@@ -491,6 +509,7 @@ export default function OrderPage() {
         }
   
         toast.success("Order placed successfully!");
+        setOrderStatus("Order placed successfully!");
         await clearCart();
         navigate("/");
       } catch (error) {
@@ -498,10 +517,11 @@ export default function OrderPage() {
         toast.error("Failed to place order: " + error.message);
       } finally {
         setPlacingOrder(false);
+        setOrderStatus("");
       }
     } else {
       // 6. Else branch: Payment mode is not Pay Later.
-      // Save order with payment mode "pending" and payment status "PG", then redirect to payment page.
+      setOrderStatus("Redirecting to payment gateway...");
       try {
         orderData.paymentMode = "pending";
         orderData.orderStatus = "PG";
@@ -513,10 +533,12 @@ export default function OrderPage() {
       } catch (error) {
         console.error("Error saving order for payment:", error);
         toast.error("Failed to save order for payment: " + error.message);
+      } finally {
+        setPlacingOrder(false);
+        setOrderStatus("");
       }
     }
   };
-  
   
   // Cancel button: return to cart page
   const handleCancel = () => {
@@ -632,8 +654,7 @@ export default function OrderPage() {
           )}
           {isPremium && payLater && (
             <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              You have selected Pay Later. We will contact you regarding
-              payment.
+              You have selected Pay Later. We will contact you regarding payment.
             </Typography>
           )}
         </Box>
@@ -779,6 +800,21 @@ export default function OrderPage() {
           )}
         </Button>
       </Box>
+
+      {/* Overlay Loader using Backdrop */}
+      <Backdrop
+        open={placingOrder}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          color: "#fff",
+          flexDirection: "column",
+        }}
+      >
+        <CircularProgress color="inherit" />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          {orderStatus || "Processing your order, please wait..."}
+        </Typography>
+      </Backdrop>
     </Container>
   );
 }
