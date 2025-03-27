@@ -12,9 +12,10 @@ import {
 import { toast } from "react-toastify";
 import { auth, db } from "../Configs/FirebaseConfig";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../Context/GlobalContext";
+import { v4 as uuidv4 } from "uuid";
 
 // Framer Motion & React Awesome Reveal
 import { motion } from "framer-motion";
@@ -28,6 +29,27 @@ const OTPVerification = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Generate and update session token after successful login
+  const handleSuccessfulLogin = async (userData) => {
+    try {
+      const sessionToken = uuidv4(); // Generate a unique session token
+      console.log("Generated session token:", sessionToken);
+      // Update the user's Firestore document with the new session token.
+      const userDocRef = doc(db, "users", userData.id);
+      await updateDoc(userDocRef, { websiteSessionToken: sessionToken });
+      console.log("Updated Firestore with session token for user:", userData.id);
+      // Save the token locally (e.g., localStorage)
+      localStorage.setItem("websiteSessionToken", sessionToken);
+      console.log("Session token stored locally.");
+      // Update global context and navigate as per userStage logic
+      updateFirestoreUser(userData);
+      navigate("/");
+    } catch (error) {
+      console.error("Error updating session token:", error);
+      toast.error("Failed to set up your session. Please try again.");
+    }
+  };
 
   // Function to send OTP
   const handleSendOtp = async () => {
@@ -105,7 +127,8 @@ const OTPVerification = () => {
       const snapshot = await getDocs(q);
       let userData = null;
       if (!snapshot.empty) {
-        userData = snapshot.docs[0].data();
+        userData = { uid: result.user.uid, ...snapshot.docs[0].data() };
+        console.log("User found by primaryPhone:", userData);
       } else {
         const altQ = query(
           usersRef,
@@ -113,13 +136,14 @@ const OTPVerification = () => {
         );
         const altSnapshot = await getDocs(altQ);
         if (!altSnapshot.empty) {
-          userData = altSnapshot.docs[0].data();
+          userData = { uid: result.user.uid, ...altSnapshot.docs[0].data() };
+          console.log("User found by alternatePhone:", userData);
         }
       }
       // Handle different user stages
       if (userData) {
         const { userStage } = userData;
-        console.log("User found:", userData);
+        console.log("User stage:", userStage);
         if (userStage === 5) {
           signOutUser();
           navigate("/request-pending");
@@ -137,15 +161,17 @@ const OTPVerification = () => {
           return;
         }
         if (userStage === 10 || userStage === 20) {
-          updateFirestoreUser(userData);
-          navigate("/");
+          console.log("Successful login for user with stage", userStage);
+          // Successful login - update session token and proceed.
+          await handleSuccessfulLogin(userData);
           return;
         }
+        console.log("User stage did not match known values; signing out.");
         signOutUser();
         navigate("/");
         return;
       }
-      // If no user found => new user: redirect to registration
+      console.log("No user found; redirecting to registration.");
       navigate("/register");
     } catch (error) {
       console.error("Error verifying OTP:", error);
