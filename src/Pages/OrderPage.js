@@ -412,7 +412,7 @@ export default function OrderPage() {
           shippingPincode: orderData.shippingPincode,
           shippingStateCode: Number(orderData.shippingStateCode),
           shipmentItems: orderData.orderItems.length,
-          customerName: orderData.userName,
+          customerName: orderData.userBusinessName,
           customerMobile: orderData.userPhone,
           customerEmail: orderData.userEmail,
           orderRemarks: orderData.orderRemarks,
