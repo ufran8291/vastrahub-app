@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "vastrahub-ef0c1"
+  },
+  "targets": {
+    "vastrahub-ef0c1": {
+      "hosting": {
+        "ecommerce": [
+          "vastrahub-ecommerce-store"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
