@@ -5,18 +5,19 @@ import { toast } from "react-toastify";
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
-  getFirestore,
+  query,
+  where,
+  onSnapshot,
   updateDoc,
+  getFirestore,
+  getDoc,
 } from "firebase/firestore";
 
 export const GlobalContext = createContext();
 
 export const GlobalProvider = ({ children }) => {
-  // User data from Firebase auth
   const [currentUser, setCurrentUser] = useState(null);
-  // User data from Firestore for the corresponding user.
   const [firestoreUser, setFirestoreUser] = useState(null);
 
   const signOutUser = async () => {
@@ -24,6 +25,7 @@ export const GlobalProvider = ({ children }) => {
       await auth.signOut();
       setCurrentUser(null);
       setFirestoreUser(null);
+      localStorage.removeItem("websiteSessionToken");
       console.log("User signed out globally.");
       toast.success("Logged Out");
     } catch (error) {
@@ -40,20 +42,55 @@ export const GlobalProvider = ({ children }) => {
     }
   };
 
+  const checkSessionTokenConsistency = async () => {
+    if (!currentUser) return;
+    try {
+      // Use the Firestore user's document id if available; otherwise fall back to currentUser.uid.
+      const userDocId =  firestoreUser.id ;
+      console.log("Checking session token consistency for user document:", firestoreUser);
+      console.log("Checking session token consistency for user document:", userDocId);
+      
+      // Directly get the user document from the "users" collection.
+      const userDocRef = doc(db, "users", userDocId);
+      const docSnap = await getDoc(userDocRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const localToken = localStorage.getItem("websiteSessionToken");
+        console.log("Local session token:", localToken, "Firestore session token:", data.websiteSessionToken);
+        // If the session token in Firestore does not match the local token, sign out the user.
+        if (data.websiteSessionToken && data.websiteSessionToken !== localToken) {
+          toast.error("You have been logged out because your account was signed in on another device.");
+          await signOutUser();
+        }
+      } else {
+        console.log("No matching user document found for document id:", userDocId);
+      }
+    } catch (error) {
+      console.error("Error checking session token consistency:", error);
+    }
+  };
+  
+
+  // Example: You might call checkSessionTokenConsistency() on critical actions or periodically.
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     checkSessionTokenConsistency();
+  //   }, 60000); // check every 60 seconds
+  //   return () => clearInterval(intervalId);
+  // }, [currentUser]);
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
       if (user) {
-        console.log(
-          "GlobalContext: Detected sign-in with phone:",
-          user.phoneNumber
-        );
+        console.log("GlobalContext: Detected sign-in with phone:", user.phoneNumber);
+        //update uid to the user object with user.uid from firbase auth
+        // Optionally, you can call checkSessionTokenConsistency() here as well.
+        checkSessionTokenConsistency();
       } else {
         console.log("GlobalContext: Detected sign-out.");
       }
     });
-
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -234,6 +271,7 @@ export const GlobalProvider = ({ children }) => {
     firestoreUser, // Firestore user data
     updateFirestoreUser, // Function to update Firestore user data
     signOutUser,
+    checkSessionTokenConsistency,
     fetchGoFrugalItems,
     syncStockData,
     syncStockDataForIds,

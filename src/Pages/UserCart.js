@@ -23,7 +23,7 @@ import CartImage from '../assets/cartimage.png';
 
 export default function UserCart() {
   const navigate = useNavigate();
-  const { currentUser, firestoreUser } = useContext(GlobalContext);
+  const { currentUser, firestoreUser,checkSessionTokenConsistency } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id;
 
@@ -41,6 +41,7 @@ export default function UserCart() {
       navigate("/otp-verify");
       return;
     }
+    checkSessionTokenConsistency();
     fetchCartItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);

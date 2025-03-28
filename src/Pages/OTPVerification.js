@@ -42,6 +42,7 @@ const OTPVerification = () => {
       // Save the token locally (e.g., localStorage)
       localStorage.setItem("websiteSessionToken", sessionToken);
       console.log("Session token stored locally.");
+      console.warn(userData)
       // Update global context and navigate as per userStage logic
       updateFirestoreUser(userData);
       navigate("/");

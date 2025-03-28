@@ -194,7 +194,7 @@ function CategoryCard2({ category, onClick }) {
 
 export default function Homepage() {
   const navigate = useNavigate();
-  const { currentUser, firestoreUser } = useContext(GlobalContext);
+  const { currentUser, firestoreUser, checkSessionTokenConsistency } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
   // Loader state
@@ -393,6 +393,7 @@ export default function Homepage() {
 
   // ------------------ Fetch Tag IDs for Featured Sections ------------------
   useEffect(() => {
+    checkSessionTokenConsistency()
     const fetchTagIds = async () => {
       const tagId1 = await getTagIdByTitle("Featured Products");
       const tagId2 = await getTagIdByTitle("Featured Products 2");

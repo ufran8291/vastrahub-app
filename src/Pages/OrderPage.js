@@ -64,6 +64,7 @@ export default function OrderPage() {
     sendEmail,
     syncStockDataForIds,
     createSalesOrder,
+    checkSessionTokenConsistency,
   } = useContext(GlobalContext);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function OrderPage() {
       navigate("/otp-verify");
       return;
     }
+    checkSessionTokenConsistency();
     // Pre-fill user details from firestoreUser
     setAddress(firestoreUser.address || "");
     setTransport(firestoreUser.transportService || "");

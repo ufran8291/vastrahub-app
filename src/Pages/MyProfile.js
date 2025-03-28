@@ -22,7 +22,7 @@ import { motion } from "framer-motion";
 
 export default function MyProfile() {
   const navigate = useNavigate();
-  const { currentUser, firestoreUser, signOutUser } = useContext(GlobalContext);
+  const { currentUser, firestoreUser, signOutUser,checkSessionTokenConsistency } = useContext(GlobalContext);
 
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const [userDocId, setUserDocId] = useState(null);
@@ -50,7 +50,7 @@ export default function MyProfile() {
       navigate("/otp-verify");
       return;
     }
-
+    checkSessionTokenConsistency();
     if (firestoreUser) {
       setProfileData({
         fullName: firestoreUser.name || "",
