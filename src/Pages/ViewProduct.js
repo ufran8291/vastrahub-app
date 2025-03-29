@@ -34,7 +34,7 @@ const ViewProduct = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingSizes, setLoadingSizes] = useState(true);
-  const [sizesSynced, setSizesSynced] = useState(false); // NEW: flag to ensure sizes are synced only once
+  const [sizesSynced, setSizesSynced] = useState(false); // flag to ensure sizes are synced only once
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [sizesQuantity, setSizesQuantity] = useState([]);
   const [existingCartItems, setExistingCartItems] = useState({});
@@ -127,7 +127,7 @@ const ViewProduct = () => {
     async function syncSizes() {
        // Only sync sizes if user is logged in
        if (!isLoggedIn) {
-        console.log('not logged in skipping stock sync')
+        console.log('Not logged in - skipping stock sync');
         setLoadingSizes(false);
         return;
       }
@@ -169,7 +169,7 @@ const ViewProduct = () => {
       }
     }
     syncSizes();
-  }, [product, productId, sizesSynced, syncStockDataForIds, existingCartItems]);
+  }, [product, productId, sizesSynced, syncStockDataForIds, existingCartItems, isLoggedIn]);
 
   // ---------- Effect: Preload Images ----------
   useEffect(() => {
@@ -262,7 +262,7 @@ const ViewProduct = () => {
             quantity: boxesSelected,
             noOfPieces,
             updatedAt: new Date(),
-            inventoryId:sizeObj.inventoryId,
+            inventoryId: sizeObj.inventoryId,
           };
           if (mapping[sizeObj.size]) {
             const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);
@@ -293,12 +293,15 @@ const ViewProduct = () => {
   const handleMouseEnter = () => {
     if (getCurrentImageUrl()) setShowMagnifier(true);
   };
+
   const handleMouseLeave = () => setShowMagnifier(false);
+
   const handleMouseMove = (e) => {
     if (!imgContainerRef.current) return;
     const { left, top, width, height } = imgContainerRef.current.getBoundingClientRect();
-    const x = e.pageX - left - window.scrollX;
-    const y = e.pageY - top - window.scrollY;
+    // Use clientX/clientY since getBoundingClientRect returns viewport-relative values.
+    const x = e.clientX - left;
+    const y = e.clientY - top;
     const lensRadius = magnifierSize / 2;
     const clampedX = Math.max(lensRadius, Math.min(x, width - lensRadius));
     const clampedY = Math.max(lensRadius, Math.min(y, height - lensRadius));
@@ -399,27 +402,30 @@ const ViewProduct = () => {
               <AiOutlineArrowRight />
             </button>
           )}
-          {showMagnifier && (
-            <div
-              style={{
-                position: "absolute",
-                pointerEvents: "none",
-                width: magnifierSize + "px",
-                height: magnifierSize + "px",
-                borderRadius: "50%",
-                overflow: "hidden",
-                top: magnifierPos.y - magnifierSize / 2,
-                left: magnifierPos.x - magnifierSize / 2,
-                border: "2px solid #999",
-                boxSizing: "border-box",
-                backgroundImage: `url('${getCurrentImageUrl()}')`,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: `${600 * zoomScale}px ${450 * zoomScale}px`,
-                backgroundPositionX: -(magnifierPos.x * zoomScale - magnifierSize / 2),
-                backgroundPositionY: -(magnifierPos.y * zoomScale - magnifierSize / 2),
-              }}
-            />
-          )}
+          {showMagnifier && imgContainerRef.current && (() => {
+            const { width, height } = imgContainerRef.current.getBoundingClientRect();
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  pointerEvents: "none",
+                  width: magnifierSize + "px",
+                  height: magnifierSize + "px",
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  top: magnifierPos.y - magnifierSize / 2,
+                  left: magnifierPos.x - magnifierSize / 2,
+                  border: "2px solid #999",
+                  boxSizing: "border-box",
+                  backgroundImage: `url('${getCurrentImageUrl()}')`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: `${width * zoomScale}px ${height * zoomScale}px`,
+                  backgroundPositionX: `-${magnifierPos.x * zoomScale - magnifierSize / 2}px`,
+                  backgroundPositionY: `-${magnifierPos.y * zoomScale - magnifierSize / 2}px`,
+                }}
+              />
+            );
+          })()}
         </div>
         {totalImagesCount > 1 && (
           <div
@@ -514,9 +520,6 @@ const ViewProduct = () => {
                         ? `Price/Piece: ₹${sizeObj.pricePerPiece} | Pieces/Box: ${sizeObj.boxPieces}`
                         : `Price/Piece: -- | Pieces/Box: ${sizeObj.boxPieces}`}
                     </p>
-                    {/* <p style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "14px", color: "#555", marginBottom: "0px" }}>
-                      Boxes in Stock: {availableBoxes}
-                    </p> */}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <button
