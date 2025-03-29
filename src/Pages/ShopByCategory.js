@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
-import { Grid, Box, Typography } from "@mui/material";
+import { Grid, Box, Typography, Menu, MenuItem } from "@mui/material"; // <-- Added Menu & MenuItem
 import ProductCard from "../components/ProductCard";
 import categoryPlaceholder from "../assets/categoryplaceholder.png";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
@@ -37,7 +37,28 @@ export default function ShopByCategory() {
   const [allSubcatsFromProducts, setAllSubcatsFromProducts] = useState([]);
   const [selectedSubcats, setSelectedSubcats] = useState([]);
   const [overlayProduct, setOverlayProduct] = useState(null);
+
+  // New state for Price Range filter
+  const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+  const [priceAnchorEl, setPriceAnchorEl] = useState(null); // Anchor for MUI Menu
+
   const catSubCategories = category?.subCategories || [];
+
+  // Define available price ranges.
+  const priceRanges = [
+    { label: "Clear Filter", value: null }, // Option to clear the price filter
+    { label: "Less than 200", value: { min: 0, max: 200 } },
+    { label: "200 - 300", value: { min: 200, max: 300 } },
+    { label: "300 - 400", value: { min: 300, max: 400 } },
+    { label: "400 - 500", value: { min: 400, max: 500 } },
+    { label: "500 - 600", value: { min: 500, max: 600 } },
+    { label: "600 - 700", value: { min: 600, max: 700 } },
+    { label: "700 - 800", value: { min: 700, max: 800 } },
+    { label: "800 - 900", value: { min: 800, max: 900 } },
+    { label: "900 - 1000", value: { min: 900, max: 1000 } },
+    // Add additional ranges as needed
+    { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
+  ];
 
   useEffect(() => {
     if (!category) return;
@@ -74,12 +95,25 @@ export default function ShopByCategory() {
     fetchCategoryProducts();
   }, [category, catSubCategories]);
 
+  // Update filteredProducts to include price filtering
   const filteredProducts = allProducts.filter((prod) => {
-    if (selectedSubcats.length === 0) return true;
-    if (Array.isArray(prod.subcategory)) {
-      return prod.subcategory.some((sc) => selectedSubcats.includes(sc));
+    // Subcategory filtering
+    const passesSubcat =
+      selectedSubcats.length === 0 ||
+      (Array.isArray(prod.subcategory)
+        ? prod.subcategory.some((sc) => selectedSubcats.includes(sc))
+        : selectedSubcats.includes(prod.subcategory));
+
+    // Price filtering: if a price range is selected, calculate the product price
+    let passesPrice = true;
+    if (selectedPriceRange) {
+      const productPrice =
+        prod.sizes && prod.sizes.length > 0 ? prod.sizes[0].pricePerPiece : 0;
+      passesPrice =
+        productPrice >= selectedPriceRange.min &&
+        productPrice < selectedPriceRange.max;
     }
-    return selectedSubcats.includes(prod.subcategory);
+    return passesSubcat && passesPrice;
   });
 
   const handleToggleSubcat = (sub) => {
@@ -101,7 +135,7 @@ export default function ShopByCategory() {
     setOverlayProduct(product);
   };
 
-  // Motion variants for subcategory buttons
+  // Motion variants for filter chips (subcategory & price)
   const subcatVariants = {
     hover: { scale: 1.05 },
     tap: { scale: 0.95 },
@@ -139,6 +173,7 @@ export default function ShopByCategory() {
               Filter by subcategory:
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {/* Existing subcategory chips */}
               {allSubcatsFromProducts.length === 0 ? (
                 <Typography variant="body2" sx={{ color: "#666", textAlign: "center" }}>
                   No subcategories found for this category.
@@ -171,6 +206,45 @@ export default function ShopByCategory() {
                   );
                 })
               )}
+              {/* New Price Range filter chip */}
+              <motion.div
+                variants={subcatVariants}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={(e) => setPriceAnchorEl(e.currentTarget)}
+                style={{
+                  padding: "8px 16px",
+                  border: `1px solid ${selectedPriceRange ? "#333" : "#ccc"}`,
+                  backgroundColor: selectedPriceRange ? "#333" : "#fff",
+                  color: selectedPriceRange ? "#fff" : "#333",
+                  borderRadius: "20px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  userSelect: "none",
+                  transition: "background-color 0.3s, color 0.3s",
+                }}
+              >
+                Price Range
+              </motion.div>
+              {/* Price Range dropdown */}
+              <Menu
+                anchorEl={priceAnchorEl}
+                open={Boolean(priceAnchorEl)}
+                onClose={() => setPriceAnchorEl(null)}
+              >
+                {priceRanges.map((range) => (
+                  <MenuItem
+                    key={range.label}
+                    onClick={() => {
+                      setSelectedPriceRange(range.value);
+                      setPriceAnchorEl(null);
+                    }}
+                  >
+                    {range.label}
+                  </MenuItem>
+                ))}
+              </Menu>
             </Box>
           </Box>
         </Box>
@@ -197,7 +271,7 @@ export default function ShopByCategory() {
                   title: prod.title,
                   fabric: prod.fabric,
                   image: prod.coverImage || productPlaceholder,
-            additionalImages:prod.additionalImages || [productPlaceholder],
+                  additionalImages: prod.additionalImages || [productPlaceholder],
                   price:
                     prod.sizes && prod.sizes.length > 0
                       ? prod.sizes[0].pricePerPiece
