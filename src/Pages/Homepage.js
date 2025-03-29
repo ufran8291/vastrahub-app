@@ -322,8 +322,11 @@ export default function Homepage() {
           name: docSnap.data().categoryName || "UNNAMED",
           image: docSnap.data().imageUrl || null,
           subCategories: docSnap.data().subCategories || [],
+          order:docSnap.data().categoryName || 0,
         });
       });
+       // Sort categories by the order field (lowest value first)
+       cats.sort((a, b) => a.order - b.order);
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
