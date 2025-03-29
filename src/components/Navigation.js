@@ -44,7 +44,7 @@ export default function Navigation() {
           name: doc.data().categoryName || "UNNAMED",
           image: doc.data().imageUrl || null, // Include image if available
           subCategories: doc.data().subCategories || [],
-          order:doc.data().categoryName || 0,
+          order:doc.data().order || 0,
         });
       });
       // Sort categories by the order field (lowest value first)

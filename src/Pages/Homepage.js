@@ -322,7 +322,7 @@ export default function Homepage() {
           name: docSnap.data().categoryName || "UNNAMED",
           image: docSnap.data().imageUrl || null,
           subCategories: docSnap.data().subCategories || [],
-          order:docSnap.data().categoryName || 0,
+          order:docSnap.data().order || 0,
         });
       });
        // Sort categories by the order field (lowest value first)
