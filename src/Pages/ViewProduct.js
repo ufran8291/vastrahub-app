@@ -513,9 +513,9 @@ const ViewProduct = () => {
                         ? `Price/Piece: ₹${sizeObj.pricePerPiece} | Pieces/Box: ${sizeObj.boxPieces}`
                         : `Price/Piece: -- | Pieces/Box: ${sizeObj.boxPieces}`}
                     </p>
-                    <p style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "14px", color: "#555", marginBottom: "0px" }}>
+                    {/* <p style={{ fontFamily: "Plus Jakarta Sans, sans-serif", fontSize: "14px", color: "#555", marginBottom: "0px" }}>
                       Boxes in Stock: {availableBoxes}
-                    </p>
+                    </p> */}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <button

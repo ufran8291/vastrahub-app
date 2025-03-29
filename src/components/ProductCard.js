@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Tooltip } from "@mui/material";
 import PixelTransition from "../Bits/PixelTransition";
+import { GlobalContext } from "../Context/GlobalContext";
 
 const ProductCard = ({ product, onView, onAdd }) => {
+  const { currentUser, firestoreUser, checkSessionTokenConsistency } = useContext(GlobalContext);
+    const isLoggedIn = !!currentUser && !!firestoreUser; 
   return (
     <div
       style={{
@@ -104,7 +107,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
               margin: 0,
             }}
           >
-            From ₹ {product.price}
+            From ₹ {isLoggedIn? product.price:'XXX (Login to view)'}
           </p>
         </div>
         <p

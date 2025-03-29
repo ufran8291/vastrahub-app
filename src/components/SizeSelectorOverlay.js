@@ -301,9 +301,9 @@ export default function SizeSelectorOverlay({ product, onClose }) {
               >
                 <strong style={{ fontSize: "16px" }}>
                   Size: {sizeObj.size}{" "}
-                  <span title={tooltipText} style={{ fontWeight: "normal", fontSize: "14px", color: "#555" }}>
+                  {/* <span title={tooltipText} style={{ fontWeight: "normal", fontSize: "14px", color: "#555" }}>
                     (Stock: {availableStock})
-                  </span>
+                  </span> */}
                 </strong>
                 <div style={{ fontSize: "14px", color: "#555" }}>
                   Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
