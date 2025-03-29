@@ -262,6 +262,7 @@ const ViewProduct = () => {
             quantity: boxesSelected,
             noOfPieces,
             updatedAt: new Date(),
+            inventoryId:sizeObj.inventoryId,
           };
           if (mapping[sizeObj.size]) {
             const docRef = doc(db, "users", uid, "cart", mapping[sizeObj.size].docId);

@@ -188,6 +188,7 @@ export default function SizeSelectorOverlay({ product, onClose }) {
             quantity: sq.quantity, // boxes selected
             noOfPieces, // total pieces calculated
             updatedAt: new Date(),
+            inventoryId:sq.inventoryId,
           };
           if (existing) {
             // Update the existing cart document.
