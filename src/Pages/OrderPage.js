@@ -28,7 +28,7 @@ import { toast } from "react-toastify";
 // Framer Motion & React Awesome Reveal
 import { motion } from "framer-motion";
 import { Fade } from "react-awesome-reveal";
-
+import { v4 as uuidv4 } from 'uuid';
 export default function OrderPage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser } = useContext(GlobalContext);
@@ -102,6 +102,26 @@ export default function OrderPage() {
       setLoadingCart(false);
     }
   };
+  function generateUniqueReference(userPhone) {
+    // Get current timestamp as a string
+    const nowStr = Date.now().toString();
+    // Extract the last 8 digits of the timestamp
+    const timestampPart = nowStr.slice(-8);
+    
+    // Ensure the user's phone is a string and extract the last 6 digits
+    const phonePart = userPhone.toString().slice(-6);
+    
+    // Generate a UUID and derive one numeric digit from it.
+    // For example, take a substring of the UUID, convert from hex, and mod 10.
+    const uuidVal = uuidv4();
+    const randomDigit = (parseInt(uuidVal.substring(0, 5), 16) % 10).toString();
+    
+    // Concatenate to form a 15-digit unique ID
+    console.log(timestampPart + randomDigit + phonePart);
+    // Concatenate to form a 15-digit unique ID
+    return timestampPart + randomDigit + phonePart;
+  }
+  
 
   // Calculate totals using:
   // lineTotal = noOfPieces * pricePerPiece
@@ -143,6 +163,10 @@ export default function OrderPage() {
   };
 
   const handlePlaceOrder = async () => {
+
+    console.log('initiating order for ' + cartItems);
+    console.log(cartItems);
+    // return;
     // Begin order placement process and show overlay loader
     setPlacingOrder(true);
     setOrderStatus("Validating order details...");
@@ -391,10 +415,11 @@ export default function OrderPage() {
         console.log("Saving order (Pay Later)...", orderData);
         const orderDocRef = await addDoc(collection(db, "orders"), orderData);
         console.log("Order saved in Firestore with id:", orderDocRef.id);
+        const onlineReferenceNogen =  generateUniqueReference(orderData.userPhone);
   
         // Prepare payload for cloud function.
         const newOrderPayload = {
-          onlineReferenceNo: Number((orderData.userPhone + Date.now()).slice(0, 15)),
+           onlineReferenceNo : onlineReferenceNogen,
           createdAt: currentISODate,
           totalTaxAmount: Number(orderData.gst),
           totalDiscountAmount: 0.0,
@@ -407,6 +432,7 @@ export default function OrderPage() {
           paymentMode: orderData.paymentMode,
           shippingId: orderData.userId,
           shippingName: orderData.userName,
+          shippingMobile: orderData.userPhone,
           shippingAddress1: orderData.userAddress,
           shippingCountry: orderData.shippingCountry,
           shippingPincode: orderData.shippingPincode,

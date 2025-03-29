@@ -21,7 +21,8 @@
     "react-scripts": "5.0.1",
     "react-toastify": "^10.0.6",
     "react-typed": "^2.0.12",
-    "slick-carousel": "^1.8.1"
+    "slick-carousel": "^1.8.1",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
