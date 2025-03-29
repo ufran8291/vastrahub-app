@@ -139,9 +139,9 @@ const HelpPage = () => {
   const navigate = useNavigate();
 
   // Sample contact details – update these as needed
-  const phoneNumber = "+91 9876543210";
-  const whatsappNumber = "+91 9876543210";
-  const supportEmail = "support@vastrahub.com";
+  const phoneNumber = "+91 8275334335";
+  const whatsappNumber = "+91 8275334335";
+  const supportEmail = "vastrahub.store@gmail.com";
 
   // Handlers for button actions
   const handleCall = () => {
