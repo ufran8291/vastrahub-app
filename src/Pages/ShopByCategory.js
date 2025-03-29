@@ -38,7 +38,7 @@ export default function ShopByCategory() {
   const [selectedSubcats, setSelectedSubcats] = useState([]);
   const [overlayProduct, setOverlayProduct] = useState(null);
 
-  // New state for Price Range filter
+  // New state for Price Range filter - storing the full option object
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
   const [priceAnchorEl, setPriceAnchorEl] = useState(null); // Anchor for MUI Menu
 
@@ -56,7 +56,6 @@ export default function ShopByCategory() {
     { label: "700 - 800", value: { min: 700, max: 800 } },
     { label: "800 - 900", value: { min: 800, max: 900 } },
     { label: "900 - 1000", value: { min: 900, max: 1000 } },
-    // Add additional ranges as needed
     { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
   ];
 
@@ -104,14 +103,14 @@ export default function ShopByCategory() {
         ? prod.subcategory.some((sc) => selectedSubcats.includes(sc))
         : selectedSubcats.includes(prod.subcategory));
 
-    // Price filtering: if a price range is selected, calculate the product price
+    // Price filtering: if a price range is selected, use its value for filtering
     let passesPrice = true;
-    if (selectedPriceRange) {
+    if (selectedPriceRange && selectedPriceRange.value) {
       const productPrice =
         prod.sizes && prod.sizes.length > 0 ? prod.sizes[0].pricePerPiece : 0;
       passesPrice =
-        productPrice >= selectedPriceRange.min &&
-        productPrice < selectedPriceRange.max;
+        productPrice >= selectedPriceRange.value.min &&
+        productPrice < selectedPriceRange.value.max;
     }
     return passesSubcat && passesPrice;
   });
@@ -225,7 +224,8 @@ export default function ShopByCategory() {
                   transition: "background-color 0.3s, color 0.3s",
                 }}
               >
-                Price Range
+                {/* Display the selected range label if set, otherwise default title */}
+                {selectedPriceRange ? selectedPriceRange.label : "Price Range"}
               </motion.div>
               {/* Price Range dropdown */}
               <Menu
@@ -237,7 +237,12 @@ export default function ShopByCategory() {
                   <MenuItem
                     key={range.label}
                     onClick={() => {
-                      setSelectedPriceRange(range.value);
+                      // If "Clear Filter" is selected, clear the state
+                      if (range.value === null) {
+                        setSelectedPriceRange(null);
+                      } else {
+                        setSelectedPriceRange(range);
+                      }
                       setPriceAnchorEl(null);
                     }}
                   >
