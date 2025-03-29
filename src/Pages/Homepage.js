@@ -241,6 +241,11 @@ export default function Homepage() {
       headline: "Secure Payments",
       description: "Safe and reliable transactions, every time.",
     },
+    {
+      svg: svg4,
+      headline: "VastraHub Factory",
+      description: "VastraHub Brand products are crafted in house ensuring finest quality and best rates.",
+    },
   ];
 
   // ------------------ Fetch Hero Banner ------------------
@@ -612,43 +617,51 @@ export default function Homepage() {
       )}
 
       {/* Info Sections */}
-      <div className="container" style={{ padding: "70px 20px" }}>
-        <div className="row">
-          {sections.map((section, i) => (
-            <div
-              className="col-sm-3"
-              key={i}
-              style={{ textAlign: "center", marginBottom: "30px" }}
-            >
-              <img
-                src={section.svg}
-                alt={`Section ${i + 1}`}
-                style={{ height: "80px", marginBottom: "20px" }}
-              />
-              <h2
-                className="scroll-float"
-                style={{
-                  fontFamily: "Lora, serif",
-                  fontWeight: "600",
-                  fontSize: "18px",
-                  marginBottom: "10px",
-                }}
-              >
-                {section.headline}
-              </h2>
-              <p
-                style={{
-                  fontFamily: "Plus Jakarta Sans, sans-serif",
-                  fontSize: "17px",
-                  fontWeight: "400",
-                }}
-              >
-                {section.description}
-              </p>
-            </div>
-          ))}
-        </div>
+     {/* Info Sections */}
+<div className="container" style={{ padding: "70px 20px" }}>
+  <div
+    className="d-flex justify-content-between align-items-stretch"
+    style={{ flexWrap: "nowrap" }}
+  >
+    {sections.map((section, i) => (
+      <div
+        key={i}
+        style={{
+          flex: "1",
+          textAlign: "center",
+          margin: "0 10px",
+        }}
+      >
+        <img
+          src={section.svg}
+          alt={`Section ${i + 1}`}
+          style={{ height: "80px", marginBottom: "20px" }}
+        />
+        <h2
+          className="scroll-float"
+          style={{
+            fontFamily: "Lora, serif",
+            fontWeight: "600",
+            fontSize: "18px",
+            marginBottom: "10px",
+          }}
+        >
+          {section.headline}
+        </h2>
+        <p
+          style={{
+            fontFamily: "Plus Jakarta Sans, sans-serif",
+            fontSize: "17px",
+            fontWeight: "400",
+          }}
+        >
+          {section.description}
+        </p>
       </div>
+    ))}
+  </div>
+</div>
+
 
       {/* Categories Section */}
       <div

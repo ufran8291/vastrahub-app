@@ -193,7 +193,7 @@ export const ProtectedRoute = ({ condition, children }) => {
 function AppWithProvider() {
   return (
     <GlobalProvider>
-      <CustomCursor />
+      {/* <CustomCursor /> */}
       <App />
     </GlobalProvider>
   );
