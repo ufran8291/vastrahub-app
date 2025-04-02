@@ -20,6 +20,7 @@ import {
   AiOutlineArrowRight,
   AiOutlinePlus,
   AiOutlineMinus,
+  AiOutlineDownload,  // <-- New icon import
 } from "react-icons/ai";
 import { CircularProgress } from "@mui/material";
 
@@ -70,6 +71,19 @@ const ViewProduct = () => {
 
   const getCountDistinctSizesSelected = () => {
     return sizesQuantity.filter((q) => q && q > 0).length;
+  };
+
+  // ---------- Download Images Handler ----------
+  const handleDownloadImages = () => {
+    const images = getAllImages();
+    images.forEach((url, index) => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${product.title || "product"}-${index + 1}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
   };
 
   // ---------- Effect: Fetch Product and Initialize Quantities ----------
@@ -446,6 +460,31 @@ const ViewProduct = () => {
           </div>
         )}
       </div>
+
+      {/* ---------- Download Images Button (only if logged in) ---------- */}
+      {isLoggedIn && (
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
+          <button
+            onClick={handleDownloadImages}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#333",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontFamily: "Plus Jakarta Sans, sans-serif",
+              fontSize: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <AiOutlineDownload size={20} />
+            Download Images
+          </button>
+        </div>
+      )}
 
       {/* ---------- Product Title + Starting Price ---------- */}
       <div style={{ marginBottom: "30px" }}>
