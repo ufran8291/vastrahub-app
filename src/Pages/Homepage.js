@@ -1,7 +1,14 @@
 // src/Pages/Homepage.js
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, doc, getDocs, getDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { toast } from "react-toastify";
@@ -20,7 +27,12 @@ import mobileAppImage from "../assets/mobilepp.png";
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
-import { Button, CircularProgress, LinearProgress, Tooltip } from "@mui/material";
+import {
+  Button,
+  CircularProgress,
+  LinearProgress,
+  Tooltip,
+} from "@mui/material";
 import { TbSpeakerphone } from "react-icons/tb";
 import { ReactTyped } from "react-typed";
 import ProductCard from "../components/ProductCard";
@@ -194,7 +206,8 @@ function CategoryCard2({ category, onClick }) {
 
 export default function Homepage() {
   const navigate = useNavigate();
-  const { currentUser, firestoreUser, checkSessionTokenConsistency } = useContext(GlobalContext);
+  const { currentUser, firestoreUser, checkSessionTokenConsistency } =
+    useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
   // Loader state
@@ -244,7 +257,8 @@ export default function Homepage() {
     {
       svg: svg4,
       headline: "VastraHub Factory",
-      description: "VastraHub Brand products are crafted in house ensuring finest quality and best rates.",
+      description:
+        "VastraHub Brand products are crafted in house ensuring finest quality and best rates.",
     },
   ];
 
@@ -258,13 +272,17 @@ export default function Homepage() {
         if (data.imageLink) {
           setHeroBanner(data.imageLink);
         } else {
-          console.log("No imageLink found in hero-banner document. Using default hero image.");
+          console.log(
+            "No imageLink found in hero-banner document. Using default hero image."
+          );
         }
         if (data.hasTag === true && data.tagId) {
           setHeroBannerTag(data.tagId);
         }
       } else {
-        console.log("Hero banner document does not exist. Using default hero image.");
+        console.log(
+          "Hero banner document does not exist. Using default hero image."
+        );
       }
     } catch (error) {
       console.error("Error fetching hero banner:", error);
@@ -281,7 +299,12 @@ export default function Homepage() {
           const bannerDocSnap = await getDoc(bannerDocRef);
           if (bannerDocSnap.exists()) {
             const data = bannerDocSnap.data();
-            return { id, imageLink: data.imageLink, link: data.link || null, tagId: data.tagId || null };
+            return {
+              id,
+              imageLink: data.imageLink,
+              link: data.link || null,
+              tagId: data.tagId || null,
+            };
           } else {
             console.log(`Banner document ${id} does not exist.`);
             return null;
@@ -322,11 +345,11 @@ export default function Homepage() {
           name: docSnap.data().categoryName || "UNNAMED",
           image: docSnap.data().imageUrl || null,
           subCategories: docSnap.data().subCategories || [],
-          order:docSnap.data().order || 0,
+          order: docSnap.data().order || 0,
         });
       });
-       // Sort categories by the order field (lowest value first)
-       cats.sort((a, b) => a.order - b.order);
+      // Sort categories by the order field (lowest value first)
+      cats.sort((a, b) => a.order - b.order);
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -401,7 +424,7 @@ export default function Homepage() {
 
   // ------------------ Fetch Tag IDs for Featured Sections ------------------
   useEffect(() => {
-    checkSessionTokenConsistency()
+    checkSessionTokenConsistency();
     const fetchTagIds = async () => {
       const tagId1 = await getTagIdByTitle("Featured Products");
       const tagId2 = await getTagIdByTitle("Featured Products 2");
@@ -413,9 +436,11 @@ export default function Homepage() {
 
   // ------------------ Initial Data Fetch ------------------
   useEffect(() => {
-    Promise.all([fetchHeroBanner(), fetchBannerImages(), fetchAnnouncement()]).catch((error) =>
-      console.error("Error in banners:", error)
-    );
+    Promise.all([
+      fetchHeroBanner(),
+      fetchBannerImages(),
+      fetchAnnouncement(),
+    ]).catch((error) => console.error("Error in banners:", error));
     async function fetchData() {
       const [cats, prods, prods2] = await Promise.all([
         getCategoryImages(),
@@ -458,15 +483,20 @@ export default function Homepage() {
   if (loading || isTyping) {
     return (
       <div style={loaderStyles.container}>
-        <CircularProgress size={80} style={{ color: 'white', margin: '0 auto', marginBottom: '75px' }} />
+        <CircularProgress
+          size={80}
+          style={{ color: "white", margin: "0 auto", marginBottom: "75px" }}
+        />
         <h1 style={loaderStyles.text}>VastraHub</h1>
         <ReactTyped
           style={loaderStyles.text2}
           startWhenVisible
-          strings={['VYAPAR KA NAYA TAREEKA']}
+          strings={["VYAPAR KA NAYA TAREEKA"]}
           typeSpeed={75}
           onComplete={() => {
-            setTimeout(() => { setIsTyping(false) }, 300);
+            setTimeout(() => {
+              setIsTyping(false);
+            }, 300);
           }}
         />
       </div>
@@ -475,14 +505,16 @@ export default function Homepage() {
 
   return (
     <>
-                            {/* Hero Banner with Rotating Text and SHOP NOW Button */}
+      {/* Hero Banner with Rotating Text and SHOP NOW Button */}
       <div style={{ position: "relative" }}>
         <img
           src={heroBanner ? heroBanner : defaultHeroImg}
           alt="Hero"
           width="100%"
           onError={(e) => {
-            console.log("Hero banner image not available, falling back to default.");
+            console.log(
+              "Hero banner image not available, falling back to default."
+            );
             e.target.src = defaultHeroImg;
           }}
         />
@@ -490,61 +522,60 @@ export default function Homepage() {
         <div
           style={{
             position: "absolute",
-            bottom: "210px", 
-            left:'8vw',// adjust vertical position as needed
+            bottom: "210px",
+            left: "8vw", // adjust vertical position as needed
             // left: "40%",
             // transform: "translateX(-40%)",
             display: "flex",
             alignItems: "center",
             // backgroundColor:'#333',
-            width:'100%',
+            width: "100%",
             gap: "10px", // reduced gap to bring texts closer
           }}
         >
           {/* Fixed Text */}
           <div>
+            <div>
+              <span
+                style={{
+                  fontFamily: "Lora, serif",
+                  fontSize: "58px", // unified font size
+                  fontWeight: "600",
+                  color: "#fff",
+                }}
+              >
+                VASTRAHUB :
+              </span>
+            </div>
+            {/* Rotating Text */}
+            <div>
+              <RotatingText
+                texts={[
+                  "VYAPAR KA NAYA TAREEKA",
+                  "ONLINE B2B GARMENT STORE",
+                  "MANUFACTURER & DISTRIBUTOR",
+                ]}
+                rotationInterval={5000}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "-120%", opacity: 0 }}
+                staggerDuration={0.05}
+                splitBy="characters"
+                mainClassName="rotating-text"
+                style={{
+                  // fontFamily: "Lora, serif",
+                  fontFamily: "Plus Jakarta Sans, sans-serif",
 
-          <div>
-            <span
-              style={{
-                fontFamily: "Lora, serif",
-                fontSize: "58px", // unified font size
-                fontWeight: "600",
-                color: "#fff",
-              }}
-            >
-              VASTRAHUB :
-            </span>
-          </div>
-          {/* Rotating Text */}
-          <div>
-            <RotatingText
-              texts={[
-                "VYAPAR KA NAYA TAREEKA",
-                "ONLINE B2B GARMENT STORE",
-                "MANUFACTURER & DISTRIBUTOR"
-              ]}
-              rotationInterval={5000}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "-120%", opacity: 0 }}
-              staggerDuration={0.05}
-              splitBy="characters"
-              mainClassName="rotating-text"
-              style={{
-                // fontFamily: "Lora, serif",
-          fontFamily: "Plus Jakarta Sans, sans-serif",
-
-                fontSize: "38px", // unified font size
-                fontWeight: "600",
-                color: "#c5c5fc",
-              }}
-            />
-          </div>
+                  fontSize: "38px", // unified font size
+                  fontWeight: "600",
+                  color: "#c5c5fc",
+                }}
+              />
+            </div>
           </div>
         </div>
-        {heroBannerTag ?
+        {heroBannerTag ? (
           <Button
             variant="contained"
             onClick={() =>
@@ -566,11 +597,11 @@ export default function Homepage() {
             }}
           >
             SHOP NOW
-          </Button>:<Button
+          </Button>
+        ) : (
+          <Button
             variant="contained"
-            onClick={() =>
-              navigate("/about-us")
-            }
+            onClick={() => navigate("/about-us")}
             sx={{
               position: "absolute",
               bottom: "100px", // position button below the texts
@@ -588,10 +619,8 @@ export default function Homepage() {
           >
             ABOUT US
           </Button>
-          
-        }
+        )}
       </div>
-
 
       {/* Announcement Section */}
       {announcementText && (
@@ -620,51 +649,50 @@ export default function Homepage() {
       )}
 
       {/* Info Sections */}
-     {/* Info Sections */}
-<div className="container" style={{ padding: "70px 20px" }}>
-  <div
-    className="d-flex justify-content-between align-items-stretch"
-    style={{ flexWrap: "nowrap" }}
-  >
-    {sections.map((section, i) => (
-      <div
-        key={i}
-        style={{
-          flex: "1",
-          textAlign: "center",
-          margin: "0 10px",
-        }}
-      >
-        <img
-          src={section.svg}
-          alt={`Section ${i + 1}`}
-          style={{ height: "80px", marginBottom: "20px" }}
-        />
-        <h2
-          className="scroll-float"
-          style={{
-            fontFamily: "Lora, serif",
-            fontWeight: "600",
-            fontSize: "18px",
-            marginBottom: "10px",
-          }}
+      {/* Info Sections */}
+      <div className="container" style={{ padding: "70px 20px" }}>
+        <div
+          className="d-flex justify-content-between align-items-stretch"
+          style={{ flexWrap: "nowrap" }}
         >
-          {section.headline}
-        </h2>
-        <p
-          style={{
-            fontFamily: "Plus Jakarta Sans, sans-serif",
-            fontSize: "17px",
-            fontWeight: "400",
-          }}
-        >
-          {section.description}
-        </p>
+          {sections.map((section, i) => (
+            <div
+              key={i}
+              style={{
+                flex: "1",
+                textAlign: "center",
+                margin: "0 10px",
+              }}
+            >
+              <img
+                src={section.svg}
+                alt={`Section ${i + 1}`}
+                style={{ height: "80px", marginBottom: "20px" }}
+              />
+              <h2
+                className="scroll-float"
+                style={{
+                  fontFamily: "Lora, serif",
+                  fontWeight: "600",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                }}
+              >
+                {section.headline}
+              </h2>
+              <p
+                style={{
+                  fontFamily: "Plus Jakarta Sans, sans-serif",
+                  fontSize: "17px",
+                  fontWeight: "400",
+                }}
+              >
+                {section.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
-    ))}
-  </div>
-</div>
-
 
       {/* Categories Section */}
       <div
@@ -686,9 +714,23 @@ export default function Homepage() {
           className="squares-background"
         />
         {/* Category content appears above the squares */}
-        <div className="container" style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}>
+        <div
+          className="container"
+          style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}
+        >
           {/* Replace the plain heading with ScrollFloat */}
-          <ScrollFloat containerClassName="" textClassName="" styles={{ color: "#fff", fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px", textAlign: "left", marginBottom: "50px" }}>
+          <ScrollFloat
+            containerClassName=""
+            textClassName=""
+            styles={{
+              color: "#fff",
+              fontFamily: "Lora, serif",
+              fontWeight: "600",
+              fontSize: "48px",
+              textAlign: "left",
+              marginBottom: "50px",
+            }}
+          >
             SHOP BY CATEGORY
           </ScrollFloat>
           <div style={{ position: "relative", overflow: "hidden" }}>
@@ -705,7 +747,9 @@ export default function Homepage() {
                 <CategoryCard2
                   key={i}
                   category={cat}
-                  onClick={() => navigate("/shopbycategory", { state: { category: cat } })}
+                  onClick={() =>
+                    navigate("/shopbycategory", { state: { category: cat } })
+                  }
                 />
               ))}
             </div>
@@ -724,7 +768,15 @@ export default function Homepage() {
               marginBottom: "50px",
             }}
           >
-            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px" }}>
+            <ScrollFloat
+              containerClassName=""
+              textClassName=""
+              styles={{
+                fontFamily: "Lora, serif",
+                fontWeight: "600",
+                fontSize: "48px",
+              }}
+            >
               FEATURED PRODUCTS
             </ScrollFloat>
             {featuredTagId && (
@@ -832,7 +884,9 @@ export default function Homepage() {
                   left: 0,
                   width: "100%",
                   height: "100%",
-                  backgroundColor: bannerHover[i] ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+                  backgroundColor: bannerHover[i]
+                    ? "rgba(0,0,0,0.6)"
+                    : "rgba(0,0,0,0)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -867,14 +921,24 @@ export default function Homepage() {
               marginBottom: "50px",
             }}
           >
-            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora, serif", fontWeight: "600", fontSize: "48px" }}>
+            <ScrollFloat
+              containerClassName=""
+              textClassName=""
+              styles={{
+                fontFamily: "Lora, serif",
+                fontWeight: "600",
+                fontSize: "48px",
+              }}
+            >
               FEATURED PRODUCTS
             </ScrollFloat>
             {featuredTagId2 && (
               <Button
                 variant="text"
                 onClick={() =>
-                  navigate("/tag-products", { state: { tagId: featuredTagId2 } })
+                  navigate("/tag-products", {
+                    state: { tagId: featuredTagId2 },
+                  })
                 }
                 sx={{
                   textTransform: "none",
@@ -927,7 +991,15 @@ export default function Homepage() {
           overflow: "hidden",
         }}
       >
-        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1, paddingBottom:'60px' }}>
+        <div
+          className="container"
+          style={{
+            textAlign: "center",
+            position: "relative",
+            zIndex: 1,
+            paddingBottom: "60px",
+          }}
+        >
           {/* You can optionally add a heading */}
           <h2
             style={{
@@ -936,14 +1008,17 @@ export default function Homepage() {
               fontSize: "38px",
               color: "#fff",
               marginBottom: "40px",
-
             }}
           >
             BRANDS AVAILABLE
           </h2>
           <ScrollVelocity
             texts={[
-              "Array | Folk Club | Fashionology | Fashion Trail |"," Be Indian | American Fit | Foggy | Macpi |"," D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |"," High Density | Purple Haze | Maniac | Grow Up |"," Ice Tees | Striker | A1 Bright | Raffal |"
+              "Array | Folk Club | Fashionology | Fashion Trail |",
+              " Be Indian | American Fit | Foggy | Macpi |",
+              " D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |",
+              " High Density | Purple Haze | Maniac | Grow Up |",
+              " Ice Tees | Striker | A1 Bright | Raffal |",
             ]}
             velocity={80}
             damping={50}
@@ -952,13 +1027,16 @@ export default function Homepage() {
             // Optionally override the CSS classes or styles via props
             parallaxClassName="parallax"
             scrollerClassName="scroller"
-            scrollerStyle={{ color: "#c5c5fc" }} 
+            scrollerStyle={{ color: "#c5c5fc" }}
           />
         </div>
       </div>
 
       {/* Vastrahub App Section */}
-      <div className="container-fluid" style={{ backgroundColor: "#fff", padding: "50px 0" }}>
+      <div
+        className="container-fluid"
+        style={{ backgroundColor: "#fff", padding: "50px 0" }}
+      >
         <div
           className="container"
           style={{
@@ -970,16 +1048,41 @@ export default function Homepage() {
           }}
         >
           <div style={{ maxWidth: "50%" }}>
-            <ScrollFloat containerClassName="" textClassName="" styles={{ fontFamily: "Lora", fontWeight: "600", fontSize: "38px", lineHeight: "61px", letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: "20px",textAlign:'left' }}>
-              Download the VastraHub   App Today
+            <ScrollFloat
+              containerClassName=""
+              textClassName=""
+              styles={{
+                fontFamily: "Lora",
+                fontWeight: "600",
+                fontSize: "38px",
+                lineHeight: "61px",
+                letterSpacing: "0.03em",
+                textTransform: "uppercase",
+                marginBottom: "20px",
+                textAlign: "left",
+              }}
+            >
+              Download the VastraHub App Today
             </ScrollFloat>
-            <p style={{ fontSize: "18px", fontWeight: "400", marginBottom: "50px" }}>
+            <p
+              style={{
+                fontSize: "18px",
+                fontWeight: "400",
+                marginBottom: "50px",
+              }}
+            >
               Download the VastraHub app to streamline your shopping experience.
               Access exclusive deals, manage orders easily, and connect directly
               with trusted manufacturers anytime, anywhere. Your Gateway to
               effortless, secure, and efficient garment shopping starts here.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-start", gap: "20px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-start",
+                gap: "20px",
+              }}
+            >
               <img
                 src={googlePlayImage}
                 alt="Google Play Store"
