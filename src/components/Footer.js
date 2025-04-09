@@ -1,43 +1,72 @@
-// src/Components/Footer.js
 import React, { useState, useContext } from 'react';
 import '../App.css';
 import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { GlobalContext } from '../Context/GlobalContext';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 
 export default function Footer() {
   const navigate = useNavigate();
-  const { sendEmail } = useContext(GlobalContext);
+  const { sendEmail, currentUser, firestoreUser } = useContext(GlobalContext);
   const [phoneNumberUser, setPhoneNumberUser] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Validate phone number: allow an optional country code (starting with +) followed by 10 digits.
   const validatePhoneNumber = (phone) => {
     const trimmed = phone.trim();
-    // Regex: Optional '+' and 1-3 digits (country code), optional dash or space, then 10 digits.
     const regex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
     return regex.test(trimmed);
   };
 
-  // This function is triggered when the arrow button is clicked.
-  const handleBroadcastSubmit = async () => {
-    if (!validatePhoneNumber(phoneNumberUser)) {
-      toast.error("Please enter a valid phone number, with or without a country code.");
+  const joinedOnFormatted = firestoreUser?.JoinedOn?.toDate
+    ? firestoreUser.JoinedOn.toDate().toLocaleDateString("en-GB")
+    : "N/A";
+
+  const fullPreviewContent = `
+📞 Submitted Phone Number: ${phoneNumberUser.trim()}
+👤 Name: ${firestoreUser?.name || "N/A"}
+🏢 Business Name: ${firestoreUser?.businessName || "N/A"}
+📱 Registered Phone: ${firestoreUser?.primaryPhone || "N/A"}
+📞 Alternate Phone: ${firestoreUser?.alternatePhone || "N/A"}
+🗓️ Member Since: ${joinedOnFormatted}
+🧾 GSTIN: ${firestoreUser?.gstin || "N/A"}
+🪪 PAN: ${firestoreUser?.pan || "N/A"}
+📧 Email: ${firestoreUser?.email || "N/A"}
+  `;
+
+  const handleBroadcastSubmit = () => {
+    if (!currentUser || !firestoreUser) {
+      toast.info("Please log in to join the broadcast channel.");
+      navigate("/otp-verify");
       return;
     }
+
+    if (!validatePhoneNumber(phoneNumberUser)) {
+      toast.error("Please enter a valid phone number.");
+      return;
+    }
+
+    setPreviewOpen(true); // show preview modal
+  };
+
+  const confirmSendEmail = async () => {
     const subject = "Broadcast Channel Request";
-    const content = `The phone number ${phoneNumberUser.trim()} wants to join the WhatsApp broadcast channel.`;
     try {
       const emailResponse = await sendEmail({
         email: "vastrahub.store@gmail.com",
         subject,
-        content,
+        content: fullPreviewContent,
       });
       console.log("Email sent response:", emailResponse);
       toast.success("Your request has been sent successfully!");
+      setPhoneNumberUser('');
     } catch (error) {
-      console.error("Error sending broadcast request email:", error);
+      console.error("Error sending email:", error);
       toast.error("Failed to send request. Please try again later.");
+    } finally {
+      setPreviewOpen(false);
     }
   };
 
@@ -51,7 +80,7 @@ export default function Footer() {
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>
               WHATSAPP BROADCAST
             </h4>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '10px' }}>
+            <p style={{ fontSize: '15px', marginBottom: '10px' }}>
               Join our WhatsApp Broadcast to receive the latest updates on offers and new arrivals.
             </p>
             <div
@@ -81,12 +110,13 @@ export default function Footer() {
               />
               <button
                 onClick={handleBroadcastSubmit}
+                disabled={!validatePhoneNumber(phoneNumberUser)}
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#aaa',
+                  color: validatePhoneNumber(phoneNumberUser) ? '#fff' : '#555',
                   padding: '10px',
-                  cursor: 'pointer',
+                  cursor: validatePhoneNumber(phoneNumberUser) ? 'pointer' : 'not-allowed',
                 }}
               >
                 →
@@ -98,39 +128,9 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>COMPANY</h4>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  marginBottom: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/about-us")}
-              >
-                About Us
-              </li>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  marginBottom: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/contact")}
-              >
-                Careers
-              </li>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  marginBottom: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/contact")}
-              >
-                Contact Us
-              </li>
+              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/about-us")}>About Us</li>
+              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/contact")}>Careers</li>
+              <li style={{ fontSize: '15px', cursor: 'pointer' }} onClick={() => navigate("/contact")}>Contact Us</li>
             </ul>
           </div>
 
@@ -138,88 +138,69 @@ export default function Footer() {
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>HELP</h4>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  marginBottom: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/terms-and-conditions")}
-              >
-                Terms &amp; Conditions
-              </li>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  marginBottom: '8px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/refund-policy")}
-              >
-                Refund &amp; Replacement Policy
-              </li>
-              <li
-                style={{
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate("/privacy-policy")}
-              >
-                Privacy Policy
-              </li>
+              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/terms-and-conditions")}>Terms &amp; Conditions</li>
+              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/refund-policy")}>Refund &amp; Replacement Policy</li>
+              <li style={{ fontSize: '15px', cursor: 'pointer' }} onClick={() => navigate("/privacy-policy")}>Privacy Policy</li>
             </ul>
           </div>
 
           {/* Contact Section */}
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>CONTACT</h4>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Friday</p>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>9am–5pm IST or email anytime!</p>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px', marginBottom: '5px' }}>vastrahub.store@gmail.com</p>
-            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '15px' }}>+918275334335</p>
+            <p style={{ fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Friday</p>
+            <p style={{ fontSize: '15px', marginBottom: '5px' }}>9am–5pm IST or email anytime!</p>
+            <p style={{ fontSize: '15px', marginBottom: '5px' }}>vastrahub.store@gmail.com</p>
+            <p style={{ fontSize: '15px' }}>+918275334335</p>
           </div>
         </div>
 
-        {/* Social Icons and Payment Methods */}
-        <div className="socials-payment d-flex justify-content-between align-items-center" style={{ marginTop:'50px', marginBottom: '50px' }}>
+        {/* Social Icons */}
+        <div className="socials-payment d-flex justify-content-between align-items-center" style={{ marginTop: '50px', marginBottom: '50px' }}>
           <div className="social-icons d-flex">
-            <FaInstagram 
-              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
-              onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")}
-            />
-            <FaWhatsapp 
-              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
-              onClick={() => window.open("https://wa.me/918275334335", "_blank")}
-            />
-            <FaFacebook 
-              style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} 
-              onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")}
-            />
-          </div>
-          <div className="payment-methods d-flex">
-            <FaInstagram style={{ fontSize: '24px', marginRight: '15px' }} />
-            <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px' }} />
-            <FaFacebook style={{ fontSize: '24px' }} />
+            <FaInstagram style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
+            <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} onClick={() => window.open("https://wa.me/918275334335", "_blank")} />
+            <FaFacebook style={{ fontSize: '24px', cursor: 'pointer' }} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
           </div>
         </div>
 
-        {/* Horizontal Divider */}
         <hr style={{ borderTop: '1px solid #fff', margin: '40px 0' }} />
 
         {/* Bottom Section */}
         <div className="bottom-footer d-flex justify-content-between align-items-center">
-          <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px' }}>© 2024 VastraHub Clothing</p>
-          <p
-            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '14px', cursor: 'pointer' }}
-            onClick={() => window.location.href = "https://visionforgetech.web.app/"}
-          >
+          <p style={{ fontSize: '14px' }}>© 2024 VastraHub Clothing</p>
+          <p style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => window.location.href = "https://visionforgetech.web.app/"}>
             Made with <span style={{ color: 'red' }}>❤️</span> by VisionForge
           </p>
         </div>
       </div>
+
+      {/* Modal Preview */}
+      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+        <Box sx={{
+          maxWidth: 500,
+          bgcolor: '#fff',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: '10px',
+          mx: 'auto',
+          mt: '10%',
+        }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '15px' }}>
+            Confirm Submission
+          </h2>
+          <pre style={{ fontSize: '13px', whiteSpace: 'pre-wrap', marginBottom: '20px' }}>
+            {fullPreviewContent}
+          </pre>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <Button onClick={() => setPreviewOpen(false)} variant="outlined" size="small">
+              Cancel
+            </Button>
+            <Button onClick={confirmSendEmail} variant="contained" size="small" color="primary">
+              Confirm & Send
+            </Button>
+          </div>
+        </Box>
+      </Modal>
     </footer>
   );
 }
