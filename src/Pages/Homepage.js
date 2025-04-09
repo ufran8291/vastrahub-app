@@ -19,11 +19,15 @@ import svg1 from "../assets/iconamoon_delivery-light.svg";
 import svg2 from "../assets/si_rupee-duotone.svg";
 import svg3 from "../assets/mdi-light_calendar.svg";
 import svg4 from "../assets/gala_secure.svg";
+import svg5 from "../assets/secpayment.svg";
+import svg6 from "../assets/factory.svg";
 import categoryPlaceholder from "../assets/categoryplaceholder.png";
 import productPlaceholder from "../assets/prodimgplaceholder.png";
 import googlePlayImage from "../assets/googleplay.png";
 import appStoreImage from "../assets/appstore.png";
 import mobileAppImage from "../assets/mobilepp.png";
+import vasLogo from "../assets/vastrahubLogo.svg";
+import { MdFactory, MdSecurity } from "react-icons/md"; // Material-style icons
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
@@ -140,9 +144,6 @@ function CategoryCard2({ category, onClick }) {
       onMouseLeave={() => setHover(false)}
       onClick={onClick}
       style={{
-        flex: "0 0 auto",
-        width: "325px",
-        marginRight: "20px",
         textAlign: "left",
         cursor: "pointer",
         position: "relative",
@@ -153,9 +154,9 @@ function CategoryCard2({ category, onClick }) {
           src={category.image || categoryPlaceholder}
           alt={category.name}
           style={{
-            width: "300px",
-            height: "365px",
-            objectFit: "contain",
+            width: "100%", // Ensures image fills its grid cell
+            height: "auto",
+            objectFit: "cover",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
           }}
@@ -191,7 +192,7 @@ function CategoryCard2({ category, onClick }) {
         style={{
           fontFamily: "Plus Jakarta Sans, sans-serif",
           fontWeight: "500",
-          fontSize: "32px",
+          fontSize: "1.75rem", // Use rem so it scales
           textTransform: "uppercase",
           marginTop: "10px",
           color: "#fff",
@@ -250,15 +251,21 @@ export default function Homepage() {
       description: "Expertise you can trust, built over years.",
     },
     {
-      svg: svg4,
+      svg: svg5,
       headline: "Secure Payments",
       description: "Safe and reliable transactions, every time.",
     },
     {
-      svg: svg4,
+      svg: svg6,
       headline: "VastraHub Factory",
       description:
-        "VastraHub Brand products are crafted in house ensuring finest quality and best rates.",
+        "In-house crafted VastraHub products deliver Best quality & rates..",
+    },
+    {
+      svg: svg4,
+      headline: "Trusted Brands",
+      description:
+        "Wellknown Indian retail brands for more quality reliability",
     },
   ];
 
@@ -487,7 +494,12 @@ export default function Homepage() {
           size={80}
           style={{ color: "white", margin: "0 auto", marginBottom: "75px" }}
         />
-        <h1 style={loaderStyles.text}>VastraHub</h1>
+        <img
+          src={vasLogo}
+          width={200}
+          alt="VastraHub Logo"
+          style={loaderStyles.logo}
+        />
         <ReactTyped
           style={loaderStyles.text2}
           startWhenVisible
@@ -649,32 +661,36 @@ export default function Homepage() {
       )}
 
       {/* Info Sections */}
-      {/* Info Sections */}
       <div className="container" style={{ padding: "70px 20px" }}>
         <div
-          className="d-flex justify-content-between align-items-stretch"
-          style={{ flexWrap: "nowrap" }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "20px",
+          }}
         >
           {sections.map((section, i) => (
             <div
               key={i}
               style={{
-                flex: "1",
                 textAlign: "center",
-                margin: "0 10px",
+                minWidth: 0,
               }}
             >
               <img
                 src={section.svg}
                 alt={`Section ${i + 1}`}
-                style={{ height: "80px", marginBottom: "20px" }}
+                style={{
+                  height: "clamp(40px, 10vw, 80px)",
+                  marginBottom: "20px",
+                }}
               />
+
               <h2
-                className="scroll-float"
                 style={{
                   fontFamily: "Lora, serif",
                   fontWeight: "600",
-                  fontSize: "18px",
+                  fontSize: "clamp(14px, 2.5vw, 18px)",
                   marginBottom: "10px",
                 }}
               >
@@ -683,7 +699,7 @@ export default function Homepage() {
               <p
                 style={{
                   fontFamily: "Plus Jakarta Sans, sans-serif",
-                  fontSize: "17px",
+                  fontSize: "clamp(12px, 2vw, 17px)",
                   fontWeight: "400",
                 }}
               >
@@ -695,64 +711,35 @@ export default function Homepage() {
       </div>
 
       {/* Categories Section */}
-      <div
-        className="container-fluid"
-        style={{
-          backgroundColor: "#000",
-          position: "relative",
-          minHeight: "80vh",
-          overflow: "hidden",
-        }}
-      >
-        {/* Squares rendered as background */}
-        <Squares
-          speed={0.6}
-          squareSize={30}
-          direction="diagonal"
-          borderColor="#000"
-          hoverFillColor="#fff"
-          className="squares-background"
-        />
-        {/* Category content appears above the squares */}
-        <div
-          className="container"
-          style={{ padding: "50px 20px", position: "relative", zIndex: 1 }}
-        >
-          {/* Replace the plain heading with ScrollFloat */}
+      {/* Categories Section */}
+      <div className="full-width-dark-container">
+        {/* Background squares */}
+        {/* <Squares
+    speed={0.6}
+    squareSize={30}
+    direction="diagonal"
+    borderColor="#000"
+    hoverFillColor="#fff"
+    className="squares-background"
+  /> */}
+        <div className="container category-content">
           <ScrollFloat
             containerClassName=""
-            textClassName=""
-            styles={{
-              color: "#fff",
-              fontFamily: "Lora, serif",
-              fontWeight: "600",
-              fontSize: "48px",
-              textAlign: "left",
-              marginBottom: "50px",
-            }}
+            textClassName="responsive-title"
+            styles={{ marginBottom: "50px", textAlign: "left" }}
           >
             SHOP BY CATEGORY
           </ScrollFloat>
-          <div style={{ position: "relative", overflow: "hidden" }}>
-            <div
-              className="row no-scrollbar"
-              ref={categoryCarouselRef}
-              style={{
-                display: "flex",
-                flexWrap: "nowrap",
-                overflowX: "scroll",
-              }}
-            >
-              {categories.map((cat, i) => (
-                <CategoryCard2
-                  key={i}
-                  category={cat}
-                  onClick={() =>
-                    navigate("/shopbycategory", { state: { category: cat } })
-                  }
-                />
-              ))}
-            </div>
+          <div className="category-grid">
+            {categories.map((cat, i) => (
+              <CategoryCard2
+                key={i}
+                category={cat}
+                onClick={() =>
+                  navigate("/shopbycategory", { state: { category: cat } })
+                }
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -1129,6 +1116,11 @@ const loaderStyles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
+    alignItems: "center", // center the logo horizontally too
+  },
+  logo: {
+    filter: "brightness(0) invert(1)", // Make the logo appear white
+    marginBottom: "20px",
   },
   text: {
     color: "#fff",
