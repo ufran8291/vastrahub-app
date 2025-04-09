@@ -12,7 +12,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
-import {CircularProgress} from '@mui/material'
+import { CircularProgress } from "@mui/material";
 export default function SizeSelectorOverlay({ product, onClose }) {
   const { firestoreUser, syncStockDataForIds } = useContext(GlobalContext);
   const uid = firestoreUser?.id;
@@ -100,7 +100,10 @@ export default function SizeSelectorOverlay({ product, onClose }) {
             snapshot.forEach((docSnap) => {
               const data = docSnap.data();
               // Use the size as key (assuming one doc per product/size)
-              cartMapping[data.size] = { docId: docSnap.id, quantity: data.quantity };
+              cartMapping[data.size] = {
+                docId: docSnap.id,
+                quantity: data.quantity,
+              };
             });
           } catch (error) {
             console.error("Error fetching existing cart items:", error);
@@ -122,13 +125,19 @@ export default function SizeSelectorOverlay({ product, onClose }) {
   const handleIncrement = (idx) => {
     setQuantities((prev) => {
       const updated = [...prev];
-      const availableStock = computeTotalBoxes(updated[idx].piecesInStock, updated[idx].boxPieces);
+      const availableStock = computeTotalBoxes(
+        updated[idx].piecesInStock,
+        updated[idx].boxPieces
+      );
       if (updated[idx].quantity < availableStock) {
         updated[idx].quantity += 1;
       }
       // Log calculation details
-      const fullBoxes = Math.floor((updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1));
-      const remainder = (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
+      const fullBoxes = Math.floor(
+        (updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1)
+      );
+      const remainder =
+        (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
       const totalPiecesSelected = computeTotalPieces(
         updated[idx].quantity,
         updated[idx].boxPieces,
@@ -148,8 +157,11 @@ export default function SizeSelectorOverlay({ product, onClose }) {
         updated[idx].quantity -= 1;
       }
       // Log calculation details
-      const fullBoxes = Math.floor((updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1));
-      const remainder = (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
+      const fullBoxes = Math.floor(
+        (updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1)
+      );
+      const remainder =
+        (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
       const totalPiecesSelected = computeTotalPieces(
         updated[idx].quantity,
         updated[idx].boxPieces,
@@ -177,7 +189,11 @@ export default function SizeSelectorOverlay({ product, onClose }) {
       for (let sq of quantities) {
         if (sq.quantity > 0) {
           // Compute the total number of pieces for this size
-          const noOfPieces = computeTotalPieces(sq.quantity, sq.boxPieces, sq.piecesInStock);
+          const noOfPieces = computeTotalPieces(
+            sq.quantity,
+            sq.boxPieces,
+            sq.piecesInStock
+          );
           const existing = existingCartItems[sq.size];
           const cartData = {
             productId: product.id,
@@ -188,7 +204,7 @@ export default function SizeSelectorOverlay({ product, onClose }) {
             quantity: sq.quantity, // boxes selected
             noOfPieces, // total pieces calculated
             updatedAt: new Date(),
-            inventoryId:sq.inventoryId,
+            inventoryId: sq.inventoryId,
           };
           if (existing) {
             // Update the existing cart document.
@@ -234,7 +250,9 @@ export default function SizeSelectorOverlay({ product, onClose }) {
         }}
       >
         <CircularProgress size={80} />
-        <p style={{ color: "#fff", marginTop: "16px" }}>Getting stock data...</p>
+        <p style={{ color: "#fff", marginTop: "16px" }}>
+          Getting stock data...
+        </p>
       </div>
     );
   }
@@ -275,11 +293,23 @@ export default function SizeSelectorOverlay({ product, onClose }) {
         </p>
 
         {/* SCROLLABLE AREA */}
-        <div style={{ maxHeight: "300px", overflowY: "auto", marginBottom: "20px" }}>
+        <div
+          style={{
+            maxHeight: "300px",
+            overflowY: "auto",
+            marginBottom: "20px",
+          }}
+        >
           {quantities.map((sizeObj, idx) => {
-            const availableStock = computeTotalBoxes(sizeObj.piecesInStock, sizeObj.boxPieces);
-            const fullBoxes = Math.floor((sizeObj.piecesInStock || 0) / (sizeObj.boxPieces || 1));
-            const remainder = (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
+            const availableStock = computeTotalBoxes(
+              sizeObj.piecesInStock,
+              sizeObj.boxPieces
+            );
+            const fullBoxes = Math.floor(
+              (sizeObj.piecesInStock || 0) / (sizeObj.boxPieces || 1)
+            );
+            const remainder =
+              (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
             const tooltipText =
               sizeObj.piecesInStock > 0
                 ? `${availableStock} box available (${fullBoxes} full` +
@@ -307,7 +337,8 @@ export default function SizeSelectorOverlay({ product, onClose }) {
                   </span> */}
                 </strong>
                 <div style={{ fontSize: "14px", color: "#555" }}>
-                  Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box: {sizeObj.boxPieces}
+                  Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box:{" "}
+                  {sizeObj.boxPieces}
                 </div>
                 <div
                   style={{
@@ -317,7 +348,13 @@ export default function SizeSelectorOverlay({ product, onClose }) {
                     marginTop: "6px",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
                     <button
                       onClick={() => handleDecrement(idx)}
                       style={{
@@ -327,7 +364,8 @@ export default function SizeSelectorOverlay({ product, onClose }) {
                         height: "32px",
                         borderRadius: "4px",
                         fontSize: "16px",
-                        cursor: sizeObj.quantity > 0 ? "pointer" : "not-allowed",
+                        cursor:
+                          sizeObj.quantity > 0 ? "pointer" : "not-allowed",
                       }}
                       disabled={sizeObj.quantity === 0}
                     >
@@ -347,21 +385,38 @@ export default function SizeSelectorOverlay({ product, onClose }) {
                         fontSize: "16px",
                         cursor: "pointer",
                       }}
-                      disabled={sizeObj.quantity >= availableStock}
+                      disabled={
+                        availableStock === 0 ||
+                        sizeObj.quantity >= availableStock
+                      }
                     >
                       +
                     </button>
                   </div>
+
                   <div>
-                    <span style={{ fontSize: "12px", color: "#888" }}>
-                      Total Pieces: {totalPiecesSelected}
-                      {sizeObj.quantity === availableStock && remainder > 0 && (
-                        <>
-                          <br />
-                          Last box has only {remainder} pieces
-                        </>
-                      )}
-                    </span>
+                    {availableStock === 0 ? (
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#D32F2F",
+                          fontWeight: "500",
+                        }}
+                      >
+                        ❌ Out of Stock
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "12px", color: "#888" }}>
+                        Total Pieces: {totalPiecesSelected}
+                        {sizeObj.quantity === availableStock &&
+                          remainder > 0 && (
+                            <>
+                              <br />
+                              Last box has only {remainder} pieces
+                            </>
+                          )}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

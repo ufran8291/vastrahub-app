@@ -38,38 +38,40 @@ const ProductCard = ({ product, onView, onAdd }) => {
             overflow: "hidden",
           }}
         > */}
-          <PixelTransition
-          firstContent={
-            <img
-            src={product.image}
-            alt={product.title}
-            style={{
-              minWidth: "100%",
-              maxHeight: "100%",
-              // height:"400px",
-              objectFit: "contain",
-              backgroundColor:"#DAE0E2",
-              marginBottom:"20px"
-            }}
-            />
-          }
-          secondContent={
-          <img
-            src={product.additionalImages[0]}
-            alt={product.title}
-            style={{
-              minWidth: "100%",
-              maxHeight: "100%",
-              // height:"400px",
-              objectFit: "contain",
-              backgroundColor:"#DAE0E2",
-              marginBottom:"20px"
-            }}
-          />}
-          gridSize={24}
-          pixelColor='#DAE0E2'
-          animationStepDuration={0.4}
-          />
+          <div onClick={onView} style={{ cursor: "pointer" }}>
+  <PixelTransition
+    firstContent={
+      <img
+        src={product.image}
+        alt={`Front view of ${product.title}`}
+        style={{
+          minWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "contain",
+          backgroundColor: "#DAE0E2",
+          marginBottom: "20px",
+        }}
+      />
+    }
+    secondContent={
+      <img
+        src={product.additionalImages[0]}
+        alt={`Additional view of ${product.title}`}
+        style={{
+          minWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "contain",
+          backgroundColor: "#DAE0E2",
+          marginBottom: "20px",
+        }}
+      />
+    }
+    gridSize={24}
+    pixelColor="#DAE0E2"
+    animationStepDuration={0.4}
+  />
+</div>
+
         {/* </div> */}
         <h3
           style={{
