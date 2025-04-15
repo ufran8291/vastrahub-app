@@ -26,7 +26,7 @@ import productPlaceholder from "../assets/prodimgplaceholder.png";
 import googlePlayImage from "../assets/googleplay.png";
 import appStoreImage from "../assets/appstore.png";
 import mobileAppImage from "../assets/mobilepp.png";
-import vasLogo from "../assets/vastrahubLogo.svg";
+import vasLogo from "../assets/newvaslogo.jpeg";
 import { MdFactory, MdSecurity } from "react-icons/md"; // Material-style icons
 
 // Components
@@ -1119,7 +1119,7 @@ const loaderStyles = {
     alignItems: "center", // center the logo horizontally too
   },
   logo: {
-    filter: "brightness(0) invert(1)", // Make the logo appear white
+    // filter: "brightness(0) invert(1)", // Make the logo appear white
     marginBottom: "20px",
   },
   text: {
