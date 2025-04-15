@@ -147,8 +147,8 @@ export default function Footer() {
           {/* Contact Section */}
           <div>
             <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>CONTACT</h4>
-            <p style={{ fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Friday</p>
-            <p style={{ fontSize: '15px', marginBottom: '5px' }}>9am–5pm IST or email anytime!</p>
+            <p style={{ fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Saturday</p>
+            <p style={{ fontSize: '15px', marginBottom: '5px' }}>11am–8pm IST or email anytime!</p>
             <p style={{ fontSize: '15px', marginBottom: '5px' }}>vastrahub.store@gmail.com</p>
             <p style={{ fontSize: '15px' }}>+918275334335</p>
           </div>
