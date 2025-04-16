@@ -140,6 +140,7 @@ export default function Footer() {
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
               <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/terms-and-conditions")}>Terms &amp; Conditions</li>
               <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/refund-policy")}>Refund &amp; Replacement Policy</li>
+              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/shipping-policy")}>Shipping Policy</li>
               <li style={{ fontSize: '15px', cursor: 'pointer' }} onClick={() => navigate("/privacy-policy")}>Privacy Policy</li>
             </ul>
           </div>

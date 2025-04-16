@@ -4,7 +4,9 @@ import { Container, Typography, Box } from "@mui/material";
 
 export default function RefundPolicy() {
   return (
-    <Container sx={{ mt: 4, mb: 4, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+    <Container
+      sx={{ mt: 4, mb: 4, fontFamily: "Plus Jakarta Sans, sans-serif" }}
+    >
       <Box
         sx={{
           p: 3,
@@ -23,9 +25,9 @@ export default function RefundPolicy() {
         </Typography>
 
         <Typography variant="body1" sx={{ mb: 2 }}>
-          At Vastrahub, we take great pride in providing high-quality ready-made garments
-          to our B2B wholesale customers. Please carefully review our refund and replacement policy
-          outlined below:
+          At Vastrahub, we take great pride in providing high-quality ready-made
+          garments to our B2B wholesale customers. Please carefully review our
+          refund and replacement policy outlined below:
         </Typography>
 
         <Typography
@@ -35,8 +37,9 @@ export default function RefundPolicy() {
           Confirm Sale &amp; Payment
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Once an order is confirmed and payment has been received, it is considered a final sale.
-          No refunds will be processed under normal circumstances.
+          Once an order is confirmed and payment has been received, it is
+          considered a final sale. No refunds will be processed under normal
+          circumstances.
         </Typography>
 
         <Typography
@@ -46,25 +49,26 @@ export default function RefundPolicy() {
           Damaged Goods
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          In the rare event that goods received are damaged, a replacement or refund will only be
-          considered under the following conditions:
+          In the rare event that goods received are damaged, a replacement or
+          refund will only be considered under the following conditions:
         </Typography>
         <Box component="ul" sx={{ ml: 3, mb: 2 }}>
           <li>
             <Typography variant="body1">
-              The damaged goods must be reported to us within 7 days from the delivery date.
+              The damaged goods must be reported to us within 7 days from the
+              delivery date.
             </Typography>
           </li>
           <li>
             <Typography variant="body1">
-              Only unsold items with all tags intact and no signs of washing or usage are eligible
-              for a refund or replacement.
+              Only unsold items with all tags intact and no signs of washing or
+              usage are eligible for a refund or replacement.
             </Typography>
           </li>
           <li>
             <Typography variant="body1">
-              The damaged items must be returned in their original condition (unwashed, unused, and
-              with original tags attached).
+              The damaged items must be returned in their original condition
+              (unwashed, unused, and with original tags attached).
             </Typography>
           </li>
         </Box>
@@ -76,12 +80,15 @@ export default function RefundPolicy() {
           Return Process
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          The customer must initiate the return process by contacting our customer service team at{" "}
-          <strong>vastrahub.store@gmail.com</strong> with details of the damaged goods (including
-          photographs of the damage) or by sending photos via WhatsApp to our dedicated number.
-          Once the return is approved, the customer will be provided with instructions for returning
-          the damaged goods. Upon receiving the returned items, we will assess the damage. If the claim
-          is validated, a refund for the damaged pieces or a replacement will be processed accordingly.
+          The customer must initiate the return process by contacting our
+          customer service team at{" "}
+          <strong>vastrahub.store@gmail.com</strong> with details of the damaged
+          goods (including photographs of the damage) or by sending photos via
+          WhatsApp to our dedicated number. Once the return is approved, the
+          customer will be provided with instructions for returning the damaged
+          goods. Upon receiving the returned items, we will assess the damage.
+          If the claim is validated, a refund for the damaged pieces or a
+          replacement will be processed accordingly.
         </Typography>
 
         <Typography
@@ -101,7 +108,8 @@ export default function RefundPolicy() {
           </li>
           <li>
             <Typography variant="body1">
-              Items that do not meet the conditions mentioned above (e.g., missing tags, altered packaging).
+              Items that do not meet the conditions mentioned above (e.g.,
+              missing tags, altered packaging).
             </Typography>
           </li>
           <li>
@@ -112,12 +120,50 @@ export default function RefundPolicy() {
         </Box>
 
         <Typography variant="body1" sx={{ mt: 3 }}>
-          We strive to provide our customers with the best quality products, and we understand the
-          importance of ensuring that our garments arrive in perfect condition. If you have any
-          concerns or need assistance with an order, please don’t hesitate to contact our support team.
+          We strive to provide our customers with the best quality products, and
+          we understand the importance of ensuring that our garments arrive in
+          perfect condition. If you have any concerns or need assistance with an
+          order, please don’t hesitate to contact our support team.
         </Typography>
         <Typography variant="body2" sx={{ mt: 3, color: "text.secondary" }}>
-          Note: We reserve the right to update or modify this policy at any time without prior notice.
+          Note: We reserve the right to update or modify this policy at any time
+          without prior notice.
+        </Typography>
+
+        {/* New Section for Additional Refund and Replacement Details */}
+        <Typography
+          variant="h6"
+          sx={{ fontFamily: "Lora, serif", mt: 4, mb: 2 }}
+        >
+          Additional Refund and Replacement Details
+        </Typography>
+
+        <Typography
+          variant="subtitle1"
+          sx={{ fontFamily: "Lora, serif", fontWeight: "bold", mt: 2 }}
+        >
+          Refund Policy
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          In case of a mutually agreed pure return (no replacement) as per the
+          above conditions, and upon inspection of returned goods at our
+          warehouse, the refund amount will be credited to your account within
+          7 working days via the original mode of payment.
+        </Typography>
+
+        <Typography
+          variant="subtitle1"
+          sx={{ fontFamily: "Lora, serif", fontWeight: "bold", mt: 2 }}
+        >
+          Replacement
+        </Typography>
+        <Typography variant="body1">
+          In case of a mutual agreement for replacement through the communication
+          channels mentioned above, the replacement product will be dispatched
+          within 7 working days, subject to the availability of the respective
+          product. If the product cannot be replaced, the full refund for that
+          product will be credited to your account within 7 working days after
+          receipt and inspection of the goods returned by you.
         </Typography>
       </Box>
     </Container>

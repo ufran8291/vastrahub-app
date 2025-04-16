@@ -39,6 +39,7 @@ import TagProducts from "./Pages/TagProducts";
 import CustomCursor from "./components/CustomCursor";
 
 import { motion } from "framer-motion";
+import ShippingPolicy from "./Pages/ShippingPolicy";
 
 // A helper component that adds a smooth transition to its children.
 const PageTransition = ({ children }) => (
@@ -159,6 +160,10 @@ function App() {
         {
           path: "/privacy-policy",
           element: withTransition(<PrivacyPolicy />),
+        },
+        {
+          path: "/shipping-policy",
+          element: withTransition(<ShippingPolicy />),
         },
         {
           path: "/tag-products",
