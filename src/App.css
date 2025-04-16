@@ -1,14 +1,25 @@
+/* src/App.css */
+
+/* Remove default browser margins/padding and hide horizontal overflow */
+html,
 body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
   font-family: 'Plus Jakarta Sans', sans-serif; /* Default font */
 }
-/* * {
+
+/* Optionally remove the default cursor override if you wish 
+* {
   cursor: default !important;
-} */
+}
+*/
+
+/* Hide scrollbar in certain sections */
 .no-scrollbar {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
-
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, and Opera */
 }
@@ -63,13 +74,11 @@ body {
     justify-content: center;
   }
 }
-/* src/App.css */
 
 /* Show subcategory dropdown on hover */
 .lower-navbar .middle-part .subcategory-dropdown {
   display: none;
 }
-
 .lower-navbar .middle-part:hover .subcategory-dropdown {
   display: block;
 }
@@ -78,7 +87,6 @@ body {
 .subcategory-dropdown {
   z-index: 1000;
 }
-/* src/App.css */
 
 /* Banner grid layout */
 .banner-grid {
@@ -123,6 +131,7 @@ body {
       "banner4";
   }
 }
+
 /* Full-width dark container for the category section */
 .full-width-dark-container {
   width: 100%;
@@ -150,13 +159,11 @@ body {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-
 @media (max-width: 768px) {
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
 @media (max-width: 480px) {
   .category-grid {
     grid-template-columns: 1fr;
@@ -170,13 +177,11 @@ body {
   font-size: 3rem;
   color: #fff;
 }
-
 @media (max-width: 768px) {
   .responsive-title {
     font-size: 2.5rem;
   }
 }
-
 @media (max-width: 480px) {
   .responsive-title {
     font-size: 2rem;

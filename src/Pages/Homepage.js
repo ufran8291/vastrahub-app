@@ -33,7 +33,7 @@ import { MdFactory, MdSecurity } from "react-icons/md"; // Material-style icons
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
 import {
   Button,
-  CircularProgress,
+  // CircularProgress,
   LinearProgress,
   Tooltip,
 } from "@mui/material";
@@ -215,6 +215,10 @@ export default function Homepage() {
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(true);
 
+  // Fade-out logic states
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+
   // Local state variables
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -269,7 +273,56 @@ export default function Homepage() {
     },
   ];
 
-  // ------------------ Fetch Hero Banner ------------------
+  // ------------------ useEffects ------------------
+  useEffect(() => {
+    checkSessionTokenConsistency();
+
+    // Once data finishes loading, fade out loader
+    // (We'll also stop typing if used that logic.)
+    if (!loading && !isTyping) {
+      setFadeOut(true);
+      setTimeout(() => setShowLoader(false), 500); // remove from DOM after fade
+    }
+  }, [loading, isTyping, checkSessionTokenConsistency]);
+
+  // Fetch Tag IDs for "Featured Products" & "Featured Products 2"
+  useEffect(() => {
+    const fetchTagIds = async () => {
+      const tagId1 = await getTagIdByTitle("Featured Products");
+      const tagId2 = await getTagIdByTitle("Featured Products 2");
+      setFeaturedTagId(tagId1);
+      setFeaturedTagId2(tagId2);
+    };
+    fetchTagIds();
+  }, []);
+
+  // Initial Data Fetch (hero banner, banners, announcement)
+  useEffect(() => {
+    Promise.all([
+      fetchHeroBanner(),
+      fetchBannerImages(),
+      fetchAnnouncement(),
+    ]).catch((error) => console.error("Error in banners:", error));
+
+    async function fetchData() {
+      const [cats, prods, prods2] = await Promise.all([
+        getCategoryImages(),
+        getFeaturedProducts(),
+        getFeaturedProducts2(),
+      ]);
+      setCategories(cats);
+      setFeaturedProducts(prods);
+      setFeaturedProducts2(prods2);
+
+      // Mark loader as done:
+      setLoading(false);
+      // If you also want to skip typing or end it right away, you can:
+      setIsTyping(false);
+    }
+    fetchData();
+  }, []);
+
+  // ------------------ Banners & Announcement Fetch ------------------
   const fetchHeroBanner = async () => {
     try {
       const heroDocRef = doc(db, "banners", "hero-banner");
@@ -296,7 +349,6 @@ export default function Homepage() {
     }
   };
 
-  // ------------------ Fetch Banner Images ------------------
   const fetchBannerImages = async () => {
     try {
       const bannerIds = ["banner-1", "banner-2", "banner-3", "banner-4"];
@@ -326,7 +378,6 @@ export default function Homepage() {
     }
   };
 
-  // ------------------ Fetch Announcement ------------------
   const fetchAnnouncement = async () => {
     try {
       const announcementDocRef = doc(db, "banners", "announcement");
@@ -342,7 +393,7 @@ export default function Homepage() {
     }
   };
 
-  // ------------------ Fetch Categories ------------------
+  // ------------------ Categories & Featured Products ------------------
   const getCategoryImages = async () => {
     const cats = [];
     try {
@@ -363,7 +414,6 @@ export default function Homepage() {
     return cats;
   };
 
-  // ------------------ Fetch Featured Products (Tag: "Featured Products") ------------------
   const getFeaturedProducts = async () => {
     const prods = [];
     try {
@@ -396,7 +446,6 @@ export default function Homepage() {
     return prods;
   };
 
-  // ------------------ Fetch Featured Products 2 (Tag: "Featured Products 2") ------------------
   const getFeaturedProducts2 = async () => {
     const prods = [];
     try {
@@ -429,39 +478,6 @@ export default function Homepage() {
     return prods;
   };
 
-  // ------------------ Fetch Tag IDs for Featured Sections ------------------
-  useEffect(() => {
-    checkSessionTokenConsistency();
-    const fetchTagIds = async () => {
-      const tagId1 = await getTagIdByTitle("Featured Products");
-      const tagId2 = await getTagIdByTitle("Featured Products 2");
-      setFeaturedTagId(tagId1);
-      setFeaturedTagId2(tagId2);
-    };
-    fetchTagIds();
-  }, []);
-
-  // ------------------ Initial Data Fetch ------------------
-  useEffect(() => {
-    Promise.all([
-      fetchHeroBanner(),
-      fetchBannerImages(),
-      fetchAnnouncement(),
-    ]).catch((error) => console.error("Error in banners:", error));
-    async function fetchData() {
-      const [cats, prods, prods2] = await Promise.all([
-        getCategoryImages(),
-        getFeaturedProducts(),
-        getFeaturedProducts2(),
-      ]);
-      setCategories(cats);
-      setFeaturedProducts(prods);
-      setFeaturedProducts2(prods2);
-      setLoading(false);
-    }
-    fetchData();
-  }, []);
-
   // ------------------ Carousel Scroll (optional) ------------------
   const scrollCarousel = (ref, direction, amount) => {
     if (ref.current) {
@@ -487,36 +503,31 @@ export default function Homepage() {
     setOverlayProduct(null);
   };
 
-  if (loading || isTyping) {
-    return (
-      <div style={loaderStyles.container}>
-        <CircularProgress
-          size={80}
-          style={{ color: "white", margin: "0 auto", marginBottom: "75px" }}
-        />
-        <img
-          src={vasLogo}
-          width={200}
-          alt="VastraHub Logo"
-          style={loaderStyles.logo}
-        />
-        <ReactTyped
-          style={loaderStyles.text2}
-          startWhenVisible
-          strings={["VYAPAR KA NAYA TAREEKA"]}
-          typeSpeed={75}
-          onComplete={() => {
-            setTimeout(() => {
-              setIsTyping(false);
-            }, 300);
-          }}
-        />
-      </div>
-    );
-  }
-
+  // ------------------ RENDER ------------------
   return (
     <>
+      {/* LOADER with fade-out */}
+      {showLoader && (
+        <div
+          style={{
+            ...loaderStyles.container,
+            transition: "opacity 0.5s ease-in-out",
+            opacity: fadeOut ? 0 : 1,
+          }}
+        >
+          <img
+            src={vasLogo}
+            height={200}
+            alt="VastraHub Logo"
+            style={loaderStyles.logo}
+          />
+          <div style={{ width: "50%", margin: "0", marginBottom: "75px" }}>
+            <LinearProgress color="inherit" />
+          </div>
+        </div>
+      )}
+
+      {/* MAIN PAGE CONTENT */}
       {/* Hero Banner with Rotating Text and SHOP NOW Button */}
       <div style={{ position: "relative" }}>
         <img
@@ -536,13 +547,10 @@ export default function Homepage() {
             position: "absolute",
             bottom: "210px",
             left: "8vw", // adjust vertical position as needed
-            // left: "40%",
-            // transform: "translateX(-40%)",
             display: "flex",
             alignItems: "center",
-            // backgroundColor:'#333',
             width: "100%",
-            gap: "10px", // reduced gap to bring texts closer
+            gap: "10px",
           }}
         >
           {/* Fixed Text */}
@@ -551,7 +559,7 @@ export default function Homepage() {
               <span
                 style={{
                   fontFamily: "Lora, serif",
-                  fontSize: "58px", // unified font size
+                  fontSize: "58px",
                   fontWeight: "600",
                   color: "#fff",
                 }}
@@ -576,10 +584,8 @@ export default function Homepage() {
                 splitBy="characters"
                 mainClassName="rotating-text"
                 style={{
-                  // fontFamily: "Lora, serif",
                   fontFamily: "Plus Jakarta Sans, sans-serif",
-
-                  fontSize: "38px", // unified font size
+                  fontSize: "38px",
                   fontWeight: "600",
                   color: "#c5c5fc",
                 }}
@@ -595,9 +601,8 @@ export default function Homepage() {
             }
             sx={{
               position: "absolute",
-              bottom: "100px", // position button below the texts
+              bottom: "100px",
               left: "8vw",
-              // transform: "translateX(-50%)",
               backgroundColor: "#000",
               color: "#fff",
               textTransform: "none",
@@ -616,9 +621,8 @@ export default function Homepage() {
             onClick={() => navigate("/about-us")}
             sx={{
               position: "absolute",
-              bottom: "100px", // position button below the texts
+              bottom: "100px",
               left: "8vw",
-              // transform: "translateX(-50%)",
               backgroundColor: "#000",
               color: "#fff",
               textTransform: "none",
@@ -711,17 +715,7 @@ export default function Homepage() {
       </div>
 
       {/* Categories Section */}
-      {/* Categories Section */}
       <div className="full-width-dark-container">
-        {/* Background squares */}
-        {/* <Squares
-    speed={0.6}
-    squareSize={30}
-    direction="diagonal"
-    borderColor="#000"
-    hoverFillColor="#fff"
-    className="squares-background"
-  /> */}
         <div className="container category-content">
           <ScrollFloat
             containerClassName=""
@@ -969,6 +963,7 @@ export default function Homepage() {
           </div>
         </div>
       </div>
+
       {/* Brands Section using ScrollVelocity */}
       <div
         className="container-fluid"
@@ -987,7 +982,6 @@ export default function Homepage() {
             paddingBottom: "60px",
           }}
         >
-          {/* You can optionally add a heading */}
           <h2
             style={{
               fontFamily: "Lora, serif",
@@ -1011,7 +1005,6 @@ export default function Homepage() {
             damping={50}
             stiffness={400}
             numCopies={6}
-            // Optionally override the CSS classes or styles via props
             parallaxClassName="parallax"
             scrollerClassName="scroller"
             scrollerStyle={{ color: "#c5c5fc" }}
@@ -1119,7 +1112,6 @@ const loaderStyles = {
     alignItems: "center", // center the logo horizontally too
   },
   logo: {
-    // filter: "brightness(0) invert(1)", // Make the logo appear white
     marginBottom: "20px",
   },
   text: {
