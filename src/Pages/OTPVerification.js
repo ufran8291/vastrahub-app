@@ -42,7 +42,7 @@ const OTPVerification = () => {
       // Save the token locally (e.g., localStorage)
       localStorage.setItem("websiteSessionToken", sessionToken);
       console.log("Session token stored locally.");
-      console.warn(userData)
+      console.warn(userData);
       // Update global context and navigate as per userStage logic
       updateFirestoreUser(userData);
       navigate("/");
@@ -199,6 +199,7 @@ const OTPVerification = () => {
           <Typography variant="h5" align="center" gutterBottom>
             Sign-in to VastraHub
           </Typography>
+
           <form>
             <Grid container spacing={3}>
               {/* Phone Number Input */}
@@ -259,6 +260,16 @@ const OTPVerification = () => {
                     ? "Sending OTP..."
                     : "Send OTP"}
                 </Button>
+
+                {/* New user note with smaller font size */}
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  align="center"
+                  sx={{ mt: 2 }}
+                >
+                  New users can also register after verifying their phone number above.
+                </Typography>
               </Grid>
             </Grid>
           </form>
