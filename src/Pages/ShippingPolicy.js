@@ -113,12 +113,27 @@ export default function ShippingPolicy() {
             </Typography>
           </li>
         </Box>
-
         <Typography
           variant="h6"
           sx={{ fontFamily: "Lora, serif", mt: 3, mb: 1 }}
         >
-          5. Documentation &amp; Communication
+          5. Relevant Dispatch &amp; Delivery Time Details:
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          <ul style={{ marginLeft: "1rem" }}>
+            <li>
+            After marking your order as "in-transit" your shipment will be delivered to your transporter within 7 working days from the time of issuing "in-transit" email.
+            </li>
+            <li>
+            After delivering your shipment to your transporter you can expect it to arrive at your desired location within India within 7-10 days of LR(Lorry Receipt) generation.
+            </li>
+          </ul>
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{ fontFamily: "Lora, serif", mt: 3, mb: 1 }}
+        >
+          6. Documentation &amp; Communication
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           <ul style={{ marginLeft: "1rem" }}>
@@ -133,12 +148,12 @@ export default function ShippingPolicy() {
             </li>
           </ul>
         </Typography>
-
+        
         <Typography
           variant="h6"
           sx={{ fontFamily: "Lora, serif", mt: 3, mb: 1 }}
         >
-          6. Freight Terms &amp; Responsibilities
+          7. Freight Terms &amp; Responsibilities
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           <ul style={{ marginLeft: "1rem" }}>
@@ -158,7 +173,7 @@ export default function ShippingPolicy() {
           variant="h6"
           sx={{ fontFamily: "Lora, serif", mt: 3, mb: 1 }}
         >
-          7. Delivery Status Update
+          8. Delivery Status Update
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           Once your order is handed over to the transporter:
@@ -185,7 +200,7 @@ export default function ShippingPolicy() {
           variant="h6"
           sx={{ fontFamily: "Lora, serif", mt: 3, mb: 1 }}
         >
-          8. Responsibility &amp; Insurance
+          9 . Responsibility &amp; Insurance
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           <ul style={{ marginLeft: "1rem" }}>
