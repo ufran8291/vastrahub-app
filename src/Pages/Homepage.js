@@ -8,6 +8,7 @@ import {
   getDoc,
   query,
   where,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
@@ -393,25 +394,35 @@ export default function Homepage() {
     }
   };
 
-  // ------------------ Categories & Featured Products ------------------
   const getCategoryImages = async () => {
-    const cats = [];
     try {
-      const snap = await getDocs(collection(db, "categories"));
-      snap.forEach((docSnap) => {
-        cats.push({
-          name: docSnap.data().categoryName || "UNNAMED",
-          image: docSnap.data().imageUrl || null,
-          subCategories: docSnap.data().subCategories || [],
-          order: docSnap.data().order || 0,
-        });
-      });
-      // Sort categories by the order field (lowest value first)
-      cats.sort((a, b) => a.order - b.order);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
+      const catDocs = await getDocs(collection(db, "categories"));
+      const rawCats = catDocs.docs.map((d) => ({
+        name: d.data().categoryName || "UNNAMED",
+        image: d.data().imageUrl || null,
+        subCategories: d.data().subCategories || [],
+        order: d.data().order || 0,
+      }));
+
+      // For each category, run an aggregated count query. We do it in parallel
+      // with Promise.all so the UI doesn't block sequentially.
+      const catsWithProducts = await Promise.all(
+        rawCats.map(async (cat) => {
+          const countSnap = await getCountFromServer(
+            query(collection(db, "products"), where("category", "==", cat.name))
+          );
+          console.log(`category count ${cat.name} : ${countSnap.data().count}`)
+          return countSnap.data().count > 0 ? cat : null;
+        })
+      );
+
+      return catsWithProducts
+        .filter(Boolean)
+        .sort((a, b) => a.order - b.order);
+    } catch (err) {
+      console.error("[Homepage] Error fetching categories:", err);
+      return [];
     }
-    return cats;
   };
 
   const getFeaturedProducts = async () => {

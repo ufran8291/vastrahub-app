@@ -1,7 +1,7 @@
 // src/Pages/Navigation.js
 import React, { useState, useEffect, useContext } from "react";
 import "../App.css";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, getCountFromServer, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 // Import SVGs
@@ -39,23 +39,40 @@ export default function Navigation() {
   // Fetch categories from Firestore
   const getCategories = async () => {
     const db = getFirestore();
-    const fetchedCategories = [];
     try {
-      const querySnapshot = await getDocs(collection(db, "categories"));
-      querySnapshot.forEach((doc) => {
-        fetchedCategories.push({
-          name: doc.data().categoryName || "UNNAMED",
-          image: doc.data().imageUrl || null,
-          subCategories: doc.data().subCategories || [],
-          order: doc.data().order || 0,
-        });
-      });
-      // Sort categories by order (lowest first)
-      fetchedCategories.sort((a, b) => a.order - b.order);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
+      // 1) Get *all* category docs first (cheap single read per doc)
+      const snap = await getDocs(collection(db, "categories"));
+      const rawCats = snap.docs.map((d) => ({
+        name: d.data().categoryName || "UNNAMED",
+        image: d.data().imageUrl || null,
+        subCategories: d.data().subCategories || [],
+        order: d.data().order || 0,
+      }));
+
+      // 2) For each category, run an *aggregation count* query in parallel
+      const catsWithProducts = await Promise.all(
+        rawCats.map(async (cat) => {
+          try {
+            const countSnap = await getCountFromServer( 
+              query(collection(db, "products"), where("category", "==", cat.name))
+            );
+            // Debug — uncomment if needed
+            // console.log(`Count for ${cat.name}:`, countSnap.data().count);
+            return countSnap.data().count > 0 ? cat : null;
+          } catch (err) {
+            console.error(`[Navigation] count error for ${cat.name}:`, err);
+            return null;
+          }
+        })
+      );
+
+      return catsWithProducts
+        .filter(Boolean) // remove nulls
+        .sort((a, b) => a.order - b.order);
+    } catch (err) {
+      console.error("[Navigation] Error fetching categories:", err);
+      return [];
     }
-    return fetchedCategories;
   };
 
   // On mount, fetch categories
