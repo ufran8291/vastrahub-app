@@ -1,12 +1,7 @@
 // src/Pages/ShopByCategory.js
 import React, { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
 import {
@@ -156,21 +151,47 @@ export default function ShopByCategory() {
   };
 
   return (
-    <div style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+    <div
+      style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}
+    >
       <Fade triggerOnce>
-        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "20px", mb: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "20px",
+            mb: 4,
+          }}
+        >
           <Box sx={{ flex: "1 1 300px", maxWidth: "400px" }}>
             <img
               src={category.image || categoryPlaceholder}
               alt={category.name}
-              style={{ width: "100%", borderRadius: "100%", objectFit: "contain", maxHeight: "300px" }}
+              style={{
+                width: "100%",
+                borderRadius: "100%",
+                objectFit: "contain",
+                maxHeight: "300px",
+              }}
             />
           </Box>
           <Box sx={{ flex: "1 1 300px", minWidth: "280px" }}>
-            <Typography variant="h3" sx={{ fontFamily: "Lora, serif", fontWeight: 600, textTransform: "uppercase", mb: 2 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontFamily: "Lora, serif",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                mb: 2,
+              }}
+            >
               Shop for {category.name || "Category"}
             </Typography>
-            <Typography variant="body1" sx={{ fontSize: "16px", color: "#666", mb: 1 }}>
+            <Typography
+              variant="body1"
+              sx={{ fontSize: "16px", color: "#666", mb: 1 }}
+            >
               Filter by subcategory:
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
@@ -229,7 +250,9 @@ export default function ShopByCategory() {
                   <MenuItem
                     key={range.label}
                     onClick={() => {
-                      setSelectedPriceRange(range.value === null ? null : range);
+                      setSelectedPriceRange(
+                        range.value === null ? null : range
+                      );
                       setPriceAnchorEl(null);
                     }}
                   >
@@ -261,7 +284,10 @@ export default function ShopByCategory() {
       </Box>
 
       {filteredProducts.length === 0 ? (
-        <Typography variant="body1" sx={{ color: "#666", textAlign: "center", my: 8 }}>
+        <Typography
+          variant="body1"
+          sx={{ color: "#666", textAlign: "center", my: 8 }}
+        >
           No products match the selected category/subcategory filters.
         </Typography>
       ) : (
@@ -274,11 +300,15 @@ export default function ShopByCategory() {
                   title: prod.title,
                   fabric: prod.fabric,
                   image: prod.coverImage || productPlaceholder,
-                  additionalImages: prod.additionalImages || [productPlaceholder],
+                  additionalImages: prod.additionalImages || [
+                    productPlaceholder,
+                  ],
                   price: prod.sizes?.[0]?.pricePerPiece || 0,
                   sizes: prod.sizes || [],
                 }}
-                onView={() => navigate("/view-product", { state: { productId: prod.id } })}
+                onView={() =>
+                  navigate("/view-product", { state: { productId: prod.id } })
+                }
                 onAdd={() => handleAddToCartClick(prod)}
               />
             </Grid>
@@ -287,7 +317,10 @@ export default function ShopByCategory() {
       )}
 
       {overlayProduct && (
-        <SizeSelectorOverlay product={overlayProduct} onClose={() => setOverlayProduct(null)} />
+        <SizeSelectorOverlay
+          product={overlayProduct}
+          onClose={() => setOverlayProduct(null)}
+        />
       )}
     </div>
   );
