@@ -1,7 +1,13 @@
 // src/Pages/ShopByCategory.js
 import React, { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  getCountFromServer,
+} from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { toast } from "react-toastify";
 import {
@@ -28,6 +34,9 @@ export default function ShopByCategory() {
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
+  /* ──────────────────────────────────────────────────────────
+     Guard – redirect if no category was passed
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!category) {
       toast.error("No category selected.");
@@ -35,6 +44,9 @@ export default function ShopByCategory() {
     }
   }, [category, navigate]);
 
+  /* ──────────────────────────────────────────────────────────
+     Local state
+  ────────────────────────────────────────────────────────── */
   const [allProducts, setAllProducts] = useState([]);
   const [allSubcatsFromProducts, setAllSubcatsFromProducts] = useState([]);
   const [selectedSubcats, setSelectedSubcats] = useState([]);
@@ -43,128 +55,187 @@ export default function ShopByCategory() {
   const [priceAnchorEl, setPriceAnchorEl] = useState(null);
   const [sortOption, setSortOption] = useState("recent");
 
-  const catSubCategories = category?.subCategories || [];
-
-  const priceRanges = [
-    { label: "Clear Filter", value: null },
-    { label: "Less than 200", value: { min: 0, max: 200 } },
-    { label: "200 - 300", value: { min: 200, max: 300 } },
-    { label: "300 - 400", value: { min: 300, max: 400 } },
-    { label: "400 - 500", value: { min: 400, max: 500 } },
-    { label: "500 - 600", value: { min: 500, max: 600 } },
-    { label: "600 - 700", value: { min: 600, max: 700 } },
-    { label: "700 - 800", value: { min: 700, max: 800 } },
-    { label: "800 - 900", value: { min: 800, max: 900 } },
-    { label: "900 - 1000", value: { min: 900, max: 1000 } },
+  /* ──────────────────────────────────────────────────────────
+     Fixed price‑range master list
+  ────────────────────────────────────────────────────────── */
+  const priceRangesMaster = [
+    { label: "Clear Filter",      value: null },
+    { label: "Less than 200",     value: { min: 0,    max: 200 } },
+    { label: "200 ‑ 300",         value: { min: 200,  max: 300 } },
+    { label: "300 ‑ 400",         value: { min: 300,  max: 400 } },
+    { label: "400 ‑ 500",         value: { min: 400,  max: 500 } },
+    { label: "500 ‑ 600",         value: { min: 500,  max: 600 } },
+    { label: "600 ‑ 700",         value: { min: 600,  max: 700 } },
+    { label: "700 ‑ 800",         value: { min: 700,  max: 800 } },
+    { label: "800 ‑ 900",         value: { min: 800,  max: 900 } },
+    { label: "900 ‑ 1000",        value: { min: 900,  max: 1000 } },
     { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
   ];
+  const [availablePriceRanges, setAvailablePriceRanges] =
+    useState(priceRangesMaster);
 
+  /* ──────────────────────────────────────────────────────────
+     Fetch category products → derive subcats & valid price ranges
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!category) return;
-    async function fetchCategoryProducts() {
-      try {
-        const productsRef = collection(db, "products");
-        const qCat = query(productsRef, where("category", "==", category.name));
-        const snapshot = await getDocs(qCat);
-        const prodArr = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          prodArr.push({ id: docSnap.id, ...data });
-        });
-        setAllProducts(prodArr);
 
-        const subcatSet = new Set();
-        prodArr.forEach((p) => {
-          if (p.subcategory) {
-            if (Array.isArray(p.subcategory)) {
-              p.subcategory.forEach((sc) => subcatSet.add(sc));
-            } else {
-              subcatSet.add(p.subcategory);
-            }
-          }
+    (async () => {
+      try {
+        /* 1️⃣  Pull every product in this category */
+        const qCat = query(
+          collection(db, "products"),
+          where("category", "==", category.name)
+        );
+        const snap = await getDocs(qCat);
+        const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setAllProducts(products);
+
+        /* 2️⃣  Derive *subcategories that actually have products* */
+        const declaredSubcats = category.subCategories || [];
+        const subcatSetFromDocs = new Set();
+        products.forEach((p) => {
+          if (!p.subcategory) return;
+          Array.isArray(p.subcategory)
+            ? p.subcategory.forEach((s) => subcatSetFromDocs.add(s))
+            : subcatSetFromDocs.add(p.subcategory);
         });
-        catSubCategories.forEach((sc) => subcatSet.add(sc));
-        setAllSubcatsFromProducts([...subcatSet]);
+
+        // For declared subcats missing from docs, double‑check with count query
+        const missingDeclared = declaredSubcats.filter(
+          (s) => !subcatSetFromDocs.has(s)
+        );
+        const extraSubs = await Promise.all(
+          missingDeclared.map(async (sub) => {
+            try {
+              const cnt = await getCountFromServer(
+                query(
+                  collection(db, "products"),
+                  where("category", "==", category.name),
+                  where("subcategory", "==", sub)
+                )
+              );
+              return cnt.data().count > 0 ? sub : null;
+            } catch (err) {
+              console.error(`[ShopByCategory] subcat count error: ${sub}`, err);
+              return null;
+            }
+          })
+        );
+
+        const finalSubcats = [
+          ...subcatSetFromDocs,
+          ...extraSubs.filter(Boolean),
+        ].sort((a, b) => a.localeCompare(b));
+        setAllSubcatsFromProducts(finalSubcats);
+
+        /* 3️⃣  Figure out which price ranges actually contain products */
+        const rangesWithProducts = priceRangesMaster.filter((range) => {
+          if (range.value === null) return true; // always keep Clear Filter
+          return products.some((p) => {
+            const price = p.sizes?.[0]?.pricePerPiece || 0;
+            return (
+              price >= range.value.min && price < range.value.max
+            );
+          });
+        });
+        setAvailablePriceRanges(rangesWithProducts);
       } catch (error) {
         console.error("Error fetching category products:", error);
         toast.error("Unable to load products for this category.");
       }
+    })();
+  }, [category]);
+
+  /* Keep price selection valid when ranges change */
+  useEffect(() => {
+    if (
+      selectedPriceRange &&
+      !availablePriceRanges.some((r) => r.label === selectedPriceRange.label)
+    ) {
+      setSelectedPriceRange(null);
     }
-    fetchCategoryProducts();
-  }, [category, catSubCategories]);
+  }, [availablePriceRanges, selectedPriceRange]);
 
-  let filteredProducts = allProducts.filter((prod) => {
-    const passesSubcat =
-      selectedSubcats.length === 0 ||
-      (Array.isArray(prod.subcategory)
-        ? prod.subcategory.some((sc) => selectedSubcats.includes(sc))
-        : selectedSubcats.includes(prod.subcategory));
+  /* ──────────────────────────────────────────────────────────
+     Filter + sort products for display
+  ────────────────────────────────────────────────────────── */
+  const filteredProducts = [...allProducts]
+    .filter((prod) => {
+      /* subcategory filter */
+      const passesSubcat =
+        selectedSubcats.length === 0 ||
+        (Array.isArray(prod.subcategory)
+          ? prod.subcategory.some((sc) => selectedSubcats.includes(sc))
+          : selectedSubcats.includes(prod.subcategory));
 
-    let passesPrice = true;
-    if (selectedPriceRange && selectedPriceRange.value) {
-      const productPrice =
-        prod.sizes && prod.sizes.length > 0 ? prod.sizes[0].pricePerPiece : 0;
-      passesPrice =
-        productPrice >= selectedPriceRange.value.min &&
-        productPrice < selectedPriceRange.value.max;
-    }
-    return passesSubcat && passesPrice;
-  });
+      /* price filter */
+      let passesPrice = true;
+      if (selectedPriceRange && selectedPriceRange.value) {
+        const price = prod.sizes?.[0]?.pricePerPiece || 0;
+        passesPrice =
+          price >= selectedPriceRange.value.min &&
+          price < selectedPriceRange.value.max;
+      }
 
-  filteredProducts = [...filteredProducts].sort((a, b) => {
-    const priceA = a?.sizes?.[0]?.pricePerPiece || 0;
-    const priceB = b?.sizes?.[0]?.pricePerPiece || 0;
-    const timeA = a?.createdAt?.toDate?.() || new Date(0);
-    const timeB = b?.createdAt?.toDate?.() || new Date(0);
+      return passesSubcat && passesPrice;
+    })
+    .sort((a, b) => {
+      const priceA = a.sizes?.[0]?.pricePerPiece || 0;
+      const priceB = b.sizes?.[0]?.pricePerPiece || 0;
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
 
-    switch (sortOption) {
-      case "priceLowToHigh":
-        return priceA - priceB;
-      case "priceHighToLow":
-        return priceB - priceA;
-      case "oldest":
-        return timeA - timeB;
-      case "recent":
-      default:
-        return timeB - timeA;
-    }
-  });
+      switch (sortOption) {
+        case "priceLowToHigh":
+          return priceA - priceB;
+        case "priceHighToLow":
+          return priceB - priceA;
+        case "oldest":
+          return dateA - dateB;
+        case "recent":
+        default:
+          return dateB - dateA;
+      }
+    });
 
-  const handleToggleSubcat = (sub) => {
+  /* ──────────────────────────────────────────────────────────
+     Helpers
+  ────────────────────────────────────────────────────────── */
+  const toggleSubcat = (sub) =>
     setSelectedSubcats((prev) =>
       prev.includes(sub) ? prev.filter((x) => x !== sub) : [...prev, sub]
     );
-  };
 
-  const handleAddToCartClick = (product) => {
+  const handleAddToCart = (prod) => {
     if (!isLoggedIn) {
       toast.info("Please log in to add products to your cart.");
       navigate("/otp-verify");
       return;
     }
-    setOverlayProduct(product);
+    setOverlayProduct(prod);
   };
 
-  const subcatVariants = {
-    hover: { scale: 1.05 },
-    tap: { scale: 0.95 },
-  };
+  const subcatVariants = { hover: { scale: 1.05 }, tap: { scale: 0.95 } };
 
+  /* ──────────────────────────────────────────────────────────
+     Render
+  ────────────────────────────────────────────────────────── */
   return (
-    <div
-      style={{ padding: "30px", fontFamily: "Plus Jakarta Sans, sans-serif" }}
-    >
+    <div style={{ padding: 30, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
       <Fade triggerOnce>
+        {/* HEADER: image + filters */}
         <Box
           sx={{
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
-            gap: "20px",
+            gap: 3,
             mb: 4,
           }}
         >
-          <Box sx={{ flex: "1 1 300px", maxWidth: "400px" }}>
+          {/* Category image */}
+          <Box sx={{ flex: "1 1 300px", maxWidth: 400 }}>
             <img
               src={category.image || categoryPlaceholder}
               alt={category.name}
@@ -172,11 +243,13 @@ export default function ShopByCategory() {
                 width: "100%",
                 borderRadius: "100%",
                 objectFit: "contain",
-                maxHeight: "300px",
+                maxHeight: 300,
               }}
             />
           </Box>
-          <Box sx={{ flex: "1 1 300px", minWidth: "280px" }}>
+
+          {/* Filter chips */}
+          <Box sx={{ flex: "1 1 300px", minWidth: 280 }}>
             <Typography
               variant="h3"
               sx={{
@@ -186,41 +259,44 @@ export default function ShopByCategory() {
                 mb: 2,
               }}
             >
-              Shop for {category.name || "Category"}
+              Shop for {category.name}
             </Typography>
+
             <Typography
               variant="body1"
-              sx={{ fontSize: "16px", color: "#666", mb: 1 }}
+              sx={{ fontSize: 16, color: "#666", mb: 1 }}
             >
               Filter by subcategory:
             </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {allSubcatsFromProducts.map((sub) => {
-                const isActive = selectedSubcats.includes(sub);
+                const active = selectedSubcats.includes(sub);
                 return (
                   <motion.div
                     key={sub}
                     variants={subcatVariants}
                     whileHover="hover"
                     whileTap="tap"
-                    onClick={() => handleToggleSubcat(sub)}
+                    onClick={() => toggleSubcat(sub)}
                     style={{
                       padding: "8px 16px",
-                      border: `1px solid ${isActive ? "#333" : "#ccc"}`,
-                      backgroundColor: isActive ? "#333" : "#fff",
-                      color: isActive ? "#fff" : "#333",
-                      borderRadius: "20px",
+                      border: `1px solid ${active ? "#333" : "#ccc"}`,
+                      backgroundColor: active ? "#333" : "#fff",
+                      color: active ? "#fff" : "#333",
+                      borderRadius: 20,
                       cursor: "pointer",
-                      fontSize: "14px",
+                      fontSize: 14,
                       fontWeight: 500,
                       userSelect: "none",
-                      transition: "background-color 0.3s, color 0.3s",
                     }}
                   >
                     {sub}
                   </motion.div>
                 );
               })}
+
+              {/* PRICE‑RANGE chip */}
               <motion.div
                 variants={subcatVariants}
                 whileHover="hover"
@@ -228,25 +304,30 @@ export default function ShopByCategory() {
                 onClick={(e) => setPriceAnchorEl(e.currentTarget)}
                 style={{
                   padding: "8px 16px",
-                  border: `1px solid ${selectedPriceRange ? "#333" : "#ccc"}`,
+                  border: `1px solid ${
+                    selectedPriceRange ? "#333" : "#ccc"
+                  }`,
                   backgroundColor: selectedPriceRange ? "#333" : "#fff",
                   color: selectedPriceRange ? "#fff" : "#333",
-                  borderRadius: "20px",
+                  borderRadius: 20,
                   cursor: "pointer",
-                  fontSize: "14px",
+                  fontSize: 14,
                   fontWeight: 500,
                   userSelect: "none",
-                  transition: "background-color 0.3s, color 0.3s",
                 }}
               >
-                {selectedPriceRange ? selectedPriceRange.label : "Price Range"}
+                {selectedPriceRange
+                  ? selectedPriceRange.label
+                  : "Price Range"}
               </motion.div>
+
+              {/* PRICE‑RANGE menu */}
               <Menu
                 anchorEl={priceAnchorEl}
                 open={Boolean(priceAnchorEl)}
                 onClose={() => setPriceAnchorEl(null)}
               >
-                {priceRanges.map((range) => (
+                {availablePriceRanges.map((range) => (
                   <MenuItem
                     key={range.label}
                     onClick={() => {
@@ -265,7 +346,7 @@ export default function ShopByCategory() {
         </Box>
       </Fade>
 
-      {/* Sort By Picker */}
+      {/* SORT picker */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel id="sort-label">Sort By</InputLabel>
@@ -283,12 +364,13 @@ export default function ShopByCategory() {
         </FormControl>
       </Box>
 
+      {/* PRODUCTS grid */}
       {filteredProducts.length === 0 ? (
         <Typography
           variant="body1"
           sx={{ color: "#666", textAlign: "center", my: 8 }}
         >
-          No products match the selected category/subcategory filters.
+          No products match the selected filters.
         </Typography>
       ) : (
         <Grid container spacing={2}>
@@ -300,22 +382,24 @@ export default function ShopByCategory() {
                   title: prod.title,
                   fabric: prod.fabric,
                   image: prod.coverImage || productPlaceholder,
-                  additionalImages: prod.additionalImages || [
-                    productPlaceholder,
-                  ],
+                  additionalImages:
+                    prod.additionalImages || [productPlaceholder],
                   price: prod.sizes?.[0]?.pricePerPiece || 0,
                   sizes: prod.sizes || [],
                 }}
                 onView={() =>
-                  navigate("/view-product", { state: { productId: prod.id } })
+                  navigate("/view-product", {
+                    state: { productId: prod.id },
+                  })
                 }
-                onAdd={() => handleAddToCartClick(prod)}
+                onAdd={() => handleAddToCart(prod)}
               />
             </Grid>
           ))}
         </Grid>
       )}
 
+      {/* SIZE selector overlay */}
       {overlayProduct && (
         <SizeSelectorOverlay
           product={overlayProduct}
