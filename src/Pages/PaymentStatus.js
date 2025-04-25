@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CircularProgress,
   Container,
@@ -7,18 +7,32 @@ import {
   Box,
   Divider,
 } from "@mui/material";
-import { GlobalContext } from "../Context/GlobalContext";
 import {
   FaCheckCircle,
   FaHourglassHalf,
   FaTimesCircle,
   FaExclamationTriangle,
 } from "react-icons/fa";
-import { doc, updateDoc } from "firebase/firestore";
+import { GlobalContext } from "../Context/GlobalContext";
 import { db } from "../Configs/FirebaseConfig";
+import {
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+  collection,
+  addDoc,
+} from "firebase/firestore";
 
 export default function PaymentStatus() {
-  const { getPhonePePaymentStatus } = useContext(GlobalContext);
+  const navigate = useNavigate();
+  const {
+    getPhonePePaymentStatus,
+    sendEmail,
+    createSalesOrder,
+    syncStockDataForIds,
+  } = useContext(GlobalContext);
+
   const location = useLocation();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Fetching payment status...");
@@ -28,6 +42,129 @@ export default function PaymentStatus() {
   const POLL_INTERVAL = 8000;
 
   const transactionId = location.search.replace("?", "").split("--")[0];
+  const orderId = transactionId.replace("TXN", "");
+
+  const getOrderData = async () => {
+    const orderRef = doc(db, "orders", orderId);
+    const snap = await getDoc(orderRef);
+    if (!snap.exists()) throw new Error("Order does not exist");
+    return { orderRef, orderData: snap.data() };
+  };
+
+  const updateStockManually = async (orderData) => {
+    for (const item of orderData.orderItems) {
+      const productRef = doc(db, "products", item.productId);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const productData = productSnap.data();
+        const updatedSizes = productData.sizes.map((size) => {
+          if (size.size === item.size) {
+            const newPieces = size.piecesInStock - item.noOfPieces;
+            return {
+              ...size,
+              piecesInStock: newPieces,
+              boxesInStock:
+                Math.floor(newPieces / size.boxPieces) +
+                (newPieces % size.boxPieces > 0 ? 1 : 0),
+            };
+          }
+          return size;
+        });
+        await setDoc(productRef, { sizes: updatedSizes }, { merge: true });
+      }
+    }
+  };
+
+  const sendOrderConfirmation = async (email, name) => {
+    const emailSubject = "Order Confirmation - Your Order is Placed";
+    const emailContent = `Hello ${name},\n\nThank you for your order!\n\nYour order has been placed successfully. You can view the order details in your profile.\n\nWarm regards,\nThe VastraHub Team`;
+    await sendEmail({ email, subject: emailSubject, content: emailContent });
+  };
+
+  const handleSuccessFlow = async (apiResponse) => {
+    const { orderRef, orderData } = await getOrderData();
+
+    // Update Firestore order
+    await updateDoc(orderRef, {
+      orderStatus: "ORDERED",
+      paymentDone: true,
+      paymentResponse: apiResponse.data,
+    });
+
+    // Prepare payload for GoFrugal
+    const onlineReferenceNo = Date.now().toString();
+    const newOrderPayload = {
+      onlineReferenceNo,
+      createdAt: new Date().toISOString(),
+      totalTaxAmount: Number(orderData.gst),
+      totalDiscountAmount: 0,
+      status: "pending",
+      totalQuantity: orderData.orderItems.reduce(
+        (sum, item) => sum + Number(item.noOfPieces),
+        0
+      ),
+      totalAmount: Number(orderData.grandTotal),
+      paymentMode: orderData.paymentMode,
+      shippingId: orderData.userId,
+      shippingName: orderData.userName,
+      shippingMobile: orderData.userPhone,
+      shippingAddress1: orderData.userAddress,
+      shippingCountry: orderData.shippingCountry,
+      shippingPincode: orderData.shippingPincode,
+      shippingStateCode: Number(orderData.shippingStateCode),
+      shipmentItems: orderData.orderItems.length,
+      customerName: orderData.userBusinessName,
+      customerMobile: orderData.userPhone,
+      customerEmail: orderData.userEmail,
+      orderRemarks: orderData.orderRemarks,
+      Channel: orderData.Channel,
+      orderItems: orderData.orderItems.map((item, index) => ({
+        rowNo: index + 1,
+        itemId: Number(item.inventoryId),
+        itemReferenceCode: String(item.inventoryId),
+        salePrice: Number(item.pricePerPiece),
+        quantity: Number(item.noOfPieces),
+        itemAmount: Number(item.noOfPieces) * Number(item.pricePerPiece),
+        taxPercentage: Number(item.gst),
+        discountPercentage: 0,
+      })),
+    };
+
+    let isStoreOpen = true;
+    try {
+      const storeSnap = await getDoc(doc(db, "banners", "other-data"));
+      if (storeSnap.exists()) isStoreOpen = storeSnap.data().isStoreOpen;
+    } catch (e) {
+      console.warn("Could not check store status:", e);
+    }
+
+    if (isStoreOpen) {
+      try {
+        await createSalesOrder(newOrderPayload);
+      } catch (err) {
+        await addDoc(collection(db, "unsync-orders"), {
+          ...newOrderPayload,
+          firestoreOrderId: orderId,
+          error: err.message,
+          createdAt: new Date().toISOString(),
+        });
+        await updateStockManually(orderData);
+      }
+    } else {
+      await addDoc(collection(db, "unsync-orders"), {
+        ...newOrderPayload,
+        firestoreOrderId: orderId,
+        error: "Store closed",
+        createdAt: new Date().toISOString(),
+      });
+      await updateStockManually(orderData);
+    }
+
+    await sendOrderConfirmation(orderData.userEmail, orderData.userName);
+    setStatus("success");
+    setMessage("✅ Payment Successful!");
+    setSubMessage("Thank you for your payment. Your order is confirmed and an email has been sent to you.");
+  };
 
   const checkStatus = async () => {
     console.log(`🔄 Attempt ${attemptCount.current + 1} for transaction ${transactionId}`);
@@ -37,10 +174,7 @@ export default function PaymentStatus() {
 
       if (txnStatus === "COMPLETED") {
         clearInterval(window.__vastrahubStatusInterval__);
-        setStatus("success");
-        setMessage("✅ Payment Successful!");
-        
-        setSubMessage("Thank you for your payment. We have received your payment against this order.");
+        await handleSuccessFlow(response);
       } else if (txnStatus === "PENDING") {
         if (attemptCount.current < MAX_ATTEMPTS - 1) {
           setStatus("pending");
@@ -54,27 +188,15 @@ export default function PaymentStatus() {
         }
       } else {
         clearInterval(window.__vastrahubStatusInterval__);
-        setStatus("pending");
+        const orderRef = doc(db, "orders", orderId);
+        await updateDoc(orderRef, {
+          orderStatus: "FAILED",
+          paymentDone: false,
+          paymentResponse: response.data,
+        });
+        setStatus("failed");
         setMessage("❌ Payment Failed");
-        setSubMessage("We’re updating your order status. Please don’t refresh this page.");
-
-        try {
-          const orderId = transactionId.replace("TXN", "");
-          const orderRef = doc(db, "orders", orderId);
-          await updateDoc(orderRef, {
-            orderStatus: "FAILED",
-            paymentDone: false,
-            paymentResponse: response.data,
-          });
-
-          setStatus("failed");
-          setSubMessage("The transaction was unsuccessful. Please try again or use another payment method.");
-        } catch (err) {
-          console.error("⚠️ Firestore update failed:", err);
-          setStatus("error");
-          setMessage("⚠️ Failed to update order");
-          setSubMessage("We couldn’t update your order. Please contact support.");
-        }
+        setSubMessage("The transaction was unsuccessful. Please try again or use another payment method.");
       }
     } catch (err) {
       clearInterval(window.__vastrahubStatusInterval__);
@@ -95,7 +217,7 @@ export default function PaymentStatus() {
       return;
     }
 
-    checkStatus(); // initial
+    checkStatus();
     window.__vastrahubStatusInterval__ = setInterval(() => {
       if (attemptCount.current >= MAX_ATTEMPTS) {
         clearInterval(window.__vastrahubStatusInterval__);
@@ -105,7 +227,7 @@ export default function PaymentStatus() {
     }, POLL_INTERVAL);
 
     return () => clearInterval(window.__vastrahubStatusInterval__);
-  }, []); // intentionally empty
+  }, []);
 
   const getIcon = () => {
     const iconSize = 70;
