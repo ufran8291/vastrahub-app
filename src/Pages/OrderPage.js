@@ -294,6 +294,7 @@ export default function OrderPage() {
           toast.error(
             `Insufficient stock for ${item.productTitle} (Size: ${item.size}).`
           );
+          console.log(`need ${item.noOfPieces} available ${sizeObj.piecesInStock}`)
           allPassed = false;
           break;
         }

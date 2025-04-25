@@ -251,7 +251,7 @@ export const GlobalProvider = ({ children }) => {
       console.log(orderId)
       const response = await fetch(
         // "https://createphonepepayment-k4uu64ikma-uc.a.run.app",
-        "http://127.0.0.1:5001/vastrahub-ef0c1/us-central1/createPhonePePayment",
+        "https://createphonepepayment-k4uu64ikma-uc.a.run.app",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -274,7 +274,7 @@ export const GlobalProvider = ({ children }) => {
   const getPhonePePaymentStatus = async ({  merchantOrderId }) => {
     try {
       const response = await fetch(
-        "http://127.0.0.1:5001/vastrahub-ef0c1/us-central1/getPhonePePaymentStatus", // Replace with actual deployed CF endpoint
+        "https://getphonepepaymentstatus-k4uu64ikma-uc.a.run.app", // Replace with actual deployed CF endpoint
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
