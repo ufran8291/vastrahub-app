@@ -40,6 +40,7 @@ import CustomCursor from "./components/CustomCursor";
 
 import { motion } from "framer-motion";
 import ShippingPolicy from "./Pages/ShippingPolicy";
+import PaymentStatus from "./Pages/PaymentStatus";
 
 // A helper component that adds a smooth transition to its children.
 const PageTransition = ({ children }) => (
@@ -169,6 +170,11 @@ function App() {
           path: "/tag-products",
           element: withTransition(<TagProducts />),
         },
+        {
+          path: "/payment",
+          element: withTransition(<PaymentStatus />),
+        },
+        
        
       ],
     },

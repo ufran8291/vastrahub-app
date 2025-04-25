@@ -242,6 +242,56 @@ export const GlobalProvider = ({ children }) => {
       throw err;
     }
   };
+  const generatePaymentLink = async ({ amount, transactionId, merchantUserId, orderId }) => {
+    try {
+      console.log('trying to make a payment with : ')
+      console.log(amount)
+      console.log(transactionId)
+      console.log(merchantUserId)
+      console.log(orderId)
+      const response = await fetch(
+        // "https://createphonepepayment-k4uu64ikma-uc.a.run.app",
+        "http://127.0.0.1:5001/vastrahub-ef0c1/us-central1/createPhonePePayment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount,transactionId, merchantUserId, orderId  }),
+        }
+      );
+      console.log(response)
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error: ${response.status} - ${response.statusText}\n${errorText}`
+        );
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+  const getPhonePePaymentStatus = async ({  merchantOrderId }) => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5001/vastrahub-ef0c1/us-central1/getPhonePePaymentStatus", // Replace with actual deployed CF endpoint
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ merchantOrderId }),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error: ${response.status}\n${errorText}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+  
 
   const createSalesOrder = async (orderData) => {
     try {
@@ -277,7 +327,9 @@ export const GlobalProvider = ({ children }) => {
     syncStockDataForIds,
     checkStockAvailability,
     sendEmail,
-    createSalesOrder, // Function to sign out the user
+    createSalesOrder, 
+    generatePaymentLink, // Function to sign out the user
+    getPhonePePaymentStatus,
   };
 
   return (
