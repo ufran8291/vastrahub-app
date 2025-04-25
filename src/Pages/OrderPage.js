@@ -584,8 +584,8 @@ export default function OrderPage() {
       // 6. Else branch: Payment mode is not Pay Later.
       setOrderStatus("Redirecting to payment gateway...");
       try {
-        orderData.paymentMode = "pending";
-        orderData.orderStatus = "PG";
+        orderData.paymentMode = "PG";
+        orderData.orderStatus = "PENDING";
         orderData.paymentDone = false;
         const orderDocRef = await addDoc(collection(db, "orders"), orderData);
         console.log("Order saved (PG mode) with id:", orderDocRef.id);

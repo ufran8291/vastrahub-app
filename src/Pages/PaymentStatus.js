@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   CircularProgress,
@@ -8,7 +8,14 @@ import {
   Divider,
 } from "@mui/material";
 import { GlobalContext } from "../Context/GlobalContext";
-import { FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaExclamationTriangle } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaHourglassHalf,
+  FaTimesCircle,
+  FaExclamationTriangle,
+} from "react-icons/fa";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../Configs/FirebaseConfig";
 
 export default function PaymentStatus() {
   const { getPhonePePaymentStatus } = useContext(GlobalContext);
@@ -16,13 +23,71 @@ export default function PaymentStatus() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Fetching payment status...");
   const [subMessage, setSubMessage] = useState("");
+  const attemptCount = useRef(0);
+  const MAX_ATTEMPTS = 8;
+  const POLL_INTERVAL = 8000;
+
+  const transactionId = location.search.replace("?", "").split("--")[0];
+
+  const checkStatus = async () => {
+    console.log(`🔄 Attempt ${attemptCount.current + 1} for transaction ${transactionId}`);
+    try {
+      const response = await getPhonePePaymentStatus({ merchantOrderId: transactionId });
+      const txnStatus = response?.data?.state || "UNKNOWN";
+
+      if (txnStatus === "COMPLETED") {
+        clearInterval(window.__vastrahubStatusInterval__);
+        setStatus("success");
+        setMessage("✅ Payment Successful!");
+        
+        setSubMessage("Thank you for your payment. We have received your payment against this order.");
+      } else if (txnStatus === "PENDING") {
+        if (attemptCount.current < MAX_ATTEMPTS - 1) {
+          setStatus("pending");
+          setMessage("⏳ Payment Pending");
+          setSubMessage("We're still waiting for payment confirmation. Please do not refresh or close this page.");
+        } else {
+          clearInterval(window.__vastrahubStatusInterval__);
+          setStatus("pending");
+          setMessage("⏳ Payment Still Pending");
+          setSubMessage("We couldn't confirm your payment automatically. You can also check your payment status anytime from the My Orders section.");
+        }
+      } else {
+        clearInterval(window.__vastrahubStatusInterval__);
+        setStatus("pending");
+        setMessage("❌ Payment Failed");
+        setSubMessage("We’re updating your order status. Please don’t refresh this page.");
+
+        try {
+          const orderId = transactionId.replace("TXN", "");
+          const orderRef = doc(db, "orders", orderId);
+          await updateDoc(orderRef, {
+            orderStatus: "FAILED",
+            paymentDone: false,
+            paymentResponse: response.data,
+          });
+
+          setStatus("failed");
+          setSubMessage("The transaction was unsuccessful. Please try again or use another payment method.");
+        } catch (err) {
+          console.error("⚠️ Firestore update failed:", err);
+          setStatus("error");
+          setMessage("⚠️ Failed to update order");
+          setSubMessage("We couldn’t update your order. Please contact support.");
+        }
+      }
+    } catch (err) {
+      clearInterval(window.__vastrahubStatusInterval__);
+      console.error("Payment status fetch error:", err);
+      setStatus("error");
+      setMessage("⚠️ Payment Status Error");
+      setSubMessage("Something went wrong while verifying your payment. Please contact support.");
+    } finally {
+      attemptCount.current++;
+    }
+  };
 
   useEffect(() => {
-    const rawQuery = location.search.replace("?", "");
-    const [transactionId] = rawQuery.split("--");
-
-    console.log("🔍 Extracted transactionId:", transactionId);
-
     if (!transactionId) {
       setStatus("error");
       setMessage("Invalid Payment Link");
@@ -30,35 +95,17 @@ export default function PaymentStatus() {
       return;
     }
 
-    const checkStatus = async () => {
-      try {
-        const response = await getPhonePePaymentStatus({ merchantOrderId: transactionId });
-
-        const txnStatus = response?.data?.state || "UNKNOWN";
-
-        if (txnStatus === "COMPLETED") {
-          setStatus("success");
-          setMessage("✅ Payment Successful!");
-          setSubMessage("Thank you for your payment. We have received your payment against this order.");
-        } else if (txnStatus === "PENDING") {
-          setStatus("pending");
-          setMessage("⏳ Payment Pending");
-          setSubMessage("We're still waiting for payment confirmation. Please do not refresh or close this page.");
-        } else {
-          setStatus("failed");
-          setMessage("❌ Payment Failed");
-          setSubMessage("The transaction was unsuccessful. Please try again or use another payment method.");
-        }
-      } catch (err) {
-        console.error("Error fetching payment status:", err);
-        setStatus("error");
-        setMessage("⚠️ Payment Status Error");
-        setSubMessage("Something went wrong while verifying your payment. Please contact support.");
+    checkStatus(); // initial
+    window.__vastrahubStatusInterval__ = setInterval(() => {
+      if (attemptCount.current >= MAX_ATTEMPTS) {
+        clearInterval(window.__vastrahubStatusInterval__);
+        return;
       }
-    };
+      checkStatus();
+    }, POLL_INTERVAL);
 
-    checkStatus();
-  }, [location.search, getPhonePePaymentStatus]);
+    return () => clearInterval(window.__vastrahubStatusInterval__);
+  }, []); // intentionally empty
 
   const getIcon = () => {
     const iconSize = 70;
@@ -90,7 +137,6 @@ export default function PaymentStatus() {
         }}
       >
         {getIcon()}
-
         <Typography
           variant="h4"
           sx={{
@@ -106,18 +152,10 @@ export default function PaymentStatus() {
         >
           {message}
         </Typography>
-
-        <Typography
-          variant="body1"
-          sx={{ mt: 2, color: "#555", fontSize: "1.1rem" }}
-        >
+        <Typography variant="body1" sx={{ mt: 2, color: "#555", fontSize: "1.1rem" }}>
           {subMessage}
         </Typography>
-
-        {status !== "loading" && (
-          <Divider sx={{ mt: 4, mb: 2 }} />
-        )}
-
+        {status !== "loading" && <Divider sx={{ mt: 4, mb: 2 }} />}
         {status === "success" && (
           <Typography variant="caption" sx={{ color: "gray" }}>
             You may close this window or return to the homepage.
