@@ -26,7 +26,9 @@ import { CircularProgress } from "@mui/material";
 
 const ViewProduct = () => {
   const navigate = useNavigate();
-  const { state } = useLocation();
+  const location = useLocation();
+   const { state } = location;  // original { productId }
+  
   const { currentUser, firestoreUser, syncStockDataForIds } =
     useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
@@ -367,8 +369,15 @@ const ViewProduct = () => {
   };
 
   const goToLogin = () => {
-    navigate("/otp-verify");
-  };
+        navigate("/otp-verify", {
+          state: {
+            returnTo: {
+              pathname: location.pathname,
+              state: { productId },
+            },
+          },
+        });
+      };
 
   if (loading) {
     return (

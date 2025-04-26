@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 import { auth, db } from "../Configs/FirebaseConfig";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation } from "react-router-dom";
 import { GlobalContext } from "../Context/GlobalContext";
 import { v4 as uuidv4 } from "uuid";
 
@@ -23,6 +23,8 @@ import { Fade } from "react-awesome-reveal";
 
 const OTPVerification = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { updateFirestoreUser, signOutUser } = useContext(GlobalContext);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -45,7 +47,13 @@ const OTPVerification = () => {
       console.warn(userData);
       // Update global context and navigate as per userStage logic
       updateFirestoreUser(userData);
-      navigate("/");
+     // if we were sent a returnTo, go back there; otherwise go home
+    const returnTo = location.state?.returnTo;
+      if (returnTo) {
+        navigate(returnTo.pathname, { state: returnTo.state });
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       console.error("Error updating session token:", error);
       toast.error("Failed to set up your session. Please try again.");

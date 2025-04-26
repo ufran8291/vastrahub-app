@@ -1,6 +1,10 @@
 // src/Pages/ShopByCategory.js
 import React, { useState, useEffect, useContext } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -30,59 +34,87 @@ import { Fade } from "react-awesome-reveal";
 
 export default function ShopByCategory() {
   const navigate = useNavigate();
-  const { category } = useLocation().state || {};
+  const location = useLocation();
+  const originalCategory = location.state?.category;
+  const [category, setCategory] = useState(originalCategory || null);
+
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
-  /* ──────────────────────────────────────────────────────────
-     Guard – redirect if no category was passed
-  ────────────────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!category) {
-      toast.error("No category selected.");
-      navigate("/");
-    }
-  }, [category, navigate]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  /* ──────────────────────────────────────────────────────────
-     Local state
-  ────────────────────────────────────────────────────────── */
+  // Master price ranges
+  const priceRangesMaster = [
+    { label: "Clear Filter",      value: null },
+    { label: "Less than 200",     value: { min: 0,    max: 200 } },
+    { label: "200 - 300",         value: { min: 200,  max: 300 } },
+    { label: "300 - 400",         value: { min: 300,  max: 400 } },
+    { label: "400 - 500",         value: { min: 400,  max: 500 } },
+    { label: "500 - 600",         value: { min: 500,  max: 600 } },
+    { label: "600 - 700",         value: { min: 600,  max: 700 } },
+    { label: "700 - 800",         value: { min: 700,  max: 800 } },
+    { label: "800 - 900",         value: { min: 800,  max: 900 } },
+    { label: "900 - 1000",        value: { min: 900,  max: 1000 } },
+    { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
+  ];
+
+  // Component state
   const [allProducts, setAllProducts] = useState([]);
   const [allSubcatsFromProducts, setAllSubcatsFromProducts] = useState([]);
   const [selectedSubcats, setSelectedSubcats] = useState([]);
   const [overlayProduct, setOverlayProduct] = useState(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+  const [availablePriceRanges, setAvailablePriceRanges] =
+    useState(priceRangesMaster);
   const [priceAnchorEl, setPriceAnchorEl] = useState(null);
   const [sortOption, setSortOption] = useState("recent");
 
-  /* ──────────────────────────────────────────────────────────
-     Fixed price‑range master list
-  ────────────────────────────────────────────────────────── */
-  const priceRangesMaster = [
-    { label: "Clear Filter",      value: null },
-    { label: "Less than 200",     value: { min: 0,    max: 200 } },
-    { label: "200 ‑ 300",         value: { min: 200,  max: 300 } },
-    { label: "300 ‑ 400",         value: { min: 300,  max: 400 } },
-    { label: "400 ‑ 500",         value: { min: 400,  max: 500 } },
-    { label: "500 ‑ 600",         value: { min: 500,  max: 600 } },
-    { label: "600 ‑ 700",         value: { min: 600,  max: 700 } },
-    { label: "700 ‑ 800",         value: { min: 700,  max: 800 } },
-    { label: "800 ‑ 900",         value: { min: 800,  max: 900 } },
-    { label: "900 ‑ 1000",        value: { min: 900,  max: 1000 } },
-    { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
-  ];
-  const [availablePriceRanges, setAvailablePriceRanges] =
-    useState(priceRangesMaster);
+  // 1️⃣ Persist incoming category to sessionStorage
+  useEffect(() => {
+    if (originalCategory) {
+      sessionStorage.setItem(
+        "shopCategory",
+        JSON.stringify(originalCategory)
+      );
+      setCategory(originalCategory);
+    }
+  }, [originalCategory]);
 
-  /* ──────────────────────────────────────────────────────────
-     Fetch category products → derive subcats & valid price ranges
-  ────────────────────────────────────────────────────────── */
+  // 2️⃣ On mount, if no location.state, load category from sessionStorage or redirect
+  useEffect(() => {
+    if (!originalCategory) {
+      const stored = sessionStorage.getItem("shopCategory");
+      if (stored) {
+        setCategory(JSON.parse(stored));
+      } else {
+        toast.error("No category selected.");
+        navigate("/", { replace: true });
+      }
+    }
+  }, [originalCategory, navigate]);
+
+  // 3️⃣ Initialize filters & sort from URL once
+  useEffect(() => {
+    const subsParam = searchParams.get("subcats");
+    if (subsParam) setSelectedSubcats(subsParam.split(","));
+
+    const pl = searchParams.get("priceLabel");
+    if (pl) {
+      const match = priceRangesMaster.find((r) => r.label === pl);
+      if (match) setSelectedPriceRange(match.value === null ? null : match);
+    }
+
+    const so = searchParams.get("sort");
+    if (so) setSortOption(so);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 4️⃣ Fetch products & derive subcats + price ranges
   useEffect(() => {
     if (!category) return;
 
     (async () => {
       try {
-        /* 1️⃣  Pull every product in this category */
         const qCat = query(
           collection(db, "products"),
           where("category", "==", category.name)
@@ -91,63 +123,46 @@ export default function ShopByCategory() {
         const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setAllProducts(products);
 
-        /* 2️⃣  Derive *subcategories that actually have products* */
-        const declaredSubcats = category.subCategories || [];
-        const subcatSetFromDocs = new Set();
+        const declared = category.subCategories || [];
+        const seen = new Set();
         products.forEach((p) => {
           if (!p.subcategory) return;
           Array.isArray(p.subcategory)
-            ? p.subcategory.forEach((s) => subcatSetFromDocs.add(s))
-            : subcatSetFromDocs.add(p.subcategory);
+            ? p.subcategory.forEach((s) => seen.add(s))
+            : seen.add(p.subcategory);
         });
 
-        // For declared subcats missing from docs, double‑check with count query
-        const missingDeclared = declaredSubcats.filter(
-          (s) => !subcatSetFromDocs.has(s)
-        );
-        const extraSubs = await Promise.all(
-          missingDeclared.map(async (sub) => {
-            try {
-              const cnt = await getCountFromServer(
-                query(
-                  collection(db, "products"),
-                  where("category", "==", category.name),
-                  where("subcategory", "==", sub)
-                )
-              );
-              return cnt.data().count > 0 ? sub : null;
-            } catch (err) {
-              console.error(`[ShopByCategory] subcat count error: ${sub}`, err);
-              return null;
-            }
+        const missing = declared.filter((s) => !seen.has(s));
+        const extras = await Promise.all(
+          missing.map(async (sub) => {
+            const cnt = await getCountFromServer(
+              query(
+                collection(db, "products"),
+                where("category", "==", category.name),
+                where("subcategory", "==", sub)
+              )
+            );
+            return cnt.data().count > 0 ? sub : null;
           })
         );
+        setAllSubcatsFromProducts([...seen, ...extras.filter(Boolean)].sort());
 
-        const finalSubcats = [
-          ...subcatSetFromDocs,
-          ...extraSubs.filter(Boolean),
-        ].sort((a, b) => a.localeCompare(b));
-        setAllSubcatsFromProducts(finalSubcats);
-
-        /* 3️⃣  Figure out which price ranges actually contain products */
-        const rangesWithProducts = priceRangesMaster.filter((range) => {
-          if (range.value === null) return true; // always keep Clear Filter
+        const valid = priceRangesMaster.filter((range) => {
+          if (range.value === null) return true;
           return products.some((p) => {
             const price = p.sizes?.[0]?.pricePerPiece || 0;
-            return (
-              price >= range.value.min && price < range.value.max
-            );
+            return price >= range.value.min && price < range.value.max;
           });
         });
-        setAvailablePriceRanges(rangesWithProducts);
-      } catch (error) {
-        console.error("Error fetching category products:", error);
+        setAvailablePriceRanges(valid);
+      } catch (err) {
+        console.error(err);
         toast.error("Unable to load products for this category.");
       }
     })();
-  }, [category]);
+  }, [category, priceRangesMaster]);
 
-  /* Keep price selection valid when ranges change */
+  // 5️⃣ Keep price selection valid
   useEffect(() => {
     if (
       selectedPriceRange &&
@@ -157,28 +172,35 @@ export default function ShopByCategory() {
     }
   }, [availablePriceRanges, selectedPriceRange]);
 
-  /* ──────────────────────────────────────────────────────────
-     Filter + sort products for display
-  ────────────────────────────────────────────────────────── */
+  // 6️⃣ Sync filters & sort back into URL
+  useEffect(() => {
+    const params = {};
+    if (selectedSubcats.length) params.subcats = selectedSubcats.join(",");
+    if (selectedPriceRange) params.priceLabel = selectedPriceRange.label;
+    if (sortOption && sortOption !== "recent") params.sort = sortOption;
+    setSearchParams(params, { replace: true });
+  }, [selectedSubcats, selectedPriceRange, sortOption, setSearchParams]);
+
+  // Don’t render UI until we have a category
+  if (!category) return null;
+
+  // Filter + sort products
   const filteredProducts = [...allProducts]
     .filter((prod) => {
-      /* subcategory filter */
-      const passesSubcat =
+      const passSub =
         selectedSubcats.length === 0 ||
         (Array.isArray(prod.subcategory)
-          ? prod.subcategory.some((sc) => selectedSubcats.includes(sc))
+          ? prod.subcategory.some((s) => selectedSubcats.includes(s))
           : selectedSubcats.includes(prod.subcategory));
 
-      /* price filter */
-      let passesPrice = true;
+      let passPrice = true;
       if (selectedPriceRange && selectedPriceRange.value) {
         const price = prod.sizes?.[0]?.pricePerPiece || 0;
-        passesPrice =
+        passPrice =
           price >= selectedPriceRange.value.min &&
           price < selectedPriceRange.value.max;
       }
-
-      return passesSubcat && passesPrice;
+      return passSub && passPrice;
     })
     .sort((a, b) => {
       const priceA = a.sizes?.[0]?.pricePerPiece || 0;
@@ -199,9 +221,6 @@ export default function ShopByCategory() {
       }
     });
 
-  /* ──────────────────────────────────────────────────────────
-     Helpers
-  ────────────────────────────────────────────────────────── */
   const toggleSubcat = (sub) =>
     setSelectedSubcats((prev) =>
       prev.includes(sub) ? prev.filter((x) => x !== sub) : [...prev, sub]
@@ -218,9 +237,6 @@ export default function ShopByCategory() {
 
   const subcatVariants = { hover: { scale: 1.05 }, tap: { scale: 0.95 } };
 
-  /* ──────────────────────────────────────────────────────────
-     Render
-  ────────────────────────────────────────────────────────── */
   return (
     <div style={{ padding: 30, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
       <Fade triggerOnce>
@@ -296,7 +312,7 @@ export default function ShopByCategory() {
                 );
               })}
 
-              {/* PRICE‑RANGE chip */}
+              {/* PRICE-RANGE chip */}
               <motion.div
                 variants={subcatVariants}
                 whileHover="hover"
@@ -321,7 +337,7 @@ export default function ShopByCategory() {
                   : "Price Range"}
               </motion.div>
 
-              {/* PRICE‑RANGE menu */}
+              {/* PRICE-RANGE menu */}
               <Menu
                 anchorEl={priceAnchorEl}
                 open={Boolean(priceAnchorEl)}
