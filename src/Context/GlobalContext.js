@@ -82,6 +82,8 @@ export const GlobalProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
+      console.log(`user is ${user}`);
+      
       if (user) {
         console.log("GlobalContext: Detected sign-in with phone:", user.phoneNumber);
         //update uid to the user object with user.uid from firbase auth

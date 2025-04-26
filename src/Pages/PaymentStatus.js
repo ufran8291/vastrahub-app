@@ -22,6 +22,8 @@ import {
   setDoc,
   collection,
   addDoc,
+  getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 
 export default function PaymentStatus() {
@@ -161,15 +163,30 @@ export default function PaymentStatus() {
     }
 
     await sendOrderConfirmation(orderData.userEmail, orderData.userName);
+    // ── CLEAR USER'S CART ───────────────────────────────────────────
+    try {
+      const cartCol = collection(db, "users", orderData.userId, "cart");
+      const cartSnap = await getDocs(cartCol);
+      await Promise.all(cartSnap.docs.map((d) => deleteDoc(d.ref)));
+      console.log("🗑️  Cleared user cart after successful order");
+    } catch (e) {
+      console.warn("Could not clear cart:", e);
+    }
     setStatus("success");
     setMessage("✅ Payment Successful!");
-    setSubMessage("Thank you for your payment. Your order is confirmed and an email has been sent to you.");
+    setSubMessage(
+      "Thank you for your payment. Your order is confirmed and an email has been sent to you."
+    );
   };
 
   const checkStatus = async () => {
-    console.log(`🔄 Attempt ${attemptCount.current + 1} for transaction ${transactionId}`);
+    console.log(
+      `🔄 Attempt ${attemptCount.current + 1} for transaction ${transactionId}`
+    );
     try {
-      const response = await getPhonePePaymentStatus({ merchantOrderId: transactionId });
+      const response = await getPhonePePaymentStatus({
+        merchantOrderId: transactionId,
+      });
       const txnStatus = response?.data?.state || "UNKNOWN";
 
       if (txnStatus === "COMPLETED") {
@@ -179,12 +196,16 @@ export default function PaymentStatus() {
         if (attemptCount.current < MAX_ATTEMPTS - 1) {
           setStatus("pending");
           setMessage("⏳ Payment Pending");
-          setSubMessage("We're still waiting for payment confirmation. Please do not refresh or close this page.");
+          setSubMessage(
+            "We're still waiting for payment confirmation. Please do not refresh or close this page."
+          );
         } else {
           clearInterval(window.__vastrahubStatusInterval__);
           setStatus("pending");
           setMessage("⏳ Payment Still Pending");
-          setSubMessage("We couldn't confirm your payment automatically. You can also check your payment status anytime from the My Orders section.");
+          setSubMessage(
+            "We couldn't confirm your payment automatically. You can also check your payment status anytime from the My Orders section."
+          );
         }
       } else {
         clearInterval(window.__vastrahubStatusInterval__);
@@ -196,14 +217,18 @@ export default function PaymentStatus() {
         });
         setStatus("failed");
         setMessage("❌ Payment Failed");
-        setSubMessage("The transaction was unsuccessful. Please try again or use another payment method.");
+        setSubMessage(
+          "The transaction was unsuccessful. Please try again or use another payment method."
+        );
       }
     } catch (err) {
       clearInterval(window.__vastrahubStatusInterval__);
       console.error("Payment status fetch error:", err);
       setStatus("error");
       setMessage("⚠️ Payment Status Error");
-      setSubMessage("Something went wrong while verifying your payment. Please contact support.");
+      setSubMessage(
+        "Something went wrong while verifying your payment. Please contact support."
+      );
     } finally {
       attemptCount.current++;
     }
@@ -213,7 +238,9 @@ export default function PaymentStatus() {
     if (!transactionId) {
       setStatus("error");
       setMessage("Invalid Payment Link");
-      setSubMessage("The payment verification link is malformed or incomplete.");
+      setSubMessage(
+        "The payment verification link is malformed or incomplete."
+      );
       return;
     }
 
@@ -274,7 +301,10 @@ export default function PaymentStatus() {
         >
           {message}
         </Typography>
-        <Typography variant="body1" sx={{ mt: 2, color: "#555", fontSize: "1.1rem" }}>
+        <Typography
+          variant="body1"
+          sx={{ mt: 2, color: "#555", fontSize: "1.1rem" }}
+        >
           {subMessage}
         </Typography>
         {status !== "loading" && <Divider sx={{ mt: 4, mb: 2 }} />}
