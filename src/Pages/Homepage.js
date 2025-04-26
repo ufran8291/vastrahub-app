@@ -1007,10 +1007,10 @@ export default function Homepage() {
           <ScrollVelocity
             texts={[
               "Array | Folk Club | Fashionology | Fashion Trail |",
-              " Be Indian | American Fit | Foggy | Macpi |",
+              " Be Indian | American Fit | Foggy | Macpi | Aldrich |",
               " D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |",
-              " High Density | Purple Haze | Maniac | Grow Up |",
-              " Ice Tees | Striker | A1 Bright | Raffal |",
+              " High Density | Purple Haze | Maniac | Grow Up | Riggas |",
+              " Ice Tees | Striker | A1 Bright | Raffal | Vyardo |",
             ]}
             velocity={80}
             damping={50}

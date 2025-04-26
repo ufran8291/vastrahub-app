@@ -66,6 +66,11 @@ const OTPVerification = () => {
       const formattedPhoneNumber = `+91${phoneNumber.trim()}`;
       console.log("Formatted phone number:", formattedPhoneNumber);
       // Initialize reCAPTCHA
+      if (window.recaptchaVerifier) {
+        //
+        console.log('ALREADY HAVE A RECAPTCHA CLEARING IT.')
+        window.recaptchaVerifier.clear();
+      }
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
         "recaptcha-container",

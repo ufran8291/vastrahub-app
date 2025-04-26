@@ -14,7 +14,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
         marginRight: "10px",
         textAlign: "left",
         padding: "10px",
-        height: "650px", // increased card height
+        height: "700px", // increased card height
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
@@ -109,7 +109,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
               margin: 0,
             }}
           >
-            From ₹ {isLoggedIn? product.price:'XXX (Login to view)'}
+            From ₹ {true? product.price:'XXX (Login to view)'}
           </p>
         </div>
         <p
@@ -145,7 +145,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
               // <Tooltip key={j} title={tooltipText} arrow>
                 <div
                   style={{
-                    width: "40px",
+                    minWidth: "40px",
                     height: "40px",
                     border: `2px solid ${pieces > 0 ? "#333" : "#ccc"}`,
                     backgroundColor: pieces > 0 ? "#fff" : "#f5f5f5",

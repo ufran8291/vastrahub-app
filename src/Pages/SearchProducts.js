@@ -50,7 +50,7 @@ export default function SearchProducts() {
             additionalImages: data.additionalImages || [productPlaceholder],
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
-            createdAt: data.createdAt || null,
+            addedOn: data.addedOn || null,
           });
         });
         setAllProducts(productsArr);
@@ -90,13 +90,13 @@ export default function SearchProducts() {
       case "oldest":
         return sorted.sort(
           (a, b) =>
-            (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)
+            (a.addedOn?.seconds || 0) - (b.addedOn?.seconds || 0)
         );
       case "recent":
       default:
         return sorted.sort(
           (a, b) =>
-            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+            (b.addedOn?.seconds || 0) - (a.addedOn?.seconds || 0)
         );
     }
   };

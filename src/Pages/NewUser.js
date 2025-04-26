@@ -312,12 +312,12 @@ const NewUser = () => {
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       <Card sx={{ p: 4, maxWidth: 700, mx: "auto", boxShadow: 3 }}>
-        <Typography variant="h5" align="center" gutterBottom>
+        <Typography variant="h4" align="center" gutterBottom>
           Register to VastraHub
         </Typography>
-        <Typography variant="p" align="center" gutterBottom>
-         View Prices, Place & Manage Orders, 
-        </Typography>
+        <p  align="center" style={{fontWeight:'bold',color:"#555"}}>
+         View Prices, Place & Manage Orders
+        </p>
         
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>

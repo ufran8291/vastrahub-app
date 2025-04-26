@@ -183,8 +183,8 @@ export default function ShopByCategory() {
     .sort((a, b) => {
       const priceA = a.sizes?.[0]?.pricePerPiece || 0;
       const priceB = b.sizes?.[0]?.pricePerPiece || 0;
-      const dateA = a.createdAt?.toDate?.() || new Date(0);
-      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      const dateA = a.addedOn?.toDate?.() || new Date(0);
+      const dateB = b.addedOn?.toDate?.() || new Date(0);
 
       switch (sortOption) {
         case "priceLowToHigh":
