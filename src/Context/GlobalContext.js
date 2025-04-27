@@ -80,21 +80,81 @@ export const GlobalProvider = ({ children }) => {
   // }, [currentUser]);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       console.log(`user is ${user}`);
-      
+  
       if (user) {
         console.log("GlobalContext: Detected sign-in with phone:", user.phoneNumber);
-        //update uid to the user object with user.uid from firbase auth
-        // Optionally, you can call checkSessionTokenConsistency() here as well.
-        checkSessionTokenConsistency();
+  
+        try {
+          // Fetch user from Firestore by phone number
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("primaryPhone", "==", user.phoneNumber?.replace("+91", "")));
+          const snapshot = await getDocs(q);
+  
+          let userData = null;
+          if (!snapshot.empty) {
+            userData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+            console.log("User found by primaryPhone:", userData);
+          } else {
+            // Try alternatePhone
+            const altQ = query(usersRef, where("alternatePhone", "==", user.phoneNumber?.replace("+91", "")));
+            const altSnapshot = await getDocs(altQ);
+            if (!altSnapshot.empty) {
+              userData = { id: altSnapshot.docs[0].id, ...altSnapshot.docs[0].data() };
+              console.log("User found by alternatePhone:", userData);
+            }
+          }
+  
+          if (userData) {
+            const { userStage } = userData;
+            console.log("User stage:", userStage);
+  
+            if (userStage === 5) {
+              await signOutUser();
+              window.location.href = "/request-pending";
+              return;
+            }
+            if (userStage === -1) {
+              await signOutUser();
+              window.location.href = "/request-rejected";
+              return;
+            }
+            if (userStage === -10) {
+              await signOutUser();
+              window.location.href = "/blocked-user";
+              return;
+            }
+            if (userStage === 10 || userStage === 20) {
+              console.log("GlobalContext: Setting Firestore user data");
+              setFirestoreUser(userData);
+              localStorage.setItem("websiteSessionToken", userData.websiteSessionToken || "");
+            } else {
+              console.log("Unknown userStage, signing out.");
+              await signOutUser();
+              window.location.href = "/";
+            }
+          } else {
+            console.log("User not found in Firestore. Signing out.");
+            await signOutUser();
+            window.location.href = "/register";
+          }
+  
+        } catch (err) {
+          console.error("Error fetching user after Firebase sign-in:", err);
+          await signOutUser();
+          window.location.href = "/";
+        }
+  
       } else {
         console.log("GlobalContext: Detected sign-out.");
       }
     });
+  
     return () => unsubscribe();
   }, []);
+  
 
   // New function to fetch stock data from the new API endpoint.
   const fetchGoFrugalItems = async () => {

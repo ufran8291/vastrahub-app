@@ -27,8 +27,8 @@ import { CircularProgress } from "@mui/material";
 const ViewProduct = () => {
   const navigate = useNavigate();
   const location = useLocation();
-   const { state } = location;  // original { productId }
-  
+  const { state } = location; // original { productId }
+
   const { currentUser, firestoreUser, syncStockDataForIds } =
     useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
@@ -369,15 +369,15 @@ const ViewProduct = () => {
   };
 
   const goToLogin = () => {
-        navigate("/otp-verify", {
-          state: {
-            returnTo: {
-              pathname: location.pathname,
-              state: { productId },
-            },
-          },
-        });
-      };
+    navigate("/otp-verify", {
+      state: {
+        returnTo: {
+          pathname: location.pathname,
+          state: { productId },
+        },
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -630,6 +630,18 @@ const ViewProduct = () => {
             >
               Fabric: {product.fabric || "N/A"}
             </p>
+            {/* ➡️ New: Show Additional Info if exists */}
+            {product.additionalInfo && (
+               <p
+               style={{
+                 fontFamily: "Plus Jakarta Sans, sans-serif",
+                 fontSize: "16px",
+                 marginBottom: "5px",
+               }}
+             >
+               Additional Info : {product.additionalInfo}
+              </p>
+            )}
           </div>
           <div style={{ flex: "1 1 300px" }}>
             <p
