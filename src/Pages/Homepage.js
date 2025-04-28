@@ -680,9 +680,12 @@ export default function Homepage() {
             <ProductCard
               key={i}
               product={prod}
-              onView={() =>
-                navigate("/view-product", { state: { productId: prod.id } })
-              }
+               onView={() =>
+                   window.open(
+                     `/view-product?productId=${prod.id}`,
+                     "_blank",
+                     "noopener,noreferrer"
+                   )}
               onAdd={() => handleAddToCartClick(prod)}
             />
           ))}
@@ -819,9 +822,12 @@ export default function Homepage() {
             <ProductCard
               key={i}
               product={prod}
-              onView={() =>
-                navigate("/view-product", { state: { productId: prod.id } })
-              }
+               onView={() =>
+                   window.open(
+                     `/view-product?productId=${prod.id}`,
+                     "_blank",
+                     "noopener,noreferrer"
+                   )}
               onAdd={() => handleAddToCartClick(prod)}
             />
           ))}

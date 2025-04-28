@@ -387,10 +387,12 @@ export default function ShopByCategory() {
                   sizes: prod.sizes || [],
                 }}
                 onView={() =>
-                  navigate("/view-product", {
-                    state: { productId: prod.id },
-                  })
-                }
+                     window.open(
+                       `/view-product?productId=${prod.id}`,
+                       "_blank",
+                       "noopener,noreferrer"
+                     )
+                   }
                 onAdd={() => handleAddToCart(prod)}
               />
             </Grid>

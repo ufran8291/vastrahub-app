@@ -102,9 +102,12 @@ export default function SearchProducts() {
   };
 
   const handleViewProduct = (id) => {
-    navigate("/view-product", { state: { productId: id } });
-  };
-
+       window.open(
+         `/view-product?productId=${id}`,
+         "_blank",
+         "noopener,noreferrer"
+       );
+     };
   const handleAddToCart = (product) => {
     setOverlayProduct(product);
   };
