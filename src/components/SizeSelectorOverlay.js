@@ -176,10 +176,10 @@ export default function SizeSelectorOverlay({ product, onClose }) {
 
   // ---------- CONFIRM HANDLER ----------
   const handleConfirm = async () => {
-    if (distinctSelected < 2) {
-      toast.info("Please select at least 2 different sizes.");
-      return;
-    }
+    // if (distinctSelected < 2) {
+    //   toast.info("Please select at least 2 different sizes.");
+    //   return;
+    // }
     if (!uid) {
       toast.error("User not authenticated.");
       return;
@@ -424,11 +424,11 @@ export default function SizeSelectorOverlay({ product, onClose }) {
           })}
         </div>
 
-        {distinctSelected < 2 && (
+        {/* {distinctSelected < 2 && (
           <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>
             You must select at least 2 different sizes.
           </p>
-        )}
+        )} */}
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button

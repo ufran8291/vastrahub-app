@@ -53,6 +53,7 @@ useEffect(() => {
   }, []);
   // 🔹 Detect mobile viewport
   const isMobile = useMediaQuery("(max-width:600px)");
+  // --- New helper: did the user choose at least one size? ---
 
   /* ------------------------------------------------------------------
      Everything below this line is UNCHANGED – search for “productId”
@@ -70,6 +71,8 @@ useEffect(() => {
   const [magnifierSize] = useState(150);
   const [zoomScale] = useState(2);
   const imgContainerRef = useRef(null);
+const hasSelection = sizesQuantity.some(q => q > 0);
+
 
   // ---------- Helper Functions ----------
   const computeTotalBoxes = (piecesInStock, boxPieces) => {
@@ -306,11 +309,11 @@ useEffect(() => {
   // ---------- Add to Cart Handler ----------
   const handleAddToCart = async () => {
     if (!isLoggedIn) return;
-    const distinctSizesSelected = sizesQuantity.filter((q) => q > 0).length;
-    if (distinctSizesSelected < 2) {
-      toast.info("Please select at least 2 different sizes to add to cart.");
-      return;
-    }
+    // const distinctSizesSelected = sizesQuantity.filter((q) => q > 0).length;
+    // if (distinctSizesSelected < 2) {
+    //   toast.info("Please select at least 2 different sizes to add to cart.");
+    //   return;
+    // }
     try {
       const cartRef = collection(db, "users", uid, "cart");
       const q = query(cartRef, where("productId", "==", productId));
@@ -437,12 +440,13 @@ useEffect(() => {
     if (!valid.length) return null;
     return Math.min(...valid.map((s) => s.pricePerPiece));
   })();
-  const distinctSizesSelected = getCountDistinctSizesSelected();
+  // const distinctSizesSelected = getCountDistinctSizesSelected();
   const cartButtonTooltip = !isLoggedIn
-    ? "Please log in to add items to cart."
-    : distinctSizesSelected < 2
-    ? "Please select at least 2 different sizes."
-    : "";
+  ? "Please log in to add items to cart."
+  : !hasSelection
+  ? "Please select at least one size."
+  : "";
+
 
   // ---------- Render ----------
   return (
@@ -1030,7 +1034,7 @@ useEffect(() => {
                   ? `Grand Total: ₹${getAllSizesTotal()}`
                   : "Grand Total: --"}
               </p>
-              {distinctSizesSelected < 2 && (
+              {/* {distinctSizesSelected < 2 && (
                 <p
                   style={{
                     fontFamily: "Plus Jakarta Sans, sans-serif",
@@ -1041,28 +1045,21 @@ useEffect(() => {
                 >
                   You must select at least 2 different sizes.
                 </p>
-              )}
+              )} */}
             </div>
             <Tooltip
               title={
-                !isLoggedIn
-                  ? "Please log in to add items to cart."
-                  : distinctSizesSelected < 2
-                  ? "Please select at least 2 different sizes."
-                  : ""
+               cartButtonTooltip
               }
               arrow
             >
               <span>
                 <button
                   onClick={isLoggedIn ? handleAddToCart : undefined}
-                  disabled={!isLoggedIn || distinctSizesSelected < 2}
+                  disabled={!isLoggedIn || !hasSelection}
                   style={{
                     padding: isMobile ? "12px 22px" : "14px 28px",
-                    backgroundColor:
-                      isLoggedIn && distinctSizesSelected >= 2
-                        ? "#333"
-                        : "#bbb",
+                    backgroundColor: isLoggedIn && hasSelection ? "#333" : "#bbb",
                     color: "#fff",
                     fontFamily: "Plus Jakarta Sans, sans-serif",
                     fontSize: isMobile ? "14px" : "16px",
@@ -1070,10 +1067,10 @@ useEffect(() => {
                     borderRadius: "4px",
                     border: "none",
                     cursor:
-                      isLoggedIn && distinctSizesSelected >= 2
-                        ? "pointer"
-                        : "not-allowed",
-                  }}
+   isLoggedIn && hasSelection
+     ? "pointer"
+     : "not-allowed",
+                 }}
                 >
                   ADD TO CART
                 </button>
