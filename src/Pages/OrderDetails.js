@@ -1,4 +1,3 @@
-// src/Pages/OrderDetails.js
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -12,6 +11,8 @@ import {
   Button,
   CircularProgress,
   Divider,
+  TableContainer,
+  Paper,
 } from "@mui/material";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
@@ -81,7 +82,6 @@ export default function OrderDetails() {
     return null;
   }
 
-  // Motion variants for section cards
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i) => ({
@@ -97,16 +97,18 @@ export default function OrderDetails() {
         mt: 4,
         mb: 4,
         fontFamily: "Plus Jakarta Sans, sans-serif",
+        px: { xs: 1, sm: 2 },
       }}
     >
       <Fade triggerOnce>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <ReceiptLongIcon sx={{ fontSize: 40, mr: 1, color: "#1976d2" }} />
-          <Typography variant="h4" sx={{ fontFamily: "Lora, serif" }}>
+          <Typography variant="h4" sx={{ fontFamily: "Lora, serif", fontSize: { xs: "26px", sm: "32px" } }}>
             Order Details
           </Typography>
         </Box>
       </Fade>
+
       <Fade triggerOnce cascade>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1">
@@ -120,11 +122,12 @@ export default function OrderDetails() {
           </Typography>
         </Box>
       </Fade>
+
       <motion.div custom={1} initial="hidden" animate="visible" variants={sectionVariants}>
         <Box
           sx={{
             mb: 4,
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #e0e0e0",
             borderRadius: "8px",
             backgroundColor: "#fafafa",
@@ -139,10 +142,8 @@ export default function OrderDetails() {
           <Typography variant="body1">Transport: {order.transport}</Typography>
           <Typography variant="body1">Email: {order.userEmail}</Typography>
           <Typography variant="body1">Phone: {order.userPhone}</Typography>
-          {order.alternatePhone && (
-            <Typography variant="body1">
-              Alternate Phone: {order.userAlternatePhone}
-            </Typography>
+          {order.userAlternatePhone && (
+            <Typography variant="body1">Alternate Phone: {order.userAlternatePhone}</Typography>
           )}
           <Typography variant="body1">GSTIN/PAN: {order.userGstinPan}</Typography>
           {order.payLater && (
@@ -152,44 +153,47 @@ export default function OrderDetails() {
           )}
         </Box>
       </motion.div>
+
       <motion.div custom={2} initial="hidden" animate="visible" variants={sectionVariants}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: "20px", sm: "24px" } }}>
             Order Items
           </Typography>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: "bold" }}>Product</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Size</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Boxes</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Pieces</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Line Total</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {order.orderItems.map((item, index) => {
-                // Calculation: lineTotal = noOfPieces * pricePerPiece
-                const lineTotal = item.noOfPieces * item.pricePerPiece;
-                return (
-                  <TableRow key={index}>
-                    <TableCell>{item.productTitle}</TableCell>
-                    <TableCell>{item.size}</TableCell>
-                    <TableCell>{item.quantity} Boxes</TableCell>
-                    <TableCell>{item.noOfPieces}</TableCell>
-                    <TableCell>₹{lineTotal.toFixed(2)}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: "bold" }}>Product</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Size</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Boxes</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Pieces</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Line Total</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {order.orderItems.map((item, index) => {
+                  const lineTotal = item.noOfPieces * item.pricePerPiece;
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>{item.productTitle}</TableCell>
+                      <TableCell>{item.size}</TableCell>
+                      <TableCell>{item.quantity} Boxes</TableCell>
+                      <TableCell>{item.noOfPieces}</TableCell>
+                      <TableCell>₹{lineTotal.toFixed(2)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       </motion.div>
+
       <motion.div custom={3} initial="hidden" animate="visible" variants={sectionVariants}>
         <Box
           sx={{
             mb: 4,
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #1976d2",
             borderRadius: "8px",
             backgroundColor: "#f8f8f8",
@@ -198,23 +202,21 @@ export default function OrderDetails() {
           <Typography variant="h6" gutterBottom>
             Order Summary
           </Typography>
-          <Typography variant="body1">
-            Subtotal: ₹{order.subtotal.toFixed(2)}
-          </Typography>
-          <Typography variant="body1">
-            Total Tax: ₹{order.gst.toFixed(2)}
-          </Typography>
+          <Typography variant="body1">Subtotal: ₹{order.subtotal.toFixed(2)}</Typography>
+          <Typography variant="body1">Total Tax: ₹{order.gst.toFixed(2)}</Typography>
           <Typography variant="body1" sx={{ fontWeight: "bold" }}>
             Grand Total: ₹{order.grandTotal.toFixed(2)}
           </Typography>
         </Box>
       </motion.div>
+
       <motion.div custom={4} initial="hidden" animate="visible" variants={sectionVariants}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, mt: 4 }}>
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/my-orders")}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Back to My Orders
           </Button>
@@ -226,6 +228,7 @@ export default function OrderDetails() {
               backgroundColor: "#000",
               color: "#fff",
               "&:hover": { backgroundColor: "#333" },
+              width: { xs: "100%", sm: "auto" },
             }}
           >
             Home

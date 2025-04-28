@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
 import './ScrollFloat.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -11,23 +10,24 @@ const ScrollFloat = ({
   scrollContainerRef,
   containerClassName = "",
   textClassName = "",
-  animationDuration = 1,
-  ease = 'back.inOut(2)',
+  animationDuration,
+  ease,
   scrollStart = 'center bottom+=50%',
   scrollEnd = 'bottom bottom-=40%',
-  stagger = 0.03,
+  stagger,
   styles,
 }) => {
   const containerRef = useRef(null);
 
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
-    return text.split("").map((char, index) => (
-      <span className="char" key={index}>
-        {char === " " ? "\u00A0" : char}
+    return text.split(" ").map((word, index) => (
+      <span className="word" key={index} style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+        {word}&nbsp;
       </span>
     ));
   }, [children]);
+  
 
   useEffect(() => {
     const el = containerRef.current;
@@ -37,6 +37,8 @@ const ScrollFloat = ({
       scrollContainerRef && scrollContainerRef.current
         ? scrollContainerRef.current
         : window;
+
+    const isMobile = window.innerWidth <= 768;
 
     const charElements = el.querySelectorAll('.char');
 
@@ -51,13 +53,13 @@ const ScrollFloat = ({
         transformOrigin: '50% 0%'
       },
       {
-        duration: animationDuration,
-        ease: ease,
+        duration: animationDuration ?? (isMobile ? 0.6 : 1),
+        ease: ease ?? (isMobile ? 'power2.out' : 'back.inOut(2)'),
         opacity: 1,
         yPercent: 0,
         scaleY: 1,
         scaleX: 1,
-        stagger: stagger,
+        stagger: stagger ?? (isMobile ? 0.02 : 0.03),
         scrollTrigger: {
           trigger: el,
           scroller,

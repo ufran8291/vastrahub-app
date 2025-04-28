@@ -1,3 +1,4 @@
+// src/components/Footer.js
 import React, { useState, useContext } from 'react';
 import '../App.css';
 import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
@@ -34,7 +35,7 @@ export default function Footer() {
 🧾 GSTIN: ${firestoreUser?.gstin || "N/A"}
 🪪 PAN: ${firestoreUser?.pan || "N/A"}
 📧 Email: ${firestoreUser?.email || "N/A"}
-  `;
+`;
 
   const handleBroadcastSubmit = () => {
     if (!currentUser || !firestoreUser) {
@@ -48,7 +49,7 @@ export default function Footer() {
       return;
     }
 
-    setPreviewOpen(true); // show preview modal
+    setPreviewOpen(true);
   };
 
   const confirmSendEmail = async () => {
@@ -70,14 +71,32 @@ export default function Footer() {
     }
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
-    <footer style={{ backgroundColor: '#161515', color: '#fff', padding: '40px 20px', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+    <footer
+      style={{
+        backgroundColor: '#161515',
+        color: '#fff',
+        padding: '40px 20px',
+        fontFamily: 'Plus Jakarta Sans, sans-serif',
+      }}
+    >
       <div className="container">
         {/* Top Section */}
-        <div className="top-footer d-flex justify-content-between" style={{ marginBottom: '30px' }}>
+        <div
+          className="top-footer"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: isMobile ? 'center' : 'space-between',
+            marginBottom: '30px',
+            gap: '30px',
+          }}
+        >
           {/* WhatsApp Broadcast Section */}
-          <div>
-            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>
+          <div style={{ flex: '1 1 250px', maxWidth: '300px' }}>
+            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '20px' }}>
               WHATSAPP BROADCAST
             </h4>
             <p style={{ fontSize: '15px', marginBottom: '10px' }}>
@@ -90,7 +109,6 @@ export default function Footer() {
                 border: '1px solid #aaa',
                 borderRadius: '5px',
                 overflow: 'hidden',
-                maxWidth: '300px',
               }}
             >
               <input
@@ -125,51 +143,78 @@ export default function Footer() {
           </div>
 
           {/* Company Section */}
-          <div>
-            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>COMPANY</h4>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/about-us")}>About Us</li>
-              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/contact")}>Careers</li>
-              <li style={{ fontSize: '15px', cursor: 'pointer' }} onClick={() => navigate("/contact")}>Contact Us</li>
+          <div style={{ flex: '1 1 150px' }}>
+            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '20px' }}>
+              COMPANY
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              <li style={linkStyle} onClick={() => navigate("/about-us")}>About Us</li>
+              <li style={linkStyle} onClick={() => navigate("/contact")}>Careers</li>
+              <li style={linkStyle} onClick={() => navigate("/contact")}>Contact Us</li>
             </ul>
           </div>
 
           {/* Help Section */}
-          <div>
-            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>HELP</h4>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/terms-and-conditions")}>Terms &amp; Conditions</li>
-              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/refund-policy")}>Refund &amp; Replacement Policy</li>
-              <li style={{ fontSize: '15px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => navigate("/shipping-policy")}>Shipping Policy</li>
-              <li style={{ fontSize: '15px', cursor: 'pointer' }} onClick={() => navigate("/privacy-policy")}>Privacy Policy</li>
+          <div style={{ flex: '1 1 150px' }}>
+            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '20px' }}>
+              HELP
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              <li style={linkStyle} onClick={() => navigate("/terms-and-conditions")}>Terms &amp; Conditions</li>
+              <li style={linkStyle} onClick={() => navigate("/refund-policy")}>Refund &amp; Replacement Policy</li>
+              <li style={linkStyle} onClick={() => navigate("/shipping-policy")}>Shipping Policy</li>
+              <li style={linkStyle} onClick={() => navigate("/privacy-policy")}>Privacy Policy</li>
             </ul>
           </div>
 
           {/* Contact Section */}
-          <div>
-            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '30px' }}>CONTACT</h4>
+          <div style={{ flex: '1 1 200px' }}>
+            <h4 style={{ fontFamily: 'Lora, serif', fontWeight: '500', fontSize: '18px', marginBottom: '20px' }}>
+              CONTACT
+            </h4>
             <p style={{ fontSize: '15px', marginBottom: '5px' }}>Call us Monday–Saturday</p>
             <p style={{ fontSize: '15px', marginBottom: '5px' }}>11am–8pm IST or email anytime!</p>
             <p style={{ fontSize: '15px', marginBottom: '5px' }}>vastrahub.store@gmail.com</p>
-            <p style={{ fontSize: '15px' }}>+918275334335</p>
+            <p style={{ fontSize: '15px' }}>+91 8275334335</p>
           </div>
         </div>
 
         {/* Social Icons */}
-        <div className="socials-payment d-flex justify-content-between align-items-center" style={{ marginTop: '50px', marginBottom: '50px' }}>
-          <div className="social-icons d-flex">
-            <FaInstagram style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
-            <FaWhatsapp style={{ fontSize: '24px', marginRight: '15px', cursor: 'pointer' }} onClick={() => window.open("https://wa.me/918275334335", "_blank")} />
-            <FaFacebook style={{ fontSize: '24px', cursor: 'pointer' }} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '50px',
+            marginBottom: '50px',
+            gap: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <FaInstagram style={socialIconStyle} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
+            <FaWhatsapp style={socialIconStyle} onClick={() => window.open("https://wa.me/918275334335", "_blank")} />
+            <FaFacebook style={socialIconStyle} onClick={() => window.open("https://www.instagram.com/vastrahub.in/", "_blank")} />
           </div>
         </div>
 
         <hr style={{ borderTop: '1px solid #fff', margin: '40px 0' }} />
 
         {/* Bottom Section */}
-        <div className="bottom-footer d-flex justify-content-between align-items-center">
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '10px',
+          }}
+        >
           <p style={{ fontSize: '14px' }}>© 2024 VastraHub Clothing</p>
-          <p style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => window.location.href = "https://visionforgetech.web.app/"}>
+          <p
+            style={{ fontSize: '14px', cursor: 'pointer' }}
+            onClick={() => window.location.href = "https://visionforgetech.web.app/"}
+          >
             Made with <span style={{ color: 'red' }}>❤️</span> by VisionForge
           </p>
         </div>
@@ -205,3 +250,16 @@ export default function Footer() {
     </footer>
   );
 }
+
+// Common small styles
+const linkStyle = {
+  fontSize: '15px',
+  marginBottom: '8px',
+  cursor: 'pointer',
+};
+
+const socialIconStyle = {
+  fontSize: '24px',
+  cursor: 'pointer',
+};
+

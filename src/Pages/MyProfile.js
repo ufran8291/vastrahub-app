@@ -12,7 +12,7 @@ import {
   MdLogout,
   MdEdit,
   MdSave,
-  MdClose
+  MdClose,
 } from "react-icons/md";
 
 // Animation libraries
@@ -22,7 +22,12 @@ import { motion } from "framer-motion";
 
 export default function MyProfile() {
   const navigate = useNavigate();
-  const { currentUser, firestoreUser, signOutUser,checkSessionTokenConsistency } = useContext(GlobalContext);
+  const {
+    currentUser,
+    firestoreUser,
+    signOutUser,
+    checkSessionTokenConsistency,
+  } = useContext(GlobalContext);
 
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const [userDocId, setUserDocId] = useState(null);
@@ -147,7 +152,7 @@ export default function MyProfile() {
               style={{
                 fontFamily: "Lora, serif",
                 fontWeight: "600",
-                fontSize: "32px",
+                fontSize: "clamp(24px, 6vw, 32px)", // Responsive font size
                 textTransform: "uppercase",
                 margin: 0,
                 flex: 1,
@@ -155,6 +160,7 @@ export default function MyProfile() {
             >
               My Profile
             </h1>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -190,18 +196,24 @@ export default function MyProfile() {
               }}
             >
               {/* Avatar + Basic Info */}
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "20px",
+                }}
+              >
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.5 }}
                   style={{
-                    width: "90px",
-                    height: "90px",
+                    width: "clamp(60px, 15vw, 90px)", // Responsive Avatar
+                    height: "clamp(60px, 15vw, 90px)",
                     borderRadius: "50%",
                     backgroundColor: "#333",
                     color: "#fff",
-                    fontSize: "36px",
+                    fontSize: "clamp(24px, 6vw, 36px)",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
@@ -210,6 +222,7 @@ export default function MyProfile() {
                 >
                   {getAvatarLetter()}
                 </motion.div>
+
                 <div style={{ flex: 1 }}>
                   <h2 style={{ margin: 0, fontWeight: 600, fontSize: "22px" }}>
                     {profileData.fullName || "Your Name"}
@@ -236,36 +249,48 @@ export default function MyProfile() {
               <div style={{ display: "grid", rowGap: "12px" }}>
                 <div>
                   <strong>Phone:</strong>{" "}
-                  <span style={{ marginLeft: "4px" }}>{profileData.phone || "N/A"}</span>
+                  <span style={{ marginLeft: "4px" }}>
+                    {profileData.phone || "N/A"}
+                  </span>
                 </div>
                 {profileData.altPhone && (
                   <div>
                     <strong>Alternate Phone:</strong>{" "}
-                    <span style={{ marginLeft: "4px" }}>{profileData.altPhone}</span>
+                    <span style={{ marginLeft: "4px" }}>
+                      {profileData.altPhone}
+                    </span>
                   </div>
                 )}
                 <div>
                   <strong>Email:</strong>{" "}
-                  <span style={{ marginLeft: "4px" }}>{profileData.email || "N/A"}</span>
+                  <span style={{ marginLeft: "4px" }}>
+                    {profileData.email || "N/A"}
+                  </span>
                 </div>
                 <div>
                   <strong>Address:</strong>{" "}
-                  <span style={{ marginLeft: "4px" }}>{profileData.address || "N/A"}</span>
+                  <span style={{ marginLeft: "4px" }}>
+                    {profileData.address || "N/A"}
+                  </span>
                 </div>
 
                 {/* GST / PAN */}
-                {(profileData.gstin || profileData.pan) ? (
+                {profileData.gstin || profileData.pan ? (
                   <>
                     {profileData.gstin && (
                       <div>
                         <strong>GSTIN:</strong>{" "}
-                        <span style={{ marginLeft: "4px" }}>{profileData.gstin}</span>
+                        <span style={{ marginLeft: "4px" }}>
+                          {profileData.gstin}
+                        </span>
                       </div>
                     )}
                     {profileData.pan && (
                       <div>
                         <strong>PAN:</strong>{" "}
-                        <span style={{ marginLeft: "4px" }}>{profileData.pan}</span>
+                        <span style={{ marginLeft: "4px" }}>
+                          {profileData.pan}
+                        </span>
                       </div>
                     )}
                   </>
@@ -395,7 +420,13 @@ export default function MyProfile() {
                 }}
               >
                 <MdShoppingCart size={32} color="#333" />
-                <h3 style={{ marginTop: "10px", fontSize: "18px", fontWeight: 500 }}>
+                <h3
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "18px",
+                    fontWeight: 500,
+                  }}
+                >
                   My Cart
                 </h3>
               </motion.div>
@@ -418,7 +449,13 @@ export default function MyProfile() {
                 }}
               >
                 <MdReceiptLong size={32} color="#333" />
-                <h3 style={{ marginTop: "10px", fontSize: "18px", fontWeight: 500 }}>
+                <h3
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "18px",
+                    fontWeight: 500,
+                  }}
+                >
                   My Orders
                 </h3>
               </motion.div>
@@ -441,7 +478,13 @@ export default function MyProfile() {
                 }}
               >
                 <MdHelpOutline size={32} color="#333" />
-                <h3 style={{ marginTop: "10px", fontSize: "18px", fontWeight: 500 }}>
+                <h3
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "18px",
+                    fontWeight: 500,
+                  }}
+                >
                   Help
                 </h3>
               </motion.div>

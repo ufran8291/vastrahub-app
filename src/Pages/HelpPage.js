@@ -2,17 +2,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "@mui/material";
-
-// Import icons from react-icons
 import { FiPhone } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
-
-// Framer Motion & React Awesome Reveal
 import { motion } from "framer-motion";
 import { Fade } from "react-awesome-reveal";
 
-// Styling objects
+// Styling
 const containerStyle = {
   fontFamily: "Plus Jakarta Sans, sans-serif",
   padding: "40px 20px",
@@ -28,15 +24,17 @@ const headerStyle = {
 
 const headerTextStyle = {
   color: "#fff",
-  fontSize: "4rem",
+  fontSize: "clamp(2rem, 8vw, 4rem)",
   fontFamily: "Lora, serif",
   fontWeight: "700",
   margin: 0,
+  lineHeight: 1.2,
 };
 
 const sectionStyle = {
   display: "flex",
   flexDirection: "row",
+  flexWrap: "wrap",
   alignItems: "center",
   padding: "20px",
   margin: "20px 0",
@@ -48,23 +46,26 @@ const sectionStyle = {
 const iconStyle = {
   fontSize: "60px",
   marginRight: "20px",
+  marginBottom: "10px",
   color: "#333",
+  flexShrink: 0,
 };
 
 const contentStyle = {
   flex: 1,
+  minWidth: "200px",
 };
 
 const headingStyle = {
   margin: "0 0 10px 0",
-  fontSize: "1.5rem",
+  fontSize: "clamp(1.2rem, 5vw, 1.5rem)",
   fontWeight: "600",
   color: "#333",
 };
 
 const textStyle = {
   margin: "0 0 5px 0",
-  fontSize: "1rem",
+  fontSize: "clamp(0.95rem, 4vw, 1rem)",
   color: "#555",
 };
 
@@ -82,13 +83,15 @@ const buttonStyle = {
   border: "none",
   borderRadius: "4px",
   cursor: "pointer",
+  marginTop: "10px",
+  minWidth: "140px",
 };
 
 const buttonHoverStyle = {
   backgroundColor: "#555",
 };
 
-// Motion variants for help sections
+// Animation variants
 const sectionVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: (i = 1) => ({
@@ -98,7 +101,7 @@ const sectionVariants = {
   }),
 };
 
-// HelpSection component with motion on the button
+// Help Section
 const HelpSection = ({
   Icon,
   title,
@@ -122,28 +125,25 @@ const HelpSection = ({
       <p style={textStyle}>
         {description} <span style={highlightStyle}>{highlight}</span>
       </p>
+      <Tooltip title={tooltip} arrow>
+        <motion.button
+          whileHover={buttonHoverStyle}
+          style={buttonStyle}
+          onClick={onAction}
+        >
+          {actionLabel}
+        </motion.button>
+      </Tooltip>
     </div>
-    <Tooltip title={tooltip} arrow>
-      <motion.button
-        whileHover={buttonHoverStyle}
-        style={buttonStyle}
-        onClick={onAction}
-      >
-        {actionLabel}
-      </motion.button>
-    </Tooltip>
   </motion.div>
 );
 
 const HelpPage = () => {
   const navigate = useNavigate();
-
-  // Sample contact details – update these as needed
   const phoneNumber = "+91 8275334335";
   const whatsappNumber = "+91 8275334335";
   const supportEmail = "vastrahub.store@gmail.com";
 
-  // Handlers for button actions
   const handleCall = () => {
     window.location.href = `tel:${phoneNumber}`;
   };

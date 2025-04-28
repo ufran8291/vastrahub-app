@@ -4,86 +4,76 @@ import PixelTransition from "../Bits/PixelTransition";
 import { GlobalContext } from "../Context/GlobalContext";
 
 const ProductCard = ({ product, onView, onAdd }) => {
-  const { currentUser, firestoreUser, checkSessionTokenConsistency } = useContext(GlobalContext);
-    const isLoggedIn = !!currentUser && !!firestoreUser; 
+  const { currentUser, firestoreUser } = useContext(GlobalContext);
+  const isLoggedIn = !!currentUser && !!firestoreUser;
+  const isMobile = window.innerWidth <= 768;
+
   return (
     <div
       style={{
         flex: "0 0 auto",
-        width: "430px",
+        width: isMobile ? "90vw" : "430px",
         marginRight: "10px",
         textAlign: "left",
         padding: "10px",
-        height: "700px", // increased card height
+        height: isMobile ? "auto" : "700px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        paddingBottom: "20px",
         border: "1px solid #eee",
         borderRadius: "8px",
+        backgroundColor: "#fff",
       }}
     >
       <div>
-        {/* Image Container with white background */}
-        {/* <div
-          style={{
-            width: "100%",
-            height: "400px", // increased image container height
-            // backgroundColor: "#000",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "8px",
-            marginBottom: "10px",
-            overflow: "hidden",
-          }}
-        > */}
-          <div onClick={onView} style={{ cursor: "pointer" }}>
-  <PixelTransition
-    firstContent={
-      <img
-        src={product.image}
-        alt={`Front view of ${product.title}`}
-        style={{
-          minWidth: "100%",
-          maxHeight: "100%",
-          objectFit: "contain",
-          backgroundColor: "#DAE0E2",
-          marginBottom: "20px",
-        }}
-      />
-    }
-    secondContent={
-      <img
-        src={product.additionalImages[0]}
-        alt={`Additional view of ${product.title}`}
-        style={{
-          minWidth: "100%",
-          maxHeight: "100%",
-          objectFit: "contain",
-          backgroundColor: "#DAE0E2",
-          marginBottom: "20px",
-        }}
-      />
-    }
-    gridSize={24}
-    pixelColor="#DAE0E2"
-    animationStepDuration={0.4}
-  />
-</div>
+        <div onClick={onView} style={{ cursor: "pointer" }}>
+          <PixelTransition
+            firstContent={
+              <img
+                src={product.image}
+                alt={`Front view of ${product.title}`}
+                style={{
+                  minWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  backgroundColor: "#DAE0E2",
+                  backgroundColor: "#DAE0E2",
+                  marginBottom: "20px",
+                }}
+              />
+            }
+            secondContent={
+              <img
+                src={product.additionalImages[0]}
+                alt={`Additional view of ${product.title}`}
+                style={{
+                  minWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  backgroundColor: "#DAE0E2",
+                  backgroundColor: "#DAE0E2",
+                  marginBottom: "20px",
+                }}
+              />
+            }
+            gridSize={24}
+            pixelColor="#DAE0E2"
+            animationStepDuration={0.4}
+          />
+        </div>
 
-        {/* </div> */}
         <h3
           style={{
             fontFamily: "Lora, serif",
             fontWeight: "500",
-            fontSize: "20px",
+            fontSize: isMobile ? "18px" : "20px",
             marginBottom: "10px",
-            marginTop:'10px'
+            marginTop: "10px",
           }}
         >
           {product.title}
         </h3>
+
         <div
           style={{
             display: "flex",
@@ -94,7 +84,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
           <p
             style={{
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "16px",
+              fontSize: isMobile ? "14px" : "16px",
               fontWeight: "400",
               margin: 0,
             }}
@@ -104,24 +94,26 @@ const ProductCard = ({ product, onView, onAdd }) => {
           <p
             style={{
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "16px",
+              fontSize: isMobile ? "14px" : "16px",
               fontWeight: "400",
               margin: 0,
             }}
           >
-            From ₹ {true? product.price:'XXX (Login to view)'}
+            From ₹ {true ? product.price : "XXX (Login to view)"}
           </p>
         </div>
+
         <p
           style={{
             fontFamily: "Plus Jakarta Sans, sans-serif",
-            fontSize: "16px",
+            fontSize: isMobile ? "14px" : "16px",
             fontWeight: "500",
             marginBottom: "10px",
           }}
         >
           Available Sizes:
         </p>
+
         <div
           style={{
             display: "flex",
@@ -142,7 +134,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
                   `)`
                 : "Out of stock";
             return (
-              // <Tooltip key={j} title={tooltipText} arrow>
+              <Tooltip key={j} title={tooltipText} arrow>
                 <div
                   style={{
                     minWidth: "40px",
@@ -154,21 +146,25 @@ const ProductCard = ({ product, onView, onAdd }) => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    objectFit: "contain",
+                    fontSize: "14px",
+                    cursor: "default",
                   }}
                 >
                   {sz.size}
                 </div>
-              // </Tooltip>
+              </Tooltip>
             );
           })}
         </div>
       </div>
+
+      {/* Buttons */}
       <div
         style={{
           marginTop: "15px",
           display: "flex",
           gap: "10px",
+          flexDirection: isMobile ? "column" : "row",
         }}
       >
         <button
@@ -180,9 +176,10 @@ const ProductCard = ({ product, onView, onAdd }) => {
             fontFamily: "Plus Jakarta Sans, sans-serif",
             fontSize: "14px",
             fontWeight: "500",
-            borderRadius: "0px",
-            border: "solid 1px #333",
+            borderRadius: "4px",
+            border: "1px solid #333",
             cursor: "pointer",
+            width: "100%",
           }}
           onClick={onView}
         >
@@ -197,9 +194,10 @@ const ProductCard = ({ product, onView, onAdd }) => {
             fontFamily: "Plus Jakarta Sans, sans-serif",
             fontSize: "14px",
             fontWeight: "500",
-            borderRadius: "0px",
+            borderRadius: "4px",
             border: "none",
             cursor: "pointer",
+            width: "100%",
           }}
           onClick={onAdd}
         >

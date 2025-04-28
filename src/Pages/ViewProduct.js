@@ -20,9 +20,9 @@ import {
   AiOutlineArrowRight,
   AiOutlinePlus,
   AiOutlineMinus,
-  AiOutlineDownload, // <-- New icon import
+  AiOutlineDownload,
 } from "react-icons/ai";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, useMediaQuery } from "@mui/material"; // ⬅️ NEW
 
 const ViewProduct = () => {
   const navigate = useNavigate();
@@ -35,10 +35,13 @@ const ViewProduct = () => {
   const uid = firestoreUser?.id || null;
   const productId = state?.productId || null;
 
+  // 🔹 Detect mobile viewport
+  const isMobile = useMediaQuery("(max-width:600px)");
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingSizes, setLoadingSizes] = useState(true);
-  const [sizesSynced, setSizesSynced] = useState(false); // flag to ensure sizes are synced only once
+  const [sizesSynced, setSizesSynced] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [sizesQuantity, setSizesQuantity] = useState([]);
   const [existingCartItems, setExistingCartItems] = useState({});
@@ -107,7 +110,6 @@ const ViewProduct = () => {
             data.sizes && Array.isArray(data.sizes)
               ? data.sizes.map((s) => 0)
               : [];
-          // If user is logged in, fetch cart items to prefill quantities.
           if (data.sizes && Array.isArray(data.sizes) && uid) {
             try {
               const cartRef = collection(db, "users", uid, "cart");
@@ -140,12 +142,10 @@ const ViewProduct = () => {
     fetchProduct();
   }, [productId, navigate, uid]);
 
-  // ---------- Effect: Sync Sizes Stock Data (only once) ----------
+  // ---------- Effect: Sync Sizes Stock Data ----------
   useEffect(() => {
     async function syncSizes() {
-      // Only sync sizes if user is logged in
       if (!isLoggedIn) {
-        console.log("Not logged in - skipping stock sync");
         setLoadingSizes(false);
         return;
       }
@@ -157,7 +157,6 @@ const ViewProduct = () => {
       ) {
         setLoadingSizes(true);
         try {
-          // Check store status.
           const storeDoc = await getDoc(doc(db, "banners", "other-data"));
           let isStoreOpen = false;
           if (storeDoc.exists()) {
@@ -167,22 +166,16 @@ const ViewProduct = () => {
             const inventoryIds = product.sizes.map((s) =>
               Number(s.inventoryId)
             );
-            console.log("Syncing sizes for inventory IDs:", inventoryIds);
             await syncStockDataForIds(inventoryIds);
-            console.log("Stock sync complete.");
-            // Re-fetch product to update sizes.
             const prodDoc = await getDoc(doc(db, "products", productId));
             if (prodDoc.exists()) {
               const updatedProduct = prodDoc.data();
               setProduct(updatedProduct);
-              // Reinitialize sizesQuantity preserving any existing cart quantities.
               const initData = updatedProduct.sizes.map(
                 (s) => existingCartItems[s.size] || 0
               );
               setSizesQuantity(initData);
             }
-          } else {
-            console.log("Store is closed. Skipping sizes sync.");
           }
           setSizesSynced(true);
         } catch (err) {
@@ -240,9 +233,7 @@ const ViewProduct = () => {
     if (!isLoggedIn) return;
     setSizesQuantity((prev) => {
       const updated = [...prev];
-      if (updated[index] !== null) {
-        updated[index] += 1;
-      }
+      if (updated[index] !== null) updated[index] += 1;
       return updated;
     });
   };
@@ -251,9 +242,7 @@ const ViewProduct = () => {
     if (!isLoggedIn) return;
     setSizesQuantity((prev) => {
       const updated = [...prev];
-      if (updated[index] !== null && updated[index] > 0) {
-        updated[index] -= 1;
-      }
+      if (updated[index] !== null && updated[index] > 0) updated[index] -= 1;
       return updated;
     });
   };
@@ -322,17 +311,15 @@ const ViewProduct = () => {
             const newDocRef = doc(cartRef);
             await setDoc(newDocRef, cartData);
           }
-        } else {
-          if (mapping[sizeObj.size]) {
-            const docRef = doc(
-              db,
-              "users",
-              uid,
-              "cart",
-              mapping[sizeObj.size].docId
-            );
-            await deleteDoc(docRef);
-          }
+        } else if (mapping[sizeObj.size]) {
+          const docRef = doc(
+            db,
+            "users",
+            uid,
+            "cart",
+            mapping[sizeObj.size].docId
+          );
+          await deleteDoc(docRef);
         }
       }
       if (!anySelected) {
@@ -350,6 +337,7 @@ const ViewProduct = () => {
 
   // ---------- Magnifier Handlers ----------
   const handleMouseEnter = () => {
+    if (isMobile) return; // Disable magnifier on mobile
     if (getCurrentImageUrl()) setShowMagnifier(true);
   };
 
@@ -359,7 +347,6 @@ const ViewProduct = () => {
     if (!imgContainerRef.current) return;
     const { left, top, width, height } =
       imgContainerRef.current.getBoundingClientRect();
-    // Use clientX/clientY since getBoundingClientRect returns viewport-relative values.
     const x = e.clientX - left;
     const y = e.clientY - top;
     const lensRadius = magnifierSize / 2;
@@ -379,11 +366,12 @@ const ViewProduct = () => {
     });
   };
 
+  // ---------- Early Loading Returns ----------
   if (loading) {
     return (
       <div
         style={{
-          padding: "60px",
+          padding: isMobile ? "40px" : "60px",
           textAlign: "center",
           fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
@@ -394,6 +382,7 @@ const ViewProduct = () => {
   }
   if (!product) return null;
 
+  // ---------- Derived UI Values ----------
   const minPrice = (() => {
     if (!product.sizes) return null;
     const valid = product.sizes.filter(
@@ -409,14 +398,21 @@ const ViewProduct = () => {
     ? "Please select at least 2 different sizes."
     : "";
 
+  // ---------- Render ----------
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "30px" }}>
+    <div
+      style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        padding: isMobile ? "20px 10px" : "30px",
+      }}
+    >
       {/* ---------- Carousel Section ---------- */}
       <div
         style={{
           position: "relative",
           textAlign: "center",
-          marginBottom: "30px",
+          marginBottom: isMobile ? "20px" : "30px",
         }}
       >
         <div
@@ -435,15 +431,15 @@ const ViewProduct = () => {
               onClick={handlePrevImage}
               style={{
                 position: "absolute",
-                left: "-50px",
+                left: isMobile ? "-30px" : "-50px",
                 top: "50%",
                 transform: "translateY(-50%)",
                 background: "#000",
                 color: "#fff",
                 border: "none",
-                fontSize: "20px",
+                fontSize: isMobile ? "16px" : "20px",
                 cursor: "pointer",
-                padding: "10px",
+                padding: "8px",
                 borderRadius: "4px",
               }}
             >
@@ -455,8 +451,10 @@ const ViewProduct = () => {
               src={getCurrentImageUrl()}
               alt="Product"
               style={{
-                maxWidth: "600px",
-                maxHeight: "450px",
+                width: "100%",
+                maxWidth: isMobile ? "100%" : "600px",
+                height: "auto",
+                maxHeight: isMobile ? "70vh" : "450px",
                 objectFit: "contain",
                 borderRadius: "8px",
                 display: "block",
@@ -465,8 +463,8 @@ const ViewProduct = () => {
           ) : (
             <div
               style={{
-                width: "600px",
-                height: "450px",
+                width: isMobile ? "90vw" : "600px",
+                height: isMobile ? "250px" : "450px",
                 backgroundColor: "#f0f0f0",
                 borderRadius: "8px",
               }}
@@ -479,15 +477,15 @@ const ViewProduct = () => {
               onClick={handleNextImage}
               style={{
                 position: "absolute",
-                right: "-50px",
+                right: isMobile ? "-30px" : "-50px",
                 top: "50%",
                 transform: "translateY(-50%)",
                 background: "#000",
                 color: "#fff",
                 border: "none",
-                fontSize: "20px",
+                fontSize: isMobile ? "16px" : "20px",
                 cursor: "pointer",
-                padding: "10px",
+                padding: "8px",
                 borderRadius: "4px",
               }}
             >
@@ -532,14 +530,14 @@ const ViewProduct = () => {
           <div
             style={{
               position: "absolute",
-              bottom: "15px",
+              bottom: isMobile ? "10px" : "15px",
               left: "50%",
               transform: "translateX(-50%)",
               backgroundColor: "rgba(0,0,0,0.5)",
               color: "#fff",
-              padding: "4px 8px",
+              padding: "2px 6px",
               borderRadius: "4px",
-              fontSize: "14px",
+              fontSize: "12px",
               fontFamily: "Plus Jakarta Sans, sans-serif",
             }}
           >
@@ -548,38 +546,43 @@ const ViewProduct = () => {
         )}
       </div>
 
-      {/* ---------- Download Images Button (only if logged in) ---------- */}
+      {/* ---------- Download Images Button ---------- */}
       {isLoggedIn && (
-        <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: isMobile ? "16px" : "20px",
+          }}
+        >
           <button
             onClick={handleDownloadImages}
             style={{
-              padding: "10px 20px",
+              padding: isMobile ? "8px 16px" : "10px 20px",
               backgroundColor: "#333",
               color: "#fff",
               border: "none",
               borderRadius: "4px",
               cursor: "pointer",
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "16px",
+              fontSize: isMobile ? "14px" : "16px",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "6px",
             }}
           >
-            <AiOutlineDownload size={20} />
+            <AiOutlineDownload size={isMobile ? 18 : 20} />
             Download Images
           </button>
         </div>
       )}
 
       {/* ---------- Product Title + Starting Price ---------- */}
-      <div style={{ marginBottom: "30px" }}>
+      <div style={{ marginBottom: isMobile ? "24px" : "30px" }}>
         <h1
           style={{
             fontFamily: "Lora, serif",
             fontWeight: "600",
-            fontSize: "32px",
+            fontSize: isMobile ? "24px" : "32px",
             marginBottom: "10px",
             textTransform: "uppercase",
           }}
@@ -590,7 +593,7 @@ const ViewProduct = () => {
           <p
             style={{
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "16px",
+              fontSize: isMobile ? "14px" : "16px",
               color: "#666",
               marginBottom: "20px",
             }}
@@ -601,7 +604,7 @@ const ViewProduct = () => {
           <p
             style={{
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "16px",
+              fontSize: isMobile ? "14px" : "16px",
               color: "#666",
               marginBottom: "20px",
             }}
@@ -614,7 +617,7 @@ const ViewProduct = () => {
             <p
               style={{
                 fontFamily: "Plus Jakarta Sans, sans-serif",
-                fontSize: "16px",
+                fontSize: isMobile ? "14px" : "16px",
                 fontWeight: "500",
                 marginBottom: "5px",
               }}
@@ -624,22 +627,21 @@ const ViewProduct = () => {
             <p
               style={{
                 fontFamily: "Plus Jakarta Sans, sans-serif",
-                fontSize: "16px",
+                fontSize: isMobile ? "14px" : "16px",
                 marginBottom: "5px",
               }}
             >
               Fabric: {product.fabric || "N/A"}
             </p>
-            {/* ➡️ New: Show Additional Info if exists */}
             {product.additionalInfo && (
-               <p
-               style={{
-                 fontFamily: "Plus Jakarta Sans, sans-serif",
-                 fontSize: "16px",
-                 marginBottom: "5px",
-               }}
-             >
-               Additional Info : {product.additionalInfo}
+              <p
+                style={{
+                  fontFamily: "Plus Jakarta Sans, sans-serif",
+                  fontSize: isMobile ? "14px" : "16px",
+                  marginBottom: "5px",
+                }}
+              >
+                Additional Info: {product.additionalInfo}
               </p>
             )}
           </div>
@@ -647,7 +649,7 @@ const ViewProduct = () => {
             <p
               style={{
                 fontFamily: "Plus Jakarta Sans, sans-serif",
-                fontSize: "16px",
+                fontSize: isMobile ? "14px" : "16px",
                 marginBottom: "5px",
               }}
             >
@@ -657,7 +659,7 @@ const ViewProduct = () => {
               <p
                 style={{
                   fontFamily: "Plus Jakarta Sans, sans-serif",
-                  fontSize: "16px",
+                  fontSize: isMobile ? "14px" : "16px",
                 }}
               >
                 Colors: {product.colors}
@@ -670,7 +672,7 @@ const ViewProduct = () => {
       {/* ---------- Size-Quantity Selector ---------- */}
       <div
         style={{
-          marginBottom: "30px",
+          marginBottom: isMobile ? "24px" : "30px",
           position: "relative",
           padding: "0 10px",
         }}
@@ -679,7 +681,7 @@ const ViewProduct = () => {
           style={{
             fontFamily: "Lora, serif",
             fontWeight: "600",
-            fontSize: "24px",
+            fontSize: isMobile ? "20px" : "24px",
             marginBottom: "15px",
           }}
         >
@@ -688,17 +690,18 @@ const ViewProduct = () => {
         {loadingSizes ? (
           <div
             style={{
-              minHeight: "200px",
+              minHeight: "180px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            <CircularProgress />
+            <CircularProgress size={isMobile ? 24 : 40} />
             <p
               style={{
                 marginLeft: "10px",
                 fontFamily: "Plus Jakarta Sans, sans-serif",
+                fontSize: isMobile ? "14px" : "16px",
               }}
             >
               Loading size details...
@@ -727,8 +730,10 @@ const ViewProduct = () => {
                   key={index}
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    flexDirection: isMobile ? "column" : "row",
+                    alignItems: isMobile ? "flex-start" : "center",
                     padding: "10px",
+                    gap: isMobile ? "8px" : "0",
                     borderBottom:
                       index !== product.sizes.length - 1
                         ? "1px solid #eee"
@@ -739,7 +744,7 @@ const ViewProduct = () => {
                     <p
                       style={{
                         fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "16px",
+                        fontSize: isMobile ? "14px" : "16px",
                         fontWeight: "500",
                         marginBottom: "6px",
                       }}
@@ -749,7 +754,7 @@ const ViewProduct = () => {
                     <p
                       style={{
                         fontFamily: "Plus Jakarta Sans, sans-serif",
-                        fontSize: "14px",
+                        fontSize: isMobile ? "12px" : "14px",
                         marginBottom: "6px",
                       }}
                     >
@@ -763,6 +768,7 @@ const ViewProduct = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      marginLeft: isMobile ? "0" : "8px",
                     }}
                   >
                     <button
@@ -772,8 +778,8 @@ const ViewProduct = () => {
                         backgroundColor: "#fff",
                         border: "1px solid #333",
                         marginRight: "8px",
-                        width: "30px",
-                        height: "30px",
+                        width: isMobile ? "26px" : "30px",
+                        height: isMobile ? "26px" : "30px",
                         borderRadius: "4px",
                         fontSize: "16px",
                         cursor:
@@ -786,9 +792,10 @@ const ViewProduct = () => {
                     </button>
                     <p
                       style={{
-                        width: "30px",
+                        width: isMobile ? "26px" : "30px",
                         textAlign: "center",
                         fontFamily: "Plus Jakarta Sans, sans-serif",
+                        fontSize: isMobile ? "14px" : "16px",
                       }}
                     >
                       {boxesSelected || 0}
@@ -804,8 +811,8 @@ const ViewProduct = () => {
                         backgroundColor: "#fff",
                         border: "1px solid #333",
                         marginLeft: "8px",
-                        width: "30px",
-                        height: "30px",
+                        width: isMobile ? "26px" : "30px",
+                        height: isMobile ? "26px" : "30px",
                         borderRadius: "4px",
                         fontSize: "16px",
                         cursor: isLoggedIn ? "pointer" : "not-allowed",
@@ -814,14 +821,19 @@ const ViewProduct = () => {
                       <AiOutlinePlus />
                     </button>
                   </div>
-                  <div style={{ marginLeft: "20px", textAlign: "right" }}>
+                  <div
+                    style={{
+                      marginLeft: isMobile ? "0" : "20px",
+                      textAlign: isMobile ? "left" : "right",
+                    }}
+                  >
                     {availableBoxes === 0 ? (
                       <p
                         style={{
                           fontFamily: "Plus Jakarta Sans, sans-serif",
-                          fontSize: "14px",
+                          fontSize: isMobile ? "12px" : "14px",
                           color: "#D32F2F",
-                          marginBottom: "0",
+                          marginBottom: 0,
                         }}
                       >
                         ❌ Out of Stock
@@ -831,8 +843,8 @@ const ViewProduct = () => {
                         <p
                           style={{
                             fontFamily: "Plus Jakarta Sans, sans-serif",
-                            fontSize: "14px",
-                            marginBottom: "0px",
+                            fontSize: isMobile ? "12px" : "14px",
+                            marginBottom: "2px",
                           }}
                         >
                           {isLoggedIn
@@ -845,7 +857,7 @@ const ViewProduct = () => {
                               fontFamily: "Plus Jakarta Sans, sans-serif",
                               fontSize: "12px",
                               color: "#888",
-                              margin: "0",
+                              margin: 0,
                             }}
                           >
                             Total Pieces: {totalPiecesSelected}
@@ -866,7 +878,12 @@ const ViewProduct = () => {
             })}
           </div>
         ) : (
-          <p style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+          <p
+            style={{
+              fontFamily: "Plus Jakarta Sans, sans-serif",
+              fontSize: isMobile ? "14px" : "16px",
+            }}
+          >
             No sizes available for this product.
           </p>
         )}
@@ -884,13 +901,14 @@ const ViewProduct = () => {
               justifyContent: "center",
               flexDirection: "column",
               borderRadius: "8px",
+              padding: "20px",
             }}
           >
             <p
               style={{
                 color: "#fff",
                 fontFamily: "Plus Jakarta Sans, sans-serif",
-                fontSize: "16px",
+                fontSize: isMobile ? "14px" : "16px",
                 margin: "10px 0",
                 textAlign: "center",
               }}
@@ -900,11 +918,11 @@ const ViewProduct = () => {
             <button
               onClick={goToLogin}
               style={{
-                padding: "10px 20px",
+                padding: isMobile ? "10px 20px" : "12px 24px",
                 backgroundColor: "#000",
                 color: "#fff",
                 border: "none",
-                fontSize: "16px",
+                fontSize: isMobile ? "14px" : "16px",
                 borderRadius: "4px",
                 cursor: "pointer",
               }}
@@ -923,16 +941,18 @@ const ViewProduct = () => {
           <div
             style={{
               display: "flex",
+              flexDirection: isMobile ? "column" : "row",
               justifyContent: "space-between",
               marginTop: "10px",
-              alignItems: "center",
+              alignItems: isMobile ? "flex-start" : "center",
+              gap: isMobile ? "12px" : "0",
             }}
           >
             <div>
               <p
                 style={{
                   fontFamily: "Plus Jakarta Sans, sans-serif",
-                  fontSize: "16px",
+                  fontSize: isMobile ? "14px" : "16px",
                   fontWeight: "600",
                   marginBottom: 0,
                 }}
@@ -941,11 +961,11 @@ const ViewProduct = () => {
                   ? `Grand Total: ₹${getAllSizesTotal()}`
                   : "Grand Total: --"}
               </p>
-              {getCountDistinctSizesSelected() < 2 && (
+              {distinctSizesSelected < 2 && (
                 <p
                   style={{
                     fontFamily: "Plus Jakarta Sans, sans-serif",
-                    fontSize: "14px",
+                    fontSize: "12px",
                     color: "#888",
                     margin: "4px 0 0",
                   }}
@@ -958,7 +978,7 @@ const ViewProduct = () => {
               title={
                 !isLoggedIn
                   ? "Please log in to add items to cart."
-                  : getCountDistinctSizesSelected() < 2
+                  : distinctSizesSelected < 2
                   ? "Please select at least 2 different sizes."
                   : ""
               }
@@ -967,17 +987,23 @@ const ViewProduct = () => {
               <span>
                 <button
                   onClick={isLoggedIn ? handleAddToCart : undefined}
-                  disabled={!isLoggedIn || getCountDistinctSizesSelected() < 2}
+                  disabled={!isLoggedIn || distinctSizesSelected < 2}
                   style={{
-                    padding: "14px 28px",
-                    backgroundColor: isLoggedIn ? "#333" : "#bbb",
+                    padding: isMobile ? "12px 22px" : "14px 28px",
+                    backgroundColor:
+                      isLoggedIn && distinctSizesSelected >= 2
+                        ? "#333"
+                        : "#bbb",
                     color: "#fff",
                     fontFamily: "Plus Jakarta Sans, sans-serif",
-                    fontSize: "16px",
+                    fontSize: isMobile ? "14px" : "16px",
                     fontWeight: "500",
                     borderRadius: "4px",
                     border: "none",
-                    cursor: isLoggedIn ? "pointer" : "not-allowed",
+                    cursor:
+                      isLoggedIn && distinctSizesSelected >= 2
+                        ? "pointer"
+                        : "not-allowed",
                   }}
                 >
                   ADD TO CART

@@ -5,23 +5,17 @@ import {
   Typography,
   Box,
   Card,
-  CardContent,
   Button,
   CircularProgress,
   Divider,
-  IconButton,
 } from "@mui/material";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { GlobalContext } from "../Context/GlobalContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
-// MUI icons
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import InfoIcon from "@mui/icons-material/Info";
-
-// Framer Motion & React Awesome Reveal
 import { motion } from "framer-motion";
 import { Fade } from "react-awesome-reveal";
 
@@ -57,15 +51,13 @@ export default function MyOrders() {
         id: docSnap.id,
         ...docSnap.data(),
       }));
-  
-      // Optionally, sort manually if needed:
+
       fetchedOrders.sort((a, b) => {
-        // Convert createdAt to Date objects if they're Firestore Timestamps.
         const dateA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
         const dateB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-        return dateB - dateA; // descending order: latest first
+        return dateB - dateA;
       });
-  
+
       setOrders(fetchedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -74,7 +66,6 @@ export default function MyOrders() {
       setLoadingOrders(false);
     }
   };
-  
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -82,7 +73,6 @@ export default function MyOrders() {
     return date.toLocaleString();
   };
 
-  // Motion variants for cards
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i) => ({
@@ -93,14 +83,10 @@ export default function MyOrders() {
     hover: { scale: 1.02, transition: { duration: 0.3 } },
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
-    <Container
-      sx={{
-        mt: 4,
-        mb: 4,
-        fontFamily: "Plus Jakarta Sans, sans-serif",
-      }}
-    >
+    <Container sx={{ mt: 4, mb: 4, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
       <Fade triggerOnce>
         <Typography
           variant="h4"
@@ -111,6 +97,7 @@ export default function MyOrders() {
           My Orders
         </Typography>
       </Fade>
+
       {loadingOrders ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
@@ -134,16 +121,16 @@ export default function MyOrders() {
                 mb: 2,
                 p: 2,
                 display: "flex",
-                alignItems: "center",
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "flex-start" : "center",
                 justifyContent: "space-between",
                 borderRadius: "8px",
                 boxShadow: 3,
+                gap: 2,
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-                <ReceiptLongIcon
-                  sx={{ fontSize: 40, mr: 2, color: "#1976d2" }}
-                />
+                <ReceiptLongIcon sx={{ fontSize: 40, mr: 2, color: "#1976d2" }} />
                 <Box>
                   <Typography
                     variant="h6"
@@ -162,7 +149,13 @@ export default function MyOrders() {
                   </Typography>
                 </Box>
               </Box>
-              <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
+
+              <Divider
+                orientation={isMobile ? "horizontal" : "vertical"}
+                flexItem
+                sx={{ my: isMobile ? 2 : 0, mx: isMobile ? 0 : 2 }}
+              />
+
               <Button
                 variant="contained"
                 startIcon={<InfoIcon />}
@@ -174,6 +167,7 @@ export default function MyOrders() {
                   color: "#fff",
                   textTransform: "none",
                   fontWeight: "bold",
+                  width: isMobile ? "100%" : "auto",
                   "&:hover": { backgroundColor: "#333" },
                 }}
               >

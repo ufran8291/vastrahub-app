@@ -28,16 +28,11 @@ import googlePlayImage from "../assets/googleplay.png";
 import appStoreImage from "../assets/appstore.png";
 import mobileAppImage from "../assets/mobilepp.png";
 import vasLogo from "../assets/newvaslogo.jpeg";
-import { MdFactory, MdSecurity } from "react-icons/md"; // Material-style icons
+import { MdFactory, MdSecurity } from "react-icons/md";
 
 // Components
 import SizeSelectorOverlay from "../components/SizeSelectorOverlay";
-import {
-  Button,
-  // CircularProgress,
-  LinearProgress,
-  Tooltip,
-} from "@mui/material";
+import { Button, LinearProgress } from "@mui/material";
 import { TbSpeakerphone } from "react-icons/tb";
 import { ReactTyped } from "react-typed";
 import ProductCard from "../components/ProductCard";
@@ -45,11 +40,7 @@ import Squares from "../Bits/Squares";
 import ScrollFloat from "../Bits/ScrollFloat";
 import ScrollVelocity from "../Bits/ScrollVelocity";
 import RotatingText from "../Bits/RotatingText";
-import { color } from "framer-motion";
-// Import ScrollFloat component
-// import ScrollFloat from "../components/ScrollFloat";
 
-// Helper function to get tag document id by title
 const getTagIdByTitle = async (title) => {
   try {
     const q = query(collection(db, "tags"), where("title", "==", title));
@@ -65,7 +56,6 @@ const getTagIdByTitle = async (title) => {
   }
 };
 
-// Local Component: CategoryCard with image hover overlay effect
 function CategoryCard({ category, onClick }) {
   const [hover, setHover] = useState(false);
   return (
@@ -75,9 +65,9 @@ function CategoryCard({ category, onClick }) {
       onClick={onClick}
       style={{
         flex: "0 0 auto",
-        width: "325px",
+        width: "300px",
         marginRight: "20px",
-        textAlign: "left",
+        textAlign: "center",
         cursor: "pointer",
         position: "relative",
       }}
@@ -87,11 +77,12 @@ function CategoryCard({ category, onClick }) {
           src={category.image || categoryPlaceholder}
           alt={category.name}
           style={{
-            width: "300px",
-            height: "365px",
-            objectFit: "contain",
+            width: "100%",
+            height: "auto",
+            objectFit: "cover",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
+            borderRadius: "8px",
           }}
         />
         <div
@@ -101,7 +92,7 @@ function CategoryCard({ category, onClick }) {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: hover ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
+            backgroundColor: hover ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -111,7 +102,7 @@ function CategoryCard({ category, onClick }) {
           <span
             style={{
               color: "#fff",
-              fontSize: "1.5rem",
+              fontSize: "clamp(16px, 3vw, 24px)",
               opacity: hover ? 1 : 0,
               transition: "opacity 0.3s",
               fontFamily: "Lora, serif",
@@ -125,9 +116,10 @@ function CategoryCard({ category, onClick }) {
         style={{
           fontFamily: "Plus Jakarta Sans, sans-serif",
           fontWeight: "500",
-          fontSize: "32px",
-          textTransform: "uppercase",
+          fontSize: "clamp(18px, 3vw, 28px)",
           marginTop: "10px",
+          textTransform: "uppercase",
+          color: "#333",
         }}
       >
         {category.name}
@@ -136,7 +128,6 @@ function CategoryCard({ category, onClick }) {
   );
 }
 
-// Local Component: CategoryCard2 with image hover overlay effect
 function CategoryCard2({ category, onClick }) {
   const [hover, setHover] = useState(false);
   return (
@@ -145,7 +136,7 @@ function CategoryCard2({ category, onClick }) {
       onMouseLeave={() => setHover(false)}
       onClick={onClick}
       style={{
-        textAlign: "left",
+        textAlign: "center",
         cursor: "pointer",
         position: "relative",
       }}
@@ -155,11 +146,12 @@ function CategoryCard2({ category, onClick }) {
           src={category.image || categoryPlaceholder}
           alt={category.name}
           style={{
-            width: "100%", // Ensures image fills its grid cell
+            width: "100%",
             height: "auto",
             objectFit: "cover",
             transition: "transform 0.3s",
             transform: hover ? "scale(1.05)" : "scale(1)",
+            borderRadius: "8px",
           }}
         />
         <div
@@ -169,7 +161,7 @@ function CategoryCard2({ category, onClick }) {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: hover ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0)",
+            backgroundColor: hover ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -179,7 +171,7 @@ function CategoryCard2({ category, onClick }) {
           <span
             style={{
               color: "#fff",
-              fontSize: "1.5rem",
+              fontSize: "clamp(16px, 3vw, 24px)",
               opacity: hover ? 1 : 0,
               transition: "opacity 0.3s",
               fontFamily: "Lora, serif",
@@ -193,11 +185,10 @@ function CategoryCard2({ category, onClick }) {
         style={{
           fontFamily: "Plus Jakarta Sans, sans-serif",
           fontWeight: "500",
-          fontSize: "1.75rem", // Use rem so it scales
-          textTransform: "uppercase",
+          fontSize: "clamp(18px, 3vw, 28px)",
           marginTop: "10px",
+          textTransform: "uppercase",
           color: "#fff",
-          textAlign: "center",
         }}
       >
         {category.name}
@@ -205,22 +196,16 @@ function CategoryCard2({ category, onClick }) {
     </div>
   );
 }
-
 export default function Homepage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser, checkSessionTokenConsistency } =
     useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
 
-  // Loader state
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(true);
-
-  // Fade-out logic states
   const [showLoader, setShowLoader] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
-
-  // Local state variables
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredProducts2, setFeaturedProducts2] = useState([]);
@@ -235,58 +220,28 @@ export default function Homepage() {
   const categoryCarouselRef = useRef(null);
   const productCarouselRef = useRef(null);
 
-  // Overlay product (for SizeSelectorOverlay)
   const [overlayProduct, setOverlayProduct] = useState(null);
 
-  // Info sections for the top area
+  const isMobile = window.innerWidth <= 768;
+
   const sections = [
-    {
-      svg: svg1,
-      headline: "Direct from Manufacturers",
-      description: "Quality garments straight from manufacturers.",
-    },
-    {
-      svg: svg2,
-      headline: "Best Price Across India",
-      description: "Unbeatable prices nationwide, guaranteed.",
-    },
-    {
-      svg: svg3,
-      headline: "Years of Market Experience",
-      description: "Expertise you can trust, built over years.",
-    },
-    {
-      svg: svg5,
-      headline: "Secure Payments",
-      description: "Safe and reliable transactions, every time.",
-    },
-    {
-      svg: svg6,
-      headline: "VastraHub Factory",
-      description:
-        "In-house crafted VastraHub products deliver Best quality & rates..",
-    },
-    {
-      svg: svg4,
-      headline: "Trusted Brands",
-      description:
-        "Wellknown Indian retail brands for more quality reliability",
-    },
+    { svg: svg1, headline: "Direct from Manufacturers", description: "Quality garments straight from manufacturers." },
+    { svg: svg2, headline: "Best Price Across India", description: "Unbeatable prices nationwide, guaranteed." },
+    { svg: svg3, headline: "Years of Market Experience", description: "Expertise you can trust, built over years." },
+    { svg: svg5, headline: "Secure Payments", description: "Safe and reliable transactions, every time." },
+    { svg: svg6, headline: "VastraHub Factory", description: "In-house crafted VastraHub products deliver Best quality & rates.." },
+    { svg: svg4, headline: "Trusted Brands", description: "Wellknown Indian retail brands for more quality reliability" },
   ];
 
-  // ------------------ useEffects ------------------
   useEffect(() => {
     checkSessionTokenConsistency();
 
-    // Once data finishes loading, fade out loader
-    // (We'll also stop typing if used that logic.)
     if (!loading && !isTyping) {
       setFadeOut(true);
-      setTimeout(() => setShowLoader(false), 500); // remove from DOM after fade
+      setTimeout(() => setShowLoader(false), 500);
     }
   }, [loading, isTyping, checkSessionTokenConsistency]);
 
-  // Fetch Tag IDs for "Featured Products" & "Featured Products 2"
   useEffect(() => {
     const fetchTagIds = async () => {
       const tagId1 = await getTagIdByTitle("Featured Products");
@@ -297,7 +252,6 @@ export default function Homepage() {
     fetchTagIds();
   }, []);
 
-  // Initial Data Fetch (hero banner, banners, announcement)
   useEffect(() => {
     Promise.all([
       fetchHeroBanner(),
@@ -314,16 +268,12 @@ export default function Homepage() {
       setCategories(cats);
       setFeaturedProducts(prods);
       setFeaturedProducts2(prods2);
-
-      // Mark loader as done:
       setLoading(false);
-      // If you also want to skip typing or end it right away, you can:
       setIsTyping(false);
     }
     fetchData();
   }, []);
 
-  // ------------------ Banners & Announcement Fetch ------------------
   const fetchHeroBanner = async () => {
     try {
       const heroDocRef = doc(db, "banners", "hero-banner");
@@ -332,18 +282,10 @@ export default function Homepage() {
         const data = heroDocSnap.data();
         if (data.imageLink) {
           setHeroBanner(data.imageLink);
-        } else {
-          console.log(
-            "No imageLink found in hero-banner document. Using default hero image."
-          );
         }
         if (data.hasTag === true && data.tagId) {
           setHeroBannerTag(data.tagId);
         }
-      } else {
-        console.log(
-          "Hero banner document does not exist. Using default hero image."
-        );
       }
     } catch (error) {
       console.error("Error fetching hero banner:", error);
@@ -365,17 +307,15 @@ export default function Homepage() {
               link: data.link || null,
               tagId: data.tagId || null,
             };
-          } else {
-            console.log(`Banner document ${id} does not exist.`);
-            return null;
           }
+          return null;
         })
       );
       const validBanners = fetchedBanners.filter((banner) => banner !== null);
       setBanners(validBanners);
       setBannerHover(new Array(validBanners.length).fill(false));
     } catch (error) {
-      console.error("Error fetching banner images:", error);
+      console.error("Error fetching banners:", error);
     }
   };
 
@@ -386,14 +326,11 @@ export default function Homepage() {
       if (announcementDocSnap.exists()) {
         const data = announcementDocSnap.data();
         setAnnouncementText(data.announcementText || "");
-      } else {
-        setAnnouncementText("");
       }
     } catch (error) {
       console.error("Error fetching announcement:", error);
     }
   };
-
   const getCategoryImages = async () => {
     try {
       const catDocs = await getDocs(collection(db, "categories"));
@@ -404,21 +341,16 @@ export default function Homepage() {
         order: d.data().order || 0,
       }));
 
-      // For each category, run an aggregated count query. We do it in parallel
-      // with Promise.all so the UI doesn't block sequentially.
       const catsWithProducts = await Promise.all(
         rawCats.map(async (cat) => {
           const countSnap = await getCountFromServer(
             query(collection(db, "products"), where("category", "==", cat.name))
           );
-          console.log(`category count ${cat.name} : ${countSnap.data().count}`)
           return countSnap.data().count > 0 ? cat : null;
         })
       );
 
-      return catsWithProducts
-        .filter(Boolean)
-        .sort((a, b) => a.order - b.order);
+      return catsWithProducts.filter(Boolean).sort((a, b) => a.order - b.order);
     } catch (err) {
       console.error("[Homepage] Error fetching categories:", err);
       return [];
@@ -489,7 +421,6 @@ export default function Homepage() {
     return prods;
   };
 
-  // ------------------ Carousel Scroll (optional) ------------------
   const scrollCarousel = (ref, direction, amount) => {
     if (ref.current) {
       ref.current.scrollBy({
@@ -499,7 +430,6 @@ export default function Homepage() {
     }
   };
 
-  // ------------------ Add to Cart ------------------
   const handleAddToCartClick = (product) => {
     if (!isLoggedIn) {
       toast.info("Please log in to add products to your cart.");
@@ -509,15 +439,14 @@ export default function Homepage() {
     setOverlayProduct(product);
   };
 
-  // ------------------ Close Overlay ------------------
   const closeOverlay = () => {
     setOverlayProduct(null);
   };
 
-  // ------------------ RENDER ------------------
+  // ======================= JSX RENDER START =========================
+
   return (
     <>
-      {/* LOADER with fade-out */}
       {showLoader && (
         <div
           style={{
@@ -526,172 +455,127 @@ export default function Homepage() {
             opacity: fadeOut ? 0 : 1,
           }}
         >
-          <img
-            src={vasLogo}
-            height={200}
-            alt="VastraHub Logo"
-            style={loaderStyles.logo}
-          />
-          <div style={{ width: "50%", margin: "0", marginBottom: "75px" }}>
+          <img src={vasLogo} height={200} alt="VastraHub Logo" style={loaderStyles.logo} />
+          <div style={{ width: "50%", marginBottom: "75px" }}>
             <LinearProgress color="inherit" />
           </div>
         </div>
       )}
 
-      {/* MAIN PAGE CONTENT */}
-      {/* Hero Banner with Rotating Text and SHOP NOW Button */}
+      {/* Hero Banner */}
       <div style={{ position: "relative" }}>
         <img
-          src={heroBanner ? heroBanner : defaultHeroImg}
+          src={heroBanner || defaultHeroImg}
           alt="Hero"
-          width="100%"
+          style={{
+            width: "100%",
+            height: isMobile ? "300px" : "auto",
+            objectFit: "cover",
+          }}
           onError={(e) => {
-            console.log(
-              "Hero banner image not available, falling back to default."
-            );
+            console.log("Hero banner fallback");
             e.target.src = defaultHeroImg;
           }}
         />
-        {/* Centered Text Overlay Container */}
         <div
           style={{
             position: "absolute",
-            bottom: "210px",
-            left: "8vw", // adjust vertical position as needed
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            gap: "10px",
+            bottom: isMobile ? "100px" : "210px",
+            left: "8vw",
+            width: "80%",
           }}
         >
-          {/* Fixed Text */}
           <div>
-            <div>
-              <span
-                style={{
-                  fontFamily: "Lora, serif",
-                  fontSize: "58px",
-                  fontWeight: "600",
-                  color: "#fff",
-                }}
-              >
-                VASTRAHUB :
-              </span>
-            </div>
-            {/* Rotating Text */}
-            <div>
-              <RotatingText
-                texts={[
-                  "VYAPAR KA NAYA TAREEKA",
-                  "ONLINE B2B GARMENT STORE",
-                  "MANUFACTURER & DISTRIBUTOR",
-                ]}
-                rotationInterval={5000}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                initial={{ y: "100%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: "-120%", opacity: 0 }}
-                staggerDuration={0.05}
-                splitBy="characters"
-                mainClassName="rotating-text"
-                style={{
-                  fontFamily: "Plus Jakarta Sans, sans-serif",
-                  fontSize: "38px",
-                  fontWeight: "600",
-                  color: "#c5c5fc",
-                }}
-              />
-            </div>
+            <span
+              style={{
+                fontFamily: "Lora, serif",
+                fontSize: isMobile ? "clamp(24px, 6vw, 32px)" : "58px",
+                fontWeight: "600",
+                color: "#fff",
+              }}
+            >
+              VASTRAHUB :
+            </span>
+          </div>
+          <div>
+            <RotatingText
+              texts={[
+                "VYAPAR KA NAYA TAREEKA",
+                "ONLINE B2B GARMENT STORE",
+                "MANUFACTURER & DISTRIBUTOR",
+              ]}
+              rotationInterval={5000}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-120%", opacity: 0 }}
+              staggerDuration={0.05}
+              splitBy="characters"
+              mainClassName="rotating-text"
+              style={{
+                fontFamily: "Plus Jakarta Sans, sans-serif",
+                fontSize: isMobile ? "clamp(16px, 5vw, 22px)" : "38px",
+                fontWeight: "600",
+                color: "#c5c5fc",
+              }}
+            />
           </div>
         </div>
-        {heroBannerTag ? (
-          <Button
-            variant="contained"
-            onClick={() =>
-              navigate("/tag-products", { state: { tagId: heroBannerTag } })
-            }
-            sx={{
-              position: "absolute",
-              bottom: "100px",
-              left: "8vw",
-              backgroundColor: "#000",
-              color: "#fff",
-              textTransform: "none",
-              fontSize: "1.2rem",
-              paddingLeft: "30px",
-              paddingRight: "30px",
-              paddingTop: "20px",
-              paddingBottom: "20px",
-            }}
-          >
-            SHOP NOW
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            onClick={() => navigate("/about-us")}
-            sx={{
-              position: "absolute",
-              bottom: "100px",
-              left: "8vw",
-              backgroundColor: "#000",
-              color: "#fff",
-              textTransform: "none",
-              fontSize: "1.2rem",
-              paddingLeft: "30px",
-              paddingRight: "30px",
-              paddingTop: "20px",
-              paddingBottom: "20px",
-            }}
-          >
-            ABOUT US
-          </Button>
-        )}
-      </div>
 
-      {/* Announcement Section */}
-      {announcementText && (
-        <div
-          style={{
+        {/* SHOP NOW Button */}
+        <Button
+          variant="contained"
+          onClick={() => {
+            heroBannerTag
+              ? navigate("/tag-products", { state: { tagId: heroBannerTag } })
+              : navigate("/about-us");
+          }}
+          sx={{
+            position: "absolute",
+            bottom: isMobile ? "30px" : "100px",
+            left: "8vw",
             backgroundColor: "#000",
-            padding: "10px 20px",
-            margin: "0px",
+            color: "#fff",
+            textTransform: "none",
+            fontSize: isMobile ? "0.8rem" : "1.2rem",
+            padding: isMobile ? "10px 20px" : "20px 30px",
           }}
         >
+          {heroBannerTag ? "SHOP NOW" : "ABOUT US"}
+        </Button>
+      </div>
+
+      {/* Announcement */}
+      {announcementText && (
+        <div style={{ backgroundColor: "#000", padding: "10px 20px" }}>
           <marquee
             behavior="alternate"
             direction="left"
             style={{
               color: "#fff",
               fontFamily: "Lora, serif",
-              fontSize: "1.2rem",
+              fontSize: isMobile ? "clamp(12px, 4vw, 16px)" : "1.2rem",
               display: "flex",
               alignItems: "center",
             }}
           >
-            <TbSpeakerphone size={25} style={{ marginRight: "10px" }} />
+            <TbSpeakerphone size={20} style={{ marginRight: "8px" }} />
             {announcementText}
           </marquee>
         </div>
       )}
 
       {/* Info Sections */}
-      <div className="container" style={{ padding: "70px 20px" }}>
+      <div style={{ padding: "70px 20px" }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
             gap: "20px",
           }}
         >
           {sections.map((section, i) => (
-            <div
-              key={i}
-              style={{
-                textAlign: "center",
-                minWidth: 0,
-              }}
-            >
+            <div key={i} style={{ textAlign: "center", minWidth: 0 }}>
               <img
                 src={section.svg}
                 alt={`Section ${i + 1}`}
@@ -700,7 +584,6 @@ export default function Homepage() {
                   marginBottom: "20px",
                 }}
               />
-
               <h2
                 style={{
                   fontFamily: "Lora, serif",
@@ -749,74 +632,60 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Featured Products Section 1 */}
-      <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
-        <div className="container" style={{ padding: "50px 20px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "50px",
+      {/* Featured Products 1 */}
+      <div style={{ backgroundColor: "#f9f9f9", padding: "50px 20px" }}>
+        <div style={{ marginBottom: "50px", display: "flex", justifyContent: "space-between" }}>
+          <ScrollFloat
+            containerClassName=""
+            textClassName=""
+            styles={{
+              fontFamily: "Lora, serif",
+              fontWeight: "600",
+              fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
+              marginBottom: "30px",
+              textAlign: "left",
             }}
           >
-            <ScrollFloat
-              containerClassName=""
-              textClassName=""
-              styles={{
-                fontFamily: "Lora, serif",
-                fontWeight: "600",
-                fontSize: "48px",
+            FEATURED PRODUCTS
+          </ScrollFloat>
+          {featuredTagId && (
+            <Button
+              variant="text"
+              onClick={() =>
+                navigate("/tag-products", { state: { tagId: featuredTagId } })
+              }
+              sx={{
+                textTransform: "none",
+                fontFamily: "Plus Jakarta Sans, sans-serif",
+                color: "#333",
+                textDecoration: "underline",
+                fontSize: "15px",
               }}
             >
-              FEATURED PRODUCTS
-            </ScrollFloat>
-            {featuredTagId && (
-              <Button
-                variant="text"
-                onClick={() =>
-                  navigate("/tag-products", { state: { tagId: featuredTagId } })
-                }
-                sx={{
-                  textTransform: "none",
-                  fontFamily: "Plus Jakarta Sans, sans-serif",
-                  color: "#333",
-                  textDecoration: "underline",
-                  fontSize: "15px",
-                }}
-              >
-                View All
-              </Button>
-            )}
-          </div>
-          <div
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              paddingLeft: "20px",
-            }}
-          >
-            <div
-              className="row no-scrollbar"
-              ref={productCarouselRef}
-              style={{
-                display: "flex",
-                flexWrap: "nowrap",
-                overflowX: "scroll",
-              }}
-            >
-              {featuredProducts.map((prod, i) => (
-                <ProductCard
-                  key={i}
-                  product={prod}
-                  onView={() =>
-                    navigate("/view-product", { state: { productId: prod.id } })
-                  }
-                  onAdd={() => handleAddToCartClick(prod)}
-                />
-              ))}
-            </div>
-          </div>
+              View All
+            </Button>
+          )}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            overflowX: "scroll",
+            gap: "20px",
+            paddingBottom: "20px",
+          }}
+          className="no-scrollbar"
+          ref={productCarouselRef}
+        >
+          {featuredProducts.map((prod, i) => (
+            <ProductCard
+              key={i}
+              product={prod}
+              onView={() =>
+                navigate("/view-product", { state: { productId: prod.id } })
+              }
+              onAdd={() => handleAddToCartClick(prod)}
+            />
+          ))}
         </div>
       </div>
 
@@ -902,154 +771,124 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Featured Products Section 2 */}
-      <div className="container-fluid" style={{ backgroundColor: "#f9f9f9" }}>
-        <div className="container" style={{ padding: "50px 20px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "50px",
+      {/* Featured Products 2 */}
+      <div style={{ backgroundColor: "#f9f9f9", padding: "50px 20px" }}>
+        <div style={{ marginBottom: "50px", display: "flex", justifyContent: "space-between" }}>
+          <ScrollFloat
+            containerClassName=""
+            textClassName=""
+            styles={{
+              fontFamily: "Lora, serif",
+              fontWeight: "600",
+              fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
+              marginBottom: "30px",
+              textAlign: "left",
             }}
           >
-            <ScrollFloat
-              containerClassName=""
-              textClassName=""
-              styles={{
-                fontFamily: "Lora, serif",
-                fontWeight: "600",
-                fontSize: "48px",
+            FEATURED PRODUCTS
+          </ScrollFloat>
+          {featuredTagId2 && (
+            <Button
+              variant="text"
+              onClick={() =>
+                navigate("/tag-products", { state: { tagId: featuredTagId2 } })
+              }
+              sx={{
+                textTransform: "none",
+                fontFamily: "Plus Jakarta Sans, sans-serif",
+                color: "#333",
+                textDecoration: "underline",
+                fontSize: "15px",
               }}
             >
-              FEATURED PRODUCTS
-            </ScrollFloat>
-            {featuredTagId2 && (
-              <Button
-                variant="text"
-                onClick={() =>
-                  navigate("/tag-products", {
-                    state: { tagId: featuredTagId2 },
-                  })
-                }
-                sx={{
-                  textTransform: "none",
-                  fontFamily: "Plus Jakarta Sans, sans-serif",
-                  color: "#333",
-                  textDecoration: "underline",
-                  fontSize: "15px",
-                }}
-              >
-                View All
-              </Button>
-            )}
-          </div>
-          <div
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              paddingLeft: "20px",
-            }}
-          >
-            <div
-              className="row no-scrollbar"
-              ref={productCarouselRef}
-              style={{
-                display: "flex",
-                flexWrap: "nowrap",
-                overflowX: "scroll",
-              }}
-            >
-              {featuredProducts2.map((prod, i) => (
-                <ProductCard
-                  key={i}
-                  product={prod}
-                  onView={() =>
-                    navigate("/view-product", { state: { productId: prod.id } })
-                  }
-                  onAdd={() => handleAddToCartClick(prod)}
-                />
-              ))}
-            </div>
-          </div>
+              View All
+            </Button>
+          )}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            overflowX: "scroll",
+            gap: "20px",
+            paddingBottom: "20px",
+          }}
+          className="no-scrollbar"
+          ref={productCarouselRef}
+        >
+          {featuredProducts2.map((prod, i) => (
+            <ProductCard
+              key={i}
+              product={prod}
+              onView={() =>
+                navigate("/view-product", { state: { productId: prod.id } })
+              }
+              onAdd={() => handleAddToCartClick(prod)}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Brands Section using ScrollVelocity */}
+      {/* Brands Available */}
       <div
-        className="container-fluid"
         style={{
           backgroundColor: "#000",
           padding: "50px 20px",
-          overflow: "hidden",
+          textAlign: "center",
+          color: "#fff",
         }}
       >
-        <div
-          className="container"
-          style={{
-            textAlign: "center",
-            position: "relative",
-            zIndex: 1,
-            paddingBottom: "60px",
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: "Lora, serif",
-              fontWeight: "600",
-              fontSize: "38px",
-              color: "#fff",
-              marginBottom: "40px",
-            }}
-          >
-            BRANDS AVAILABLE
-          </h2>
-          <ScrollVelocity
-            texts={[
-              "Array | Folk Club | Fashionology | Fashion Trail |",
-              " Be Indian | American Fit | Foggy | Macpi | Aldrich |",
-              " D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |",
-              " High Density | Purple Haze | Maniac | Grow Up | Riggas |",
-              " Ice Tees | Striker | A1 Bright | Raffal | Vyardo |",
-            ]}
-            velocity={80}
-            damping={50}
-            stiffness={400}
-            numCopies={6}
-            parallaxClassName="parallax"
-            scrollerClassName="scroller"
-            scrollerStyle={{ color: "#c5c5fc" }}
-          />
-        </div>
+        <h2 style={{ fontFamily: "Lora, serif", fontSize: "38px", marginBottom: "20px" }}>
+          BRANDS AVAILABLE
+        </h2>
+        <ScrollVelocity
+          texts={[
+            "Array | Folk Club | Fashionology | Fashion Trail |",
+            " Be Indian | American Fit | Foggy | Macpi | Aldrich |",
+            " D&T | Rare Urban | Ever Since | Radiology | Zero Gravity |",
+            " High Density | Purple Haze | Maniac | Grow Up | Riggas |",
+            " Ice Tees | Striker | A1 Bright | Raffal | Vyardo |",
+          ]}
+          velocity={80}
+          damping={50}
+          stiffness={400}
+          numCopies={6}
+          parallaxClassName="parallax"
+          scrollerClassName="scroller"
+          scrollerStyle={{ color: "#c5c5fc" }}
+        />
       </div>
 
-      {/* Vastrahub App Section */}
-      <div
-        className="container-fluid"
-        style={{ backgroundColor: "#fff", padding: "50px 0" }}
-      >
+      {/* Download App Section */}
+      <div style={{ backgroundColor: "#fff", padding: "50px 0" }}>
         <div
-          className="container"
           style={{
             display: "flex",
             flexWrap: "wrap",
-            justifyContent: "space-around",
+            justifyContent: "center",
             alignItems: "center",
-            color: "#000",
+            gap: "30px",
           }}
         >
-          <div style={{ maxWidth: "50%" }}>
+          <div style={{ maxWidth: isMobile ? "90%" : "45%" }}>
             <ScrollFloat
               containerClassName=""
               textClassName=""
+              // styles={{
+              //   fontFamily: "Lora",
+              //   fontWeight: "600",
+              //   fontSize: "38px",
+              //   lineHeight: "61px",
+              //   letterSpacing: "0.03em",
+              //   textTransform: "uppercase",
+              //   marginBottom: "20px",
+              //   textAlign: "left",
+              // }}
               styles={{
-                fontFamily: "Lora",
+                fontFamily: "Lora, serif",
                 fontWeight: "600",
-                fontSize: "38px",
-                lineHeight: "61px",
-                letterSpacing: "0.03em",
-                textTransform: "uppercase",
+                fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
                 marginBottom: "20px",
+                textTransform: "uppercase",
                 textAlign: "left",
               }}
             >
@@ -1067,42 +906,32 @@ export default function Homepage() {
               with trusted manufacturers anytime, anywhere. Your Gateway to
               effortless, secure, and efficient garment shopping starts here.
             </p>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-start",
-                gap: "20px",
-              }}
-            >
+            <div style={{ display: "flex", gap: "20px" }}>
               <img
                 src={googlePlayImage}
                 alt="Google Play Store"
                 style={{ width: "150px", cursor: "pointer" }}
-                onClick={() =>
-                  window.open("https://play.google.com/store", "_blank")
-                }
+                onClick={() => window.open("https://play.google.com/store", "_blank")}
               />
               <img
                 src={appStoreImage}
                 alt="App Store"
                 style={{ width: "150px", cursor: "pointer" }}
-                onClick={() =>
-                  window.open("https://www.apple.com/app-store/", "_blank")
-                }
+                onClick={() => window.open("https://www.apple.com/app-store/", "_blank")}
               />
             </div>
           </div>
-          <div style={{ maxWidth: "50%" }}>
+          <div style={{ maxWidth: isMobile ? "90%" : "45%" }}>
             <img
               src={mobileAppImage}
               alt="Vastrahub Mobile App"
-              style={{ width: "100%", borderRadius: "0px" }}
+              style={{ width: "100%", borderRadius: "8px" }}
             />
           </div>
         </div>
       </div>
 
-      {/* The Overlay if user clicks "Add to Cart" */}
+      {/* Overlay */}
       {overlayProduct && (
         <SizeSelectorOverlay product={overlayProduct} onClose={closeOverlay} />
       )}
@@ -1110,7 +939,7 @@ export default function Homepage() {
   );
 }
 
-// Loader styles for full-screen loading overlay
+// Loader styles
 const loaderStyles = {
   container: {
     position: "fixed",
@@ -1120,22 +949,9 @@ const loaderStyles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    alignItems: "center", // center the logo horizontally too
+    alignItems: "center",
   },
   logo: {
     marginBottom: "20px",
-  },
-  text: {
-    color: "#fff",
-    fontSize: "4rem",
-    fontFamily: "Lora, serif",
-    textAlign: "center",
-    marginBottom: "10px",
-  },
-  text2: {
-    color: "#fff",
-    fontSize: "5rem",
-    fontFamily: "Plus Jakarta Sans, sans-serif",
-    textAlign: "center",
   },
 };

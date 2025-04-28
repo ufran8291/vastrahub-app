@@ -231,23 +231,30 @@ export default function SearchProducts() {
               </Box>
 
               <Grid container spacing={2} style={{ marginTop: "10px" }}>
-                {filteredProducts.map((product, index) => (
-                  <Grid item xs={6} md={4} key={product.id}>
-                    <motion.div
-                      custom={index}
-                      initial="hidden"
-                      animate="visible"
-                      variants={gridItemVariants}
-                    >
-                      <ProductCard
-                        product={product}
-                        onView={() => handleViewProduct(product.id)}
-                        onAdd={() => handleAddToCart(product)}
-                      />
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
+  {filteredProducts.map((product, index) => (
+    <Grid
+      item
+      xs={12}   // 💥 1 card per row on mobile (xs means extra-small screens)
+      sm={6}    // 2 cards per row on tablet
+      md={4}    // 3 cards per row on medium devices
+      key={product.id}
+    >
+      <motion.div
+        custom={index}
+        initial="hidden"
+        animate="visible"
+        variants={gridItemVariants}
+      >
+        <ProductCard
+          product={product}
+          onView={() => handleViewProduct(product.id)}
+          onAdd={() => handleAddToCart(product)}
+        />
+      </motion.div>
+    </Grid>
+  ))}
+</Grid>
+
             </>
           )}
         </>
