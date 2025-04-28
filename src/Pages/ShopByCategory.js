@@ -1,10 +1,6 @@
 // src/Pages/ShopByCategory.js
 import React, { useState, useEffect, useContext } from "react";
-import {
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -23,6 +19,8 @@ import {
   Select,
   InputLabel,
   FormControl,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import ProductCard from "../components/ProductCard";
 import categoryPlaceholder from "../assets/categoryplaceholder.png";
@@ -40,25 +38,24 @@ export default function ShopByCategory() {
 
   const { currentUser, firestoreUser } = useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
-
   const [searchParams, setSearchParams] = useSearchParams();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Master price ranges
   const priceRangesMaster = [
-    { label: "Clear Filter",      value: null },
-    { label: "Less than 200",     value: { min: 0,    max: 200 } },
-    { label: "200 - 300",         value: { min: 200,  max: 300 } },
-    { label: "300 - 400",         value: { min: 300,  max: 400 } },
-    { label: "400 - 500",         value: { min: 400,  max: 500 } },
-    { label: "500 - 600",         value: { min: 500,  max: 600 } },
-    { label: "600 - 700",         value: { min: 600,  max: 700 } },
-    { label: "700 - 800",         value: { min: 700,  max: 800 } },
-    { label: "800 - 900",         value: { min: 800,  max: 900 } },
-    { label: "900 - 1000",        value: { min: 900,  max: 1000 } },
+    { label: "Clear Filter", value: null },
+    { label: "Less than 200", value: { min: 0, max: 200 } },
+    { label: "200 - 300", value: { min: 200, max: 300 } },
+    { label: "300 - 400", value: { min: 300, max: 400 } },
+    { label: "400 - 500", value: { min: 400, max: 500 } },
+    { label: "500 - 600", value: { min: 500, max: 600 } },
+    { label: "600 - 700", value: { min: 600, max: 700 } },
+    { label: "700 - 800", value: { min: 700, max: 800 } },
+    { label: "800 - 900", value: { min: 800, max: 900 } },
+    { label: "900 - 1000", value: { min: 900, max: 1000 } },
     { label: "Greater than 1000", value: { min: 1000, max: Infinity } },
   ];
 
-  // Component state
   const [allProducts, setAllProducts] = useState([]);
   const [allSubcatsFromProducts, setAllSubcatsFromProducts] = useState([]);
   const [selectedSubcats, setSelectedSubcats] = useState([]);
@@ -69,18 +66,13 @@ export default function ShopByCategory() {
   const [priceAnchorEl, setPriceAnchorEl] = useState(null);
   const [sortOption, setSortOption] = useState("recent");
 
-  // 1️⃣ Persist incoming category to sessionStorage
   useEffect(() => {
     if (originalCategory) {
-      sessionStorage.setItem(
-        "shopCategory",
-        JSON.stringify(originalCategory)
-      );
+      sessionStorage.setItem("shopCategory", JSON.stringify(originalCategory));
       setCategory(originalCategory);
     }
   }, [originalCategory]);
 
-  // 2️⃣ On mount, if no location.state, load category from sessionStorage or redirect
   useEffect(() => {
     if (!originalCategory) {
       const stored = sessionStorage.getItem("shopCategory");
@@ -93,7 +85,6 @@ export default function ShopByCategory() {
     }
   }, [originalCategory, navigate]);
 
-  // 3️⃣ Initialize filters & sort from URL once
   useEffect(() => {
     const subsParam = searchParams.get("subcats");
     if (subsParam) setSelectedSubcats(subsParam.split(","));
@@ -106,10 +97,8 @@ export default function ShopByCategory() {
 
     const so = searchParams.get("sort");
     if (so) setSortOption(so);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 4️⃣ Fetch products & derive subcats + price ranges
   useEffect(() => {
     if (!category) return;
 
@@ -162,7 +151,6 @@ export default function ShopByCategory() {
     })();
   }, [category, priceRangesMaster]);
 
-  // 5️⃣ Keep price selection valid
   useEffect(() => {
     if (
       selectedPriceRange &&
@@ -172,7 +160,6 @@ export default function ShopByCategory() {
     }
   }, [availablePriceRanges, selectedPriceRange]);
 
-  // 6️⃣ Sync filters & sort back into URL
   useEffect(() => {
     const params = {};
     if (selectedSubcats.length) params.subcats = selectedSubcats.join(",");
@@ -181,10 +168,8 @@ export default function ShopByCategory() {
     setSearchParams(params, { replace: true });
   }, [selectedSubcats, selectedPriceRange, sortOption, setSearchParams]);
 
-  // Don’t render UI until we have a category
   if (!category) return null;
 
-  // Filter + sort products
   const filteredProducts = [...allProducts]
     .filter((prod) => {
       const passSub =
@@ -238,20 +223,23 @@ export default function ShopByCategory() {
   const subcatVariants = { hover: { scale: 1.05 }, tap: { scale: 0.95 } };
 
   return (
-    <div style={{ padding: 30, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
+    <div
+      style={{
+        padding: isMobile ? 16 : 30,
+        fontFamily: "Plus Jakarta Sans, sans-serif",
+      }}
+    >
       <Fade triggerOnce>
-        {/* HEADER: image + filters */}
         <Box
           sx={{
             display: "flex",
-            flexWrap: "wrap",
+            flexDirection: isMobile ? "column" : "row",
             alignItems: "center",
             gap: 3,
             mb: 4,
           }}
         >
-          {/* Category image */}
-          <Box sx={{ flex: "1 1 300px", maxWidth: 400 }}>
+          <Box sx={{ flex: "1 1 200px", maxWidth: isMobile?200: 400 }}>
             <img
               src={category.image || categoryPlaceholder}
               alt={category.name}
@@ -264,10 +252,9 @@ export default function ShopByCategory() {
             />
           </Box>
 
-          {/* Filter chips */}
           <Box sx={{ flex: "1 1 300px", minWidth: 280 }}>
             <Typography
-              variant="h3"
+              variant={isMobile ? "h4" : "h3"}
               sx={{
                 fontFamily: "Lora, serif",
                 fontWeight: 600,
@@ -312,7 +299,7 @@ export default function ShopByCategory() {
                 );
               })}
 
-              {/* PRICE-RANGE chip */}
+              {/* PRICE range filter chip */}
               <motion.div
                 variants={subcatVariants}
                 whileHover="hover"
@@ -320,9 +307,7 @@ export default function ShopByCategory() {
                 onClick={(e) => setPriceAnchorEl(e.currentTarget)}
                 style={{
                   padding: "8px 16px",
-                  border: `1px solid ${
-                    selectedPriceRange ? "#333" : "#ccc"
-                  }`,
+                  border: `1px solid ${selectedPriceRange ? "#333" : "#ccc"}`,
                   backgroundColor: selectedPriceRange ? "#333" : "#fff",
                   color: selectedPriceRange ? "#fff" : "#333",
                   borderRadius: 20,
@@ -332,12 +317,9 @@ export default function ShopByCategory() {
                   userSelect: "none",
                 }}
               >
-                {selectedPriceRange
-                  ? selectedPriceRange.label
-                  : "Price Range"}
+                {selectedPriceRange ? selectedPriceRange.label : "Price Range"}
               </motion.div>
 
-              {/* PRICE-RANGE menu */}
               <Menu
                 anchorEl={priceAnchorEl}
                 open={Boolean(priceAnchorEl)}
@@ -362,7 +344,7 @@ export default function ShopByCategory() {
         </Box>
       </Fade>
 
-      {/* SORT picker */}
+      {/* Sort picker */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel id="sort-label">Sort By</InputLabel>
@@ -380,7 +362,7 @@ export default function ShopByCategory() {
         </FormControl>
       </Box>
 
-      {/* PRODUCTS grid */}
+      {/* Products grid */}
       {filteredProducts.length === 0 ? (
         <Typography
           variant="body1"
@@ -391,15 +373,16 @@ export default function ShopByCategory() {
       ) : (
         <Grid container spacing={2}>
           {filteredProducts.map((prod) => (
-            <Grid item xs={6} md={4} key={prod.id}>
+            <Grid item xs={12} sm={6} md={4} key={prod.id}>
               <ProductCard
                 product={{
                   id: prod.id,
                   title: prod.title,
                   fabric: prod.fabric,
                   image: prod.coverImage || productPlaceholder,
-                  additionalImages:
-                    prod.additionalImages || [productPlaceholder],
+                  additionalImages: prod.additionalImages || [
+                    productPlaceholder,
+                  ],
                   price: prod.sizes?.[0]?.pricePerPiece || 0,
                   sizes: prod.sizes || [],
                 }}
@@ -415,7 +398,6 @@ export default function ShopByCategory() {
         </Grid>
       )}
 
-      {/* SIZE selector overlay */}
       {overlayProduct && (
         <SizeSelectorOverlay
           product={overlayProduct}
