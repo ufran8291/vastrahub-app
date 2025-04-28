@@ -84,7 +84,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
           <p
             style={{
               fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: isMobile ? "14px" : "16px",
+              fontSize: isMobile ? "12px" : "13px",
               fontWeight: "400",
               margin: 0,
             }}

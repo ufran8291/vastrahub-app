@@ -1,6 +1,10 @@
 // src/Pages/ViewProduct.js
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useSearchParams,          // ⬅️ 1. ADD THIS
+} from "react-router-dom";
 import {
   doc,
   getDoc,
@@ -21,23 +25,39 @@ import {
   AiOutlinePlus,
   AiOutlineMinus,
   AiOutlineDownload,
+  AiOutlineShareAlt
 } from "react-icons/ai";
 import { CircularProgress, useMediaQuery } from "@mui/material"; // ⬅️ NEW
 
 const ViewProduct = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = location; // original { productId }
+  const { state } = location;
+
+  const [searchParams,setSearchParams] = useSearchParams();            // ⬅️ 2. NEW
+  const urlProductId = searchParams.get("productId");  // ⬅️ 3. NEW
 
   const { currentUser, firestoreUser, syncStockDataForIds } =
     useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id || null;
-  const productId = state?.productId || null;
 
+  const productId = state?.productId || urlProductId || null;  // ⬅️ 4. MODIFIED
+// ⬅️ NEW: if we arrived via state (old flow) push ?productId= into the URL
+useEffect(() => {
+    if (!urlProductId && state?.productId) {
+      setSearchParams({ productId: state.productId }, { replace: true });
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 🔹 Detect mobile viewport
   const isMobile = useMediaQuery("(max-width:600px)");
 
+  /* ------------------------------------------------------------------
+     Everything below this line is UNCHANGED – search for “productId”
+     still works with the new URL param.
+  ------------------------------------------------------------------ */
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingSizes, setLoadingSizes] = useState(true);
@@ -90,6 +110,32 @@ const ViewProduct = () => {
       link.click();
       document.body.removeChild(link);
     });
+  };
+    // ---------- Share Product Handler ----------
+  const handleShareProduct = () => {
+    const url = window.location.href;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => toast.success("Product link copied to clipboard!"))
+        .catch(() => toast.error("Failed to copy link"));
+    } else {
+      // fallback for non-secure context / older browsers
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand("copy");
+        toast.success("Product link copied to clipboard!");
+      } catch {
+        toast.error("Failed to copy link");
+      }
+      document.body.removeChild(ta);
+    }
   };
 
   // ---------- Effect: Fetch Product and Initialize Quantities ----------
@@ -548,33 +594,55 @@ const ViewProduct = () => {
 
       {/* ---------- Download Images Button ---------- */}
       {isLoggedIn && (
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: isMobile ? "16px" : "20px",
-          }}
-        >
-          <button
-            onClick={handleDownloadImages}
-            style={{
-              padding: isMobile ? "8px 16px" : "10px 20px",
-              backgroundColor: "#333",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: isMobile ? "14px" : "16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <AiOutlineDownload size={isMobile ? 18 : 20} />
-            Download Images
-          </button>
-        </div>
-      )}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: "12px",
+      marginBottom: isMobile ? "16px" : "20px",
+    }}
+  >
+    <button
+      onClick={handleDownloadImages}
+      style={{
+        padding: isMobile ? "8px 16px" : "10px 20px",
+        backgroundColor: "#333",
+        color: "#fff",
+        border: "none",
+        borderRadius: "4px",
+        cursor: "pointer",
+        fontFamily: "Plus Jakarta Sans, sans-serif",
+        fontSize: isMobile ? "14px" : "16px",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      <AiOutlineDownload size={isMobile ? 18 : 20} />
+      Download Images
+    </button>
+
+    <button
+      onClick={handleShareProduct}
+      style={{
+        padding: isMobile ? "8px 16px" : "10px 20px",
+        backgroundColor: "#333",
+        color: "#fff",
+        border: "none",
+        borderRadius: "4px",
+        cursor: "pointer",
+        fontFamily: "Plus Jakarta Sans, sans-serif",
+        fontSize: isMobile ? "14px" : "16px",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      <AiOutlineShareAlt size={isMobile ? 18 : 20} />
+      Share Product
+    </button>
+  </div>
+)}
 
       {/* ---------- Product Title + Starting Price ---------- */}
       <div style={{ marginBottom: isMobile ? "24px" : "30px" }}>
