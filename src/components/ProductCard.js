@@ -99,7 +99,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
               margin: 0,
             }}
           >
-            From ₹ {true ? product.price : "XXX (Login to view)"}
+            From ₹ {isLoggedIn ? product.price : "XXX (Login to view)"}
           </p>
         </div>
 

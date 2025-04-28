@@ -707,6 +707,7 @@ useEffect(() => {
                   fontFamily: "Plus Jakarta Sans, sans-serif",
                   fontSize: isMobile ? "14px" : "16px",
                   marginBottom: "5px",
+                  fontWeight:"bold"
                 }}
               >
                 Additional Info: {product.additionalInfo}
