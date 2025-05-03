@@ -194,11 +194,13 @@ export default function UserCart() {
   };
 
   const openEditOverlay = (group) => {
+    const disc = group.lines[0]?.discountPercent || 0;   
     setOverlayProduct({
       id: group.productId,
       coverImage: group.coverImage,
       title: group.productTitle,
       sizes: group.allSizes,
+      discount: disc, 
     });
   };
 
