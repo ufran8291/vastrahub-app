@@ -13,19 +13,26 @@ import {
 } from "firebase/firestore";
 import { db } from "../Configs/FirebaseConfig";
 import { CircularProgress } from "@mui/material";
+
 export default function SizeSelectorOverlay({ product, onClose }) {
   const { firestoreUser, syncStockDataForIds } = useContext(GlobalContext);
   const uid = firestoreUser?.id;
   const [quantities, setQuantities] = useState([]);
-  // We'll store any existing cart items for this product keyed by size.
   const [existingCartItems, setExistingCartItems] = useState({});
-  // Local state for syncing stock data.
   const [syncing, setSyncing] = useState(true);
 
-  // Count distinct sizes with quantity > 0
-  const distinctSelected = quantities.filter((q) => q.quantity > 0).length;
+  /* ---------------- DISCOUNT LOGIC ---------------- */
+  const hasValidDiscount =
+    product &&
+    typeof product.discount === "number" &&
+    product.discount > 0 &&
+    product.discount < 100;
 
-  // Helper: Compute available boxes from piecesInStock and boxPieces
+  const priceAfterDiscount = (price) =>
+    hasValidDiscount ? Math.round(price * (1 - product.discount / 100)) : price;
+  /* ------------------------------------------------ */
+
+  /* ---------------- UTILITIES ---------------- */
   const computeTotalBoxes = (piecesInStock, boxPieces) => {
     const pieces = piecesInStock || 0;
     const boxPiecesVal = boxPieces || 1;
@@ -34,48 +41,36 @@ export default function SizeSelectorOverlay({ product, onClose }) {
     return fullBoxes + (remainder > 0 ? 1 : 0);
   };
 
-  // Helper: Compute total pieces selected based on the quantity (boxes)
   const computeTotalPieces = (quantity, boxPieces, piecesInStock) => {
     const fullBoxes = Math.floor((piecesInStock || 0) / (boxPieces || 1));
     const remainder = (piecesInStock || 0) % (boxPieces || 1);
-    if (quantity <= fullBoxes) {
-      return quantity * boxPieces;
-    } else {
-      // When a partial box is added
-      return fullBoxes * boxPieces + remainder;
-    }
+    return quantity <= fullBoxes
+      ? quantity * boxPieces
+      : fullBoxes * boxPieces + remainder;
   };
+  /* -------------------------------------------- */
 
-  // Sync stock for the current product's sizes if the store is open.
+  /* ----------- SYNC STOCK (unchanged) ---------- */
   useEffect(() => {
     async function syncProductStock() {
-      if (product && product.sizes && product.sizes.length > 0) {
+      if (product?.sizes?.length) {
         try {
-          // Check store status
           const storeDoc = await getDoc(doc(db, "banners", "other-data"));
-          let isStoreOpen = false;
-          if (storeDoc.exists()) {
-            isStoreOpen = storeDoc.data().isStoreOpen;
-          }
-          if (!isStoreOpen) {
-            console.log("Store is closed. Skipping stock sync.");
+          if (!storeDoc.exists() || !storeDoc.data().isStoreOpen) {
             setSyncing(false);
             return;
           }
         } catch (err) {
-          console.error("Error checking store status:", err);
+          console.error("Store status error:", err);
           toast.error("Error checking store status: " + err.message);
           setSyncing(false);
           return;
         }
-        // Get inventory IDs from product sizes.
-        const inventoryIds = product.sizes.map((s) => Number(s.inventoryId));
         try {
-          console.log("Syncing stock for inventory IDs:", inventoryIds);
+          const inventoryIds = product.sizes.map((s) => Number(s.inventoryId));
           await syncStockDataForIds(inventoryIds);
-          console.log("Stock sync complete.");
         } catch (err) {
-          console.error("Error syncing stock data for product:", err);
+          console.error("Stock sync error:", err);
           toast.error("Error syncing stock data.");
         } finally {
           setSyncing(false);
@@ -86,66 +81,48 @@ export default function SizeSelectorOverlay({ product, onClose }) {
     }
     syncProductStock();
   }, [product, syncStockDataForIds]);
+  /* -------------------------------------------- */
 
-  // Fetch existing cart items for this product.
+  /* -------- INIT QUANTITIES (unchanged) -------- */
   useEffect(() => {
     async function initQuantities() {
-      if (product && product.sizes) {
-        let cartMapping = {};
+      if (product?.sizes) {
+        const cartMapping = {};
         if (uid) {
           try {
             const cartRef = collection(db, "users", uid, "cart");
             const q = query(cartRef, where("productId", "==", product.id));
             const snapshot = await getDocs(q);
-            snapshot.forEach((docSnap) => {
-              const data = docSnap.data();
-              // Use the size as key (assuming one doc per product/size)
-              cartMapping[data.size] = {
-                docId: docSnap.id,
-                quantity: data.quantity,
-              };
+            snapshot.forEach((d) => {
+              const data = d.data();
+              cartMapping[data.size] = { docId: d.id, quantity: data.quantity };
             });
-          } catch (error) {
-            console.error("Error fetching existing cart items:", error);
+          } catch (err) {
+            console.error("Fetch cart error:", err);
           }
         }
         setExistingCartItems(cartMapping);
-        // Initialize each size with quantity from the cart if available; otherwise zero.
-        const initData = product.sizes.map((s) => ({
-          ...s,
-          quantity: cartMapping[s.size]?.quantity || 0,
-        }));
-        setQuantities(initData);
+        setQuantities(
+          product.sizes.map((s) => ({
+            ...s,
+            quantity: cartMapping[s.size]?.quantity || 0,
+          }))
+        );
       }
     }
     initQuantities();
   }, [product, uid]);
+  /* -------------------------------------------- */
 
-  // ---------- INCREMENT / DECREMENT ----------
+  /* ------------- INCREMENT/DECREMENT ---------- */
   const handleIncrement = (idx) => {
     setQuantities((prev) => {
       const updated = [...prev];
-      const availableStock = computeTotalBoxes(
+      const availableBoxes = computeTotalBoxes(
         updated[idx].piecesInStock,
         updated[idx].boxPieces
       );
-      if (updated[idx].quantity < availableStock) {
-        updated[idx].quantity += 1;
-      }
-      // Log calculation details
-      const fullBoxes = Math.floor(
-        (updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1)
-      );
-      const remainder =
-        (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
-      const totalPiecesSelected = computeTotalPieces(
-        updated[idx].quantity,
-        updated[idx].boxPieces,
-        updated[idx].piecesInStock
-      );
-      console.log(
-        `After increment for size ${updated[idx].size}: quantity=${updated[idx].quantity}, totalPieces=${totalPiecesSelected} (fullBoxes=${fullBoxes}, remainder=${remainder})`
-      );
+      if (updated[idx].quantity < availableBoxes) updated[idx].quantity += 1;
       return updated;
     });
   };
@@ -153,42 +130,23 @@ export default function SizeSelectorOverlay({ product, onClose }) {
   const handleDecrement = (idx) => {
     setQuantities((prev) => {
       const updated = [...prev];
-      if (updated[idx].quantity > 0) {
-        updated[idx].quantity -= 1;
-      }
-      // Log calculation details
-      const fullBoxes = Math.floor(
-        (updated[idx].piecesInStock || 0) / (updated[idx].boxPieces || 1)
-      );
-      const remainder =
-        (updated[idx].piecesInStock || 0) % (updated[idx].boxPieces || 1);
-      const totalPiecesSelected = computeTotalPieces(
-        updated[idx].quantity,
-        updated[idx].boxPieces,
-        updated[idx].piecesInStock
-      );
-      console.log(
-        `After decrement for size ${updated[idx].size}: quantity=${updated[idx].quantity}, totalPieces=${totalPiecesSelected} (fullBoxes=${fullBoxes}, remainder=${remainder})`
-      );
+      if (updated[idx].quantity > 0) updated[idx].quantity -= 1;
       return updated;
     });
   };
+  /* -------------------------------------------- */
 
-  // ---------- CONFIRM HANDLER ----------
+  /* --------------- CONFIRM -------------------- */
   const handleConfirm = async () => {
-    // if (distinctSelected < 2) {
-    //   toast.info("Please select at least 2 different sizes.");
-    //   return;
-    // }
     if (!uid) {
       toast.error("User not authenticated.");
       return;
     }
     try {
       const cartRef = collection(db, "users", uid, "cart");
-      for (let sq of quantities) {
+      for (const sq of quantities) {
+        const effectivePrice = priceAfterDiscount(sq.pricePerPiece);
         if (sq.quantity > 0) {
-          // Compute the total number of pieces for this size
           const noOfPieces = computeTotalPieces(
             sq.quantity,
             sq.boxPieces,
@@ -199,60 +157,56 @@ export default function SizeSelectorOverlay({ product, onClose }) {
             productId: product.id,
             productTitle: product.title,
             size: sq.size,
-            pricePerPiece: sq.pricePerPiece,
+            pricePerPiece: effectivePrice, // 🔸 discounted price stored
+            discountPercent: hasValidDiscount ? product.discount : 0,
             boxPieces: sq.boxPieces,
-            quantity: sq.quantity, // boxes selected
-            noOfPieces, // total pieces calculated
+            quantity: sq.quantity,
+            noOfPieces,
             updatedAt: new Date(),
             inventoryId: sq.inventoryId,
           };
           if (existing) {
-            // Update the existing cart document.
-            const docRef = doc(db, "users", uid, "cart", existing.docId);
-            await setDoc(docRef, cartData, { merge: true });
+            await setDoc(
+              doc(db, "users", uid, "cart", existing.docId),
+              cartData,
+              { merge: true }
+            );
           } else {
-            // Create a new cart document.
-            const newDocRef = doc(cartRef);
-            await setDoc(newDocRef, cartData);
+            await setDoc(doc(cartRef), cartData);
           }
-        } else {
-          // If quantity is 0 and there is an existing cart document, remove it.
-          const existing = existingCartItems[sq.size];
-          if (existing) {
-            const docRef = doc(db, "users", uid, "cart", existing.docId);
-            await deleteDoc(docRef);
-          }
+        } else if (existingCartItems[sq.size]) {
+          await deleteDoc(
+            doc(db, "users", uid, "cart", existingCartItems[sq.size].docId)
+          );
         }
       }
       toast.success("Cart updated!");
       onClose();
-    } catch (error) {
-      console.error("Error updating cart:", error);
+    } catch (err) {
+      console.error("Update cart error:", err);
       toast.error("Failed to update cart.");
     }
   };
+  /* -------------------------------------------- */
 
   if (!product) return null;
 
-  // Show loader overlay until stock sync (if applicable) is complete.
   if (syncing) {
     return (
       <div
         style={{
           position: "fixed",
           inset: 0,
-          backgroundColor: "rgba(0,0,0,0.7)",
+          background: "rgba(0,0,0,0.7)",
           zIndex: 9999,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
           alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <CircularProgress size={80} />
-        <p style={{ color: "#fff", marginTop: "16px" }}>
-          Getting stock data...
-        </p>
+        <p style={{ color: "#fff", marginTop: 16 }}>Getting stock data...</p>
       </div>
     );
   }
@@ -262,160 +216,134 @@ export default function SizeSelectorOverlay({ product, onClose }) {
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
+        background: "rgba(0,0,0,0.7)",
         zIndex: 9999,
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
       }}
     >
       <div
         style={{
           background: "#fff",
-          borderRadius: "8px",
-          padding: "20px",
-          width: "400px",
+          borderRadius: 8,
+          padding: 20,
+          width: 400,
           fontFamily: "Plus Jakarta Sans, sans-serif",
         }}
       >
-        <h3
-          style={{
-            marginBottom: "10px",
-            fontFamily: "Lora, serif",
-            fontWeight: 600,
-            fontSize: "22px",
-          }}
-        >
+        <h3 style={{ marginBottom: 10, fontFamily: "Lora, serif" }}>
           Select Quantities
         </h3>
-        <p style={{ marginBottom: "20px", fontSize: "16px", color: "#333" }}>
-          {product.title}
-        </p>
+        <p style={{ marginBottom: 20, fontSize: 16 }}>{product.title}</p>
 
-        {/* SCROLLABLE AREA */}
-        <div
-          style={{
-            maxHeight: "300px",
-            overflowY: "auto",
-            marginBottom: "20px",
-          }}
-        >
-          {quantities.map((sizeObj, idx) => {
+        {/* -------- SIZE LIST -------- */}
+        <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 20 }}>
+          {quantities.map((sz, idx) => {
             const availableStock = computeTotalBoxes(
-              sizeObj.piecesInStock,
-              sizeObj.boxPieces
-            );
-            const fullBoxes = Math.floor(
-              (sizeObj.piecesInStock || 0) / (sizeObj.boxPieces || 1)
+              sz.piecesInStock,
+              sz.boxPieces
             );
             const remainder =
-              (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
-            const tooltipText =
-              sizeObj.piecesInStock > 0
-                ? `${availableStock} box available (${fullBoxes} full` +
-                  (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
-                  `)`
-                : "Out of stock";
+              (sz.piecesInStock || 0) % (sz.boxPieces || 1);
             const totalPiecesSelected = computeTotalPieces(
-              sizeObj.quantity,
-              sizeObj.boxPieces,
-              sizeObj.piecesInStock
+              sz.quantity,
+              sz.boxPieces,
+              sz.piecesInStock
             );
+            const effectivePrice = priceAfterDiscount(sz.pricePerPiece);
             return (
               <div
-                key={sizeObj.size}
+                key={sz.size}
                 style={{
                   borderBottom: "1px solid #eee",
                   padding: "8px 0",
-                  marginBottom: "8px",
+                  marginBottom: 8,
                 }}
               >
-                <strong style={{ fontSize: "16px" }}>
-                  Size: {sizeObj.size}{" "}
-                  {/* <span title={tooltipText} style={{ fontWeight: "normal", fontSize: "14px", color: "#555" }}>
-                    (Stock: {availableStock})
-                  </span> */}
-                </strong>
-                <div style={{ fontSize: "14px", color: "#555" }}>
-                  Price/Piece: ₹{sizeObj.pricePerPiece} | Pieces/Box:{" "}
-                  {sizeObj.boxPieces}
+                <strong style={{ fontSize: 16 }}>Size: {sz.size}</strong>
+                <div style={{ fontSize: 14, color: "#555" }}>
+                  {hasValidDiscount ? (
+                    <>
+                      Price/Piece:{" "}
+                      <span
+                        style={{ textDecoration: "line-through", marginRight: 4 }}
+                      >
+                        ₹{sz.pricePerPiece}
+                      </span>
+                      ₹{effectivePrice} | Pieces/Box: {sz.boxPieces}
+                    </>
+                  ) : (
+                    <>
+                      Price/Piece: ₹{sz.pricePerPiece} | Pieces/Box:{" "}
+                      {sz.boxPieces}
+                    </>
+                  )}
                 </div>
+
+                {/* --- Quantity Controls --- */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginTop: "6px",
+                    marginTop: 6,
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
                       onClick={() => handleDecrement(idx)}
+                      disabled={sz.quantity === 0}
                       style={{
-                        backgroundColor: "#fff",
+                        background: "#fff",
                         border: "1px solid #333",
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "4px",
-                        fontSize: "16px",
-                        cursor:
-                          sizeObj.quantity > 0 ? "pointer" : "not-allowed",
+                        width: 32,
+                        height: 32,
+                        borderRadius: 4,
+                        fontSize: 16,
+                        cursor: sz.quantity ? "pointer" : "not-allowed",
                       }}
-                      disabled={sizeObj.quantity === 0}
                     >
                       –
                     </button>
-                    <span style={{ minWidth: "24px", textAlign: "center" }}>
-                      {sizeObj.quantity}
+                    <span style={{ minWidth: 24, textAlign: "center" }}>
+                      {sz.quantity}
                     </span>
                     <button
                       onClick={() => handleIncrement(idx)}
+                      disabled={sz.quantity >= availableStock || availableStock === 0}
                       style={{
-                        backgroundColor: "#fff",
+                        background: "#fff",
                         border: "1px solid #333",
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "4px",
-                        fontSize: "16px",
-                        cursor: "pointer",
+                        width: 32,
+                        height: 32,
+                        borderRadius: 4,
+                        fontSize: 16,
+                        cursor:
+                          availableStock && sz.quantity < availableStock
+                            ? "pointer"
+                            : "not-allowed",
                       }}
-                      disabled={
-                        availableStock === 0 ||
-                        sizeObj.quantity >= availableStock
-                      }
                     >
                       +
                     </button>
                   </div>
 
-                  <div>
+                  <div style={{ fontSize: 12, color: "#888" }}>
                     {availableStock === 0 ? (
-                      <span
-                        style={{
-                          fontSize: "13px",
-                          color: "#D32F2F",
-                          fontWeight: "500",
-                        }}
-                      >
+                      <span style={{ color: "#D32F2F", fontWeight: 500 }}>
                         ❌ Out of Stock
                       </span>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#888" }}>
+                      <>
                         Total Pieces: {totalPiecesSelected}
-                        {sizeObj.quantity === availableStock &&
-                          remainder > 0 && (
-                            <>
-                              <br />
-                              Last box has only {remainder} pieces
-                            </>
-                          )}
-                      </span>
+                        {sz.quantity === availableStock && remainder > 0 && (
+                          <>
+                            <br />
+                            Last box has only {remainder} pieces
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -424,24 +352,14 @@ export default function SizeSelectorOverlay({ product, onClose }) {
           })}
         </div>
 
-        {/* {distinctSelected < 2 && (
-          <p style={{ fontSize: "14px", color: "#888", marginBottom: "16px" }}>
-            You must select at least 2 different sizes.
-          </p>
-        )} */}
-
+        {/* -------- ACTIONS -------- */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button
             onClick={onClose}
             style={{
               padding: "10px 20px",
-              backgroundColor: "#fff",
-              color: "#333",
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "0px",
-              border: "solid 1px #333",
+              background: "#fff",
+              border: "1px solid #333",
               cursor: "pointer",
             }}
           >
@@ -451,12 +369,8 @@ export default function SizeSelectorOverlay({ product, onClose }) {
             onClick={handleConfirm}
             style={{
               padding: "10px 20px",
-              backgroundColor: "#333",
+              background: "#333",
               color: "#fff",
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "14px",
-              fontWeight: "500",
-              borderRadius: "0px",
               border: "none",
               cursor: "pointer",
             }}

@@ -52,6 +52,7 @@ export default function TagProducts() {
               price: productData.sizes?.[0]?.pricePerPiece || 0,
               sizes: productData.sizes || [],
               fabric: productData.fabric || "",
+              discount:productData.discount ||0,
               additionalImages: productData.additionalImages || [productPlaceholder],
             });
           }

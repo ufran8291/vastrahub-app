@@ -379,6 +379,7 @@ export default function ShopByCategory() {
                   id: prod.id,
                   title: prod.title,
                   fabric: prod.fabric,
+                  discount: prod.discount,
                   image: prod.coverImage || productPlaceholder,
                   additionalImages: prod.additionalImages || [
                     productPlaceholder,

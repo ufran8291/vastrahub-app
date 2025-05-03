@@ -380,6 +380,7 @@ export default function Homepage() {
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
+            discount : data.discount||0,
           });
         }
       }
@@ -412,6 +413,7 @@ export default function Homepage() {
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
+            discount : data.discount||0,
           });
         }
       }

@@ -8,6 +8,17 @@ const ProductCard = ({ product, onView, onAdd }) => {
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const isMobile = window.innerWidth <= 768;
 
+  /* ---------- DISCOUNT LOGIC ---------- */
+  const hasValidDiscount =
+    typeof product.discount === "number" &&
+    product.discount > 0 &&
+    product.discount < 100;
+
+  const discountedPrice = hasValidDiscount
+    ? Math.round(product.price * (1 - product.discount / 100))
+    : product.price;
+  /* ------------------------------------ */
+
   return (
     <div
       style={{
@@ -25,6 +36,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
         backgroundColor: "#fff",
       }}
     >
+      {/* ---------- IMAGE & TITLE ---------- */}
       <div>
         <div onClick={onView} style={{ cursor: "pointer" }}>
           <PixelTransition
@@ -36,7 +48,6 @@ const ProductCard = ({ product, onView, onAdd }) => {
                   minWidth: "100%",
                   maxHeight: "100%",
                   objectFit: "contain",
-                  backgroundColor: "#DAE0E2",
                   backgroundColor: "#DAE0E2",
                   marginBottom: "20px",
                 }}
@@ -50,7 +61,6 @@ const ProductCard = ({ product, onView, onAdd }) => {
                   minWidth: "100%",
                   maxHeight: "100%",
                   objectFit: "contain",
-                  backgroundColor: "#DAE0E2",
                   backgroundColor: "#DAE0E2",
                   marginBottom: "20px",
                 }}
@@ -74,6 +84,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
           {product.title}
         </h3>
 
+        {/* ---------- FABRIC & PRICE ---------- */}
         <div
           style={{
             display: "flex",
@@ -99,10 +110,47 @@ const ProductCard = ({ product, onView, onAdd }) => {
               margin: 0,
             }}
           >
-            From ₹ {isLoggedIn ? product.price : "XXX (Login to view)"}
+            {isLoggedIn ? (
+              hasValidDiscount ? (
+                <>
+                  <span
+                    style={{
+                      textDecoration: "line-through",
+                      marginRight: "6px",
+                      color: "#888",
+                    }}
+                  >
+                    ₹ {product.price}
+                  </span>
+                  <span
+                    style={{
+                      color: "#d32f2f",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ₹ {discountedPrice}
+                  </span>
+                  <span
+                    style={{
+                      marginLeft: "6px",
+                      color: "#388e3c",
+                      fontWeight: "500",
+                      fontSize: isMobile ? "12px" : "14px",
+                    }}
+                  >
+                    ({product.discount}% OFF)
+                  </span>
+                </>
+              ) : (
+                <>₹ {product.price}</>
+              )
+            ) : (
+              "XXX (Login to view)"
+            )}
           </p>
         </div>
 
+        {/* ---------- SIZES ---------- */}
         <p
           style={{
             fontFamily: "Plus Jakarta Sans, sans-serif",
@@ -129,9 +177,9 @@ const ProductCard = ({ product, onView, onAdd }) => {
             const totalBoxes = fullBoxes + (remainder > 0 ? 1 : 0);
             const tooltipText =
               pieces > 0
-                ? `${totalBoxes} box available (${fullBoxes} full` +
-                  (remainder > 0 ? `, 1 partial (${remainder} pieces)` : "") +
-                  `)`
+                ? `${totalBoxes} box available (${fullBoxes} full${
+                    remainder > 0 ? `, 1 partial (${remainder} pieces)` : ""
+                  })`
                 : "Out of stock";
             return (
               <Tooltip key={j} title={tooltipText} arrow>
@@ -158,7 +206,7 @@ const ProductCard = ({ product, onView, onAdd }) => {
         </div>
       </div>
 
-      {/* Buttons */}
+      {/* ---------- ACTION BUTTONS ---------- */}
       <div
         style={{
           marginTop: "15px",

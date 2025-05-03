@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   useLocation,
   useNavigate,
-  useSearchParams,          // ⬅️ 1. ADD THIS
+  useSearchParams,
 } from "react-router-dom";
 import {
   doc,
@@ -25,40 +25,36 @@ import {
   AiOutlinePlus,
   AiOutlineMinus,
   AiOutlineDownload,
-  AiOutlineShareAlt
+  AiOutlineShareAlt,
 } from "react-icons/ai";
-import { CircularProgress, useMediaQuery } from "@mui/material"; // ⬅️ NEW
+import { CircularProgress, useMediaQuery } from "@mui/material";
 
 const ViewProduct = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = location;
 
-  const [searchParams,setSearchParams] = useSearchParams();            // ⬅️ 2. NEW
-  const urlProductId = searchParams.get("productId");  // ⬅️ 3. NEW
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlProductId = searchParams.get("productId");
 
   const { currentUser, firestoreUser, syncStockDataForIds } =
     useContext(GlobalContext);
   const isLoggedIn = !!currentUser && !!firestoreUser;
   const uid = firestoreUser?.id || null;
 
-  const productId = state?.productId || urlProductId || null;  // ⬅️ 4. MODIFIED
-// ⬅️ NEW: if we arrived via state (old flow) push ?productId= into the URL
-useEffect(() => {
+  const productId = state?.productId || urlProductId || null;
+
+  // push ?productId= to URL if we arrived via navigation state
+  useEffect(() => {
     if (!urlProductId && state?.productId) {
       setSearchParams({ productId: state.productId }, { replace: true });
     }
-    // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 🔹 Detect mobile viewport
-  const isMobile = useMediaQuery("(max-width:600px)");
-  // --- New helper: did the user choose at least one size? ---
 
-  /* ------------------------------------------------------------------
-     Everything below this line is UNCHANGED – search for “productId”
-     still works with the new URL param.
-  ------------------------------------------------------------------ */
+  const isMobile = useMediaQuery("(max-width:600px)");
+
+  /* -------------------- State -------------------- */
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingSizes, setLoadingSizes] = useState(true);
@@ -71,10 +67,9 @@ useEffect(() => {
   const [magnifierSize] = useState(150);
   const [zoomScale] = useState(2);
   const imgContainerRef = useRef(null);
-const hasSelection = sizesQuantity.some(q => q > 0);
+  const hasSelection = sizesQuantity.some((q) => q > 0);
 
-
-  // ---------- Helper Functions ----------
+  /* -------------------- Helpers -------------------- */
   const computeTotalBoxes = (piecesInStock, boxPieces) => {
     const pieces = piecesInStock || 0;
     const boxPiecesVal = boxPieces || 1;
@@ -82,6 +77,19 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     const remainder = pieces % boxPiecesVal;
     return fullBoxes + (remainder > 0 ? 1 : 0);
   };
+
+  // -------- DISCOUNT HELPERS --------
+  const hasValidDiscount =
+    product &&
+    typeof product.discount === "number" &&
+    product.discount > 0 &&
+    product.discount < 100;
+  const discountMultiplier = hasValidDiscount
+    ? 1 - product.discount / 100
+    : 1;
+  const priceAfterDiscount = (price) =>
+    Math.round(price * discountMultiplier);
+  // ----------------------------------
 
   const computeTotalPieces = (quantity, boxPieces, piecesInStock) => {
     const fullBoxes = Math.floor((piecesInStock || 0) / (boxPieces || 1));
@@ -95,14 +103,17 @@ const hasSelection = sizesQuantity.some(q => q > 0);
 
   const getSizeTotal = (sizeObj, boxesSelected) => {
     if (boxesSelected === null || !sizeObj) return 0;
-    return boxesSelected * sizeObj.boxPieces * sizeObj.pricePerPiece;
+    const effectivePrice = priceAfterDiscount(sizeObj.pricePerPiece);
+    return boxesSelected * sizeObj.boxPieces * effectivePrice;
   };
 
-  const getCountDistinctSizesSelected = () => {
-    return sizesQuantity.filter((q) => q && q > 0).length;
+  /* -------------------- Download / Share -------------------- */
+  const getAllImages = () => {
+    if (!product) return [];
+    return [product.coverImage, ...(product.additionalImages || [])].filter(
+      Boolean
+    );
   };
-
-  // ---------- Download Images Handler ----------
   const handleDownloadImages = () => {
     const images = getAllImages();
     images.forEach((url, index) => {
@@ -114,7 +125,6 @@ const hasSelection = sizesQuantity.some(q => q > 0);
       document.body.removeChild(link);
     });
   };
-    // ---------- Share Product Handler ----------
   const handleShareProduct = () => {
     const url = window.location.href;
     if (navigator.clipboard && window.isSecureContext) {
@@ -123,7 +133,6 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         .then(() => toast.success("Product link copied to clipboard!"))
         .catch(() => toast.error("Failed to copy link"));
     } else {
-      // fallback for non-secure context / older browsers
       const ta = document.createElement("textarea");
       ta.value = url;
       ta.style.position = "fixed";
@@ -141,7 +150,8 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     }
   };
 
-  // ---------- Effect: Fetch Product and Initialize Quantities ----------
+  /* -------------------- Effects -------------------- */
+  // ------ Fetch Product ------
   useEffect(() => {
     if (!productId) {
       toast.error("No product ID provided.");
@@ -157,31 +167,29 @@ const hasSelection = sizesQuantity.some(q => q > 0);
           setProduct(data);
           let initialQuantities =
             data.sizes && Array.isArray(data.sizes)
-              ? data.sizes.map((s) => 0)
+              ? data.sizes.map(() => 0)
               : [];
           if (data.sizes && Array.isArray(data.sizes) && uid) {
-            try {
-              const cartRef = collection(db, "users", uid, "cart");
-              const q = query(cartRef, where("productId", "==", productId));
-              const snapshot = await getDocs(q);
-              let mapping = {};
-              snapshot.forEach((docSnap) => {
-                const cartData = docSnap.data();
-                mapping[cartData.size] = cartData.quantity;
-              });
-              initialQuantities = data.sizes.map((s) => mapping[s.size] || 0);
-              setExistingCartItems(mapping);
-            } catch (error) {
-              console.error("Error fetching cart items:", error);
-            }
+            const cartRef = collection(db, "users", uid, "cart");
+            const q = query(cartRef, where("productId", "==", productId));
+            const snapshot = await getDocs(q);
+            let mapping = {};
+            snapshot.forEach((snap) => {
+              const cartData = snap.data();
+              mapping[cartData.size] = cartData.quantity;
+            });
+            initialQuantities = data.sizes.map(
+              (s) => mapping[s.size] || 0
+            );
+            setExistingCartItems(mapping);
           }
           setSizesQuantity(initialQuantities);
         } else {
           toast.error("Product not found in database.");
           navigate("/");
         }
-      } catch (error) {
-        console.error("Error fetching product:", error);
+      } catch (err) {
+        console.error("Error fetching product:", err);
         toast.error("Error fetching product details.");
         navigate("/");
       } finally {
@@ -191,26 +199,20 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     fetchProduct();
   }, [productId, navigate, uid]);
 
-  // ---------- Effect: Sync Sizes Stock Data ----------
+  // ------ Sync Stock ------
   useEffect(() => {
     async function syncSizes() {
       if (!isLoggedIn) {
         setLoadingSizes(false);
         return;
       }
-      if (
-        product &&
-        product.sizes &&
-        product.sizes.length > 0 &&
-        !sizesSynced
-      ) {
+      if (product && product.sizes && product.sizes.length && !sizesSynced) {
         setLoadingSizes(true);
         try {
           const storeDoc = await getDoc(doc(db, "banners", "other-data"));
-          let isStoreOpen = false;
-          if (storeDoc.exists()) {
-            isStoreOpen = storeDoc.data().isStoreOpen;
-          }
+          const isStoreOpen = storeDoc.exists()
+            ? storeDoc.data().isStoreOpen
+            : false;
           if (isStoreOpen) {
             const inventoryIds = product.sizes.map((s) =>
               Number(s.inventoryId)
@@ -233,8 +235,6 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         } finally {
           setLoadingSizes(false);
         }
-      } else {
-        setLoadingSizes(false);
       }
     }
     syncSizes();
@@ -247,7 +247,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     isLoggedIn,
   ]);
 
-  // ---------- Effect: Preload Images ----------
+  // ------ Preload images ------
   useEffect(() => {
     if (!product) return;
     getAllImages().forEach((url) => {
@@ -256,28 +256,18 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     });
   }, [product]);
 
-  const getAllImages = () => {
-    if (!product) return [];
-    return [product.coverImage, ...(product.additionalImages || [])].filter(
-      Boolean
-    );
-  };
+  /* -------------------- Image Carousel -------------------- */
   const totalImagesCount = getAllImages().length;
-  const getCurrentImageUrl = () => {
-    const allImgs = getAllImages();
-    return allImgs.length ? allImgs[currentImageIndex] : "";
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % totalImagesCount);
-  };
-  const handlePrevImage = () => {
+  const getCurrentImageUrl = () =>
+    totalImagesCount ? getAllImages()[currentImageIndex] : "";
+  const handleNextImage = () =>
+    setCurrentImageIndex((i) => (i + 1) % totalImagesCount);
+  const handlePrevImage = () =>
     setCurrentImageIndex(
-      (prev) => (prev - 1 + totalImagesCount) % totalImagesCount
+      (i) => (i - 1 + totalImagesCount) % totalImagesCount
     );
-  };
 
-  // ---------- Size Selector Handlers ----------
+  /* -------------------- Size Selectors -------------------- */
   const handlePlus = (index) => {
     if (!isLoggedIn) return;
     setSizesQuantity((prev) => {
@@ -286,7 +276,6 @@ const hasSelection = sizesQuantity.some(q => q > 0);
       return updated;
     });
   };
-
   const handleMinus = (index) => {
     if (!isLoggedIn) return;
     setSizesQuantity((prev) => {
@@ -306,23 +295,18 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     }, 0);
   };
 
-  // ---------- Add to Cart Handler ----------
+  /* -------------------- Add to Cart -------------------- */
   const handleAddToCart = async () => {
     if (!isLoggedIn) return;
-    // const distinctSizesSelected = sizesQuantity.filter((q) => q > 0).length;
-    // if (distinctSizesSelected < 2) {
-    //   toast.info("Please select at least 2 different sizes to add to cart.");
-    //   return;
-    // }
     try {
       const cartRef = collection(db, "users", uid, "cart");
       const q = query(cartRef, where("productId", "==", productId));
       const snapshot = await getDocs(q);
       let mapping = {};
-      snapshot.forEach((docSnap) => {
-        mapping[docSnap.data().size] = {
-          docId: docSnap.id,
-          quantity: docSnap.data().quantity,
+      snapshot.forEach((snap) => {
+        mapping[snap.data().size] = {
+          docId: snap.id,
+          quantity: snap.data().quantity,
         };
       });
       let anySelected = false;
@@ -330,6 +314,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         const sizeObj = product.sizes[i];
         const boxesSelected = sizesQuantity[i];
         if (boxesSelected > 0) anySelected = true;
+        const effectivePrice = priceAfterDiscount(sizeObj.pricePerPiece);
         if (boxesSelected > 0) {
           const noOfPieces = computeTotalPieces(
             boxesSelected,
@@ -337,10 +322,11 @@ const hasSelection = sizesQuantity.some(q => q > 0);
             sizeObj.piecesInStock
           );
           const cartData = {
-            productId: productId,
+            productId,
             productTitle: product.title,
             size: sizeObj.size,
-            pricePerPiece: sizeObj.pricePerPiece,
+            pricePerPiece: effectivePrice,
+            discountPercent: hasValidDiscount ? product.discount : 0,
             boxPieces: sizeObj.boxPieces,
             quantity: boxesSelected,
             noOfPieces,
@@ -357,8 +343,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
             );
             await setDoc(docRef, cartData, { merge: true });
           } else {
-            const newDocRef = doc(cartRef);
-            await setDoc(newDocRef, cartData);
+            await setDoc(doc(cartRef), cartData);
           }
         } else if (mapping[sizeObj.size]) {
           const docRef = doc(
@@ -384,14 +369,12 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     }
   };
 
-  // ---------- Magnifier Handlers ----------
+  /* -------------------- Magnifier -------------------- */
   const handleMouseEnter = () => {
-    if (isMobile) return; // Disable magnifier on mobile
+    if (isMobile) return;
     if (getCurrentImageUrl()) setShowMagnifier(true);
   };
-
   const handleMouseLeave = () => setShowMagnifier(false);
-
   const handleMouseMove = (e) => {
     if (!imgContainerRef.current) return;
     const { left, top, width, height } =
@@ -415,7 +398,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
     });
   };
 
-  // ---------- Early Loading Returns ----------
+  /* -------------------- Early returns -------------------- */
   if (loading) {
     return (
       <div
@@ -431,24 +414,25 @@ const hasSelection = sizesQuantity.some(q => q > 0);
   }
   if (!product) return null;
 
-  // ---------- Derived UI Values ----------
+  /* -------------------- Derived values -------------------- */
   const minPrice = (() => {
     if (!product.sizes) return null;
-    const valid = product.sizes.filter(
+    const validSizes = product.sizes.filter(
       (s) => computeTotalBoxes(s.piecesInStock, s.boxPieces) > 0
     );
-    if (!valid.length) return null;
-    return Math.min(...valid.map((s) => s.pricePerPiece));
+    if (!validSizes.length) return null;
+    return Math.min(
+      ...validSizes.map((s) => priceAfterDiscount(s.pricePerPiece))
+    );
   })();
-  // const distinctSizesSelected = getCountDistinctSizesSelected();
+
   const cartButtonTooltip = !isLoggedIn
-  ? "Please log in to add items to cart."
-  : !hasSelection
-  ? "Please select at least one size."
-  : "";
+    ? "Please log in to add items to cart."
+    : !hasSelection
+    ? "Please select at least one size."
+    : "";
 
-
-  // ---------- Render ----------
+  /* -------------------- Render -------------------- */
   return (
     <div
       style={{
@@ -457,7 +441,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         padding: isMobile ? "20px 10px" : "30px",
       }}
     >
-      {/* ---------- Carousel Section ---------- */}
+      {/* -------- IMAGE CAROUSEL -------- */}
       <div
         style={{
           position: "relative",
@@ -466,11 +450,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         }}
       >
         <div
-          style={{
-            marginBottom: "10px",
-            display: "inline-block",
-            position: "relative",
-          }}
+          style={{ position: "relative", display: "inline-block" }}
           ref={imgContainerRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -518,9 +498,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                 backgroundColor: "#f0f0f0",
                 borderRadius: "8px",
               }}
-            >
-              No Images
-            </div>
+            />
           )}
           {totalImagesCount > 1 && (
             <button
@@ -543,7 +521,6 @@ const hasSelection = sizesQuantity.some(q => q > 0);
             </button>
           )}
           {showMagnifier &&
-            imgContainerRef.current &&
             (() => {
               const { width, height } =
                 imgContainerRef.current.getBoundingClientRect();
@@ -552,16 +529,14 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                   style={{
                     position: "absolute",
                     pointerEvents: "none",
-                    width: magnifierSize + "px",
-                    height: magnifierSize + "px",
+                    width: magnifierSize,
+                    height: magnifierSize,
                     borderRadius: "50%",
                     overflow: "hidden",
                     top: magnifierPos.y - magnifierSize / 2,
                     left: magnifierPos.x - magnifierSize / 2,
                     border: "2px solid #999",
-                    boxSizing: "border-box",
                     backgroundImage: `url('${getCurrentImageUrl()}')`,
-                    backgroundRepeat: "no-repeat",
                     backgroundSize: `${width * zoomScale}px ${
                       height * zoomScale
                     }px`,
@@ -596,59 +571,58 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         )}
       </div>
 
-      {/* ---------- Download Images Button ---------- */}
+      {/* -------- DOWNLOAD / SHARE -------- */}
       {isLoggedIn && (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "center",
-      gap: "12px",
-      marginBottom: isMobile ? "16px" : "20px",
-    }}
-  >
-    <button
-      onClick={handleDownloadImages}
-      style={{
-        padding: isMobile ? "8px 16px" : "10px 20px",
-        backgroundColor: "#333",
-        color: "#fff",
-        border: "none",
-        borderRadius: "4px",
-        cursor: "pointer",
-        fontFamily: "Plus Jakarta Sans, sans-serif",
-        fontSize: isMobile ? "14px" : "16px",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-      }}
-    >
-      <AiOutlineDownload size={isMobile ? 18 : 20} />
-      Download Images
-    </button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "12px",
+            marginBottom: isMobile ? "16px" : "20px",
+          }}
+        >
+          <button
+            onClick={handleDownloadImages}
+            style={{
+              padding: isMobile ? "8px 16px" : "10px 20px",
+              backgroundColor: "#333",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontFamily: "Plus Jakarta Sans, sans-serif",
+              fontSize: isMobile ? "14px" : "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <AiOutlineDownload size={isMobile ? 18 : 20} />
+            Download Images
+          </button>
+          <button
+            onClick={handleShareProduct}
+            style={{
+              padding: isMobile ? "8px 16px" : "10px 20px",
+              backgroundColor: "#333",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontFamily: "Plus Jakarta Sans, sans-serif",
+              fontSize: isMobile ? "14px" : "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <AiOutlineShareAlt size={isMobile ? 18 : 20} />
+            Share Product
+          </button>
+        </div>
+      )}
 
-    <button
-      onClick={handleShareProduct}
-      style={{
-        padding: isMobile ? "8px 16px" : "10px 20px",
-        backgroundColor: "#333",
-        color: "#fff",
-        border: "none",
-        borderRadius: "4px",
-        cursor: "pointer",
-        fontFamily: "Plus Jakarta Sans, sans-serif",
-        fontSize: isMobile ? "14px" : "16px",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-      }}
-    >
-      <AiOutlineShareAlt size={isMobile ? 18 : 20} />
-      Share Product
-    </button>
-  </div>
-)}
-
-      {/* ---------- Product Title + Starting Price ---------- */}
+      {/* -------- TITLE & STARTING PRICE -------- */}
       <div style={{ marginBottom: isMobile ? "24px" : "30px" }}>
         <h1
           style={{
@@ -661,17 +635,38 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         >
           {product.title || "Untitled Product"}
         </h1>
-        {minPrice && isLoggedIn ? (
-          <p
-            style={{
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: isMobile ? "14px" : "16px",
-              color: "#666",
-              marginBottom: "20px",
-            }}
-          >
-            Starting from ₹{minPrice} per piece
-          </p>
+
+        {isLoggedIn && minPrice ? (
+          hasValidDiscount ? (
+            <p
+              style={{
+                fontFamily: "Plus Jakarta Sans, sans-serif",
+                fontSize: isMobile ? "14px" : "16px",
+                color: "#666",
+                marginBottom: "20px",
+              }}
+            >
+              Starting from{" "}
+              <span style={{ textDecoration: "line-through", marginRight: 6 }}>
+                ₹{Math.min(
+                  ...product.sizes.map((s) => s.pricePerPiece)
+                )}
+              </span>
+              <span style={{ fontWeight: 600 }}>₹{minPrice}</span>{" "}
+              per piece ({product.discount}% OFF)
+            </p>
+          ) : (
+            <p
+              style={{
+                fontFamily: "Plus Jakarta Sans, sans-serif",
+                fontSize: isMobile ? "14px" : "16px",
+                color: "#666",
+                marginBottom: "20px",
+              }}
+            >
+              Starting from ₹{minPrice} per piece
+            </p>
+          )
         ) : !isLoggedIn ? (
           <p
             style={{
@@ -684,6 +679,8 @@ const hasSelection = sizesQuantity.some(q => q > 0);
             Starting from -- per piece (Login to view prices)
           </p>
         ) : null}
+
+        {/* --- Product Meta --- */}
         <div style={{ display: "flex", flexWrap: "wrap", rowGap: "10px" }}>
           <div style={{ flex: "1 1 300px" }}>
             <p
@@ -711,7 +708,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                   fontFamily: "Plus Jakarta Sans, sans-serif",
                   fontSize: isMobile ? "14px" : "16px",
                   marginBottom: "5px",
-                  fontWeight:"bold"
+                  fontWeight: "bold",
                 }}
               >
                 Additional Info: {product.additionalInfo}
@@ -742,7 +739,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         </div>
       </div>
 
-      {/* ---------- Size-Quantity Selector ---------- */}
+      {/* -------- SIZE SELECTOR -------- */}
       <div
         style={{
           marginBottom: isMobile ? "24px" : "30px",
@@ -760,6 +757,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         >
           Select Sizes & Quantities
         </h2>
+
         {loadingSizes ? (
           <div
             style={{
@@ -780,15 +778,18 @@ const hasSelection = sizesQuantity.some(q => q > 0);
               Loading size details...
             </p>
           </div>
-        ) : product.sizes && product.sizes.length > 0 ? (
+        ) : product.sizes && product.sizes.length ? (
           <div style={{ border: "1px solid #ccc", borderRadius: "8px" }}>
-            {product.sizes.map((sizeObj, index) => {
-              const boxesSelected = sizesQuantity[index];
+            {product.sizes.map((sizeObj, idx) => {
+              const boxesSelected = sizesQuantity[idx];
               const availableBoxes = computeTotalBoxes(
                 sizeObj.piecesInStock,
                 sizeObj.boxPieces
               );
-              const totalForThisSize = isLoggedIn
+              const effectivePrice = priceAfterDiscount(
+                sizeObj.pricePerPiece
+              );
+              const totalForSize = isLoggedIn
                 ? getSizeTotal(sizeObj, boxesSelected)
                 : 0;
               const totalPiecesSelected = computeTotalPieces(
@@ -798,27 +799,29 @@ const hasSelection = sizesQuantity.some(q => q > 0);
               );
               const remainder =
                 (sizeObj.piecesInStock || 0) % (sizeObj.boxPieces || 1);
+
               return (
                 <div
-                  key={index}
+                  key={idx}
                   style={{
                     display: "flex",
                     flexDirection: isMobile ? "column" : "row",
                     alignItems: isMobile ? "flex-start" : "center",
                     padding: "10px",
-                    gap: isMobile ? "8px" : "0",
+                    gap: isMobile ? "8px" : 0,
                     borderBottom:
-                      index !== product.sizes.length - 1
+                      idx !== product.sizes.length - 1
                         ? "1px solid #eee"
                         : "none",
                   }}
                 >
+                  {/* --- Size + Price --- */}
                   <div style={{ flex: 1 }}>
                     <p
                       style={{
                         fontFamily: "Plus Jakarta Sans, sans-serif",
                         fontSize: isMobile ? "14px" : "16px",
-                        fontWeight: "500",
+                        fontWeight: 500,
                         marginBottom: "6px",
                       }}
                     >
@@ -831,30 +834,55 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                         marginBottom: "6px",
                       }}
                     >
-                      {isLoggedIn
-                        ? `Price/Piece: ₹${sizeObj.pricePerPiece} | Pieces/Box: ${sizeObj.boxPieces}`
-                        : `Price/Piece: -- | Pieces/Box: ${sizeObj.boxPieces}`}
+                      {isLoggedIn ? (
+                        hasValidDiscount ? (
+                          <>
+                            Price/Piece:{" "}
+                            <span
+                              style={{
+                                textDecoration: "line-through",
+                                marginRight: 4,
+                              }}
+                            >
+                              ₹{sizeObj.pricePerPiece}
+                            </span>
+                            ₹{effectivePrice} | Pieces/Box:{" "}
+                            {sizeObj.boxPieces}
+                          </>
+                        ) : (
+                          <>
+                            Price/Piece: ₹{sizeObj.pricePerPiece} |
+                            Pieces/Box: {sizeObj.boxPieces}
+                          </>
+                        )
+                      ) : (
+                        <>
+                          Price/Piece: -- | Pieces/Box: {sizeObj.boxPieces}
+                        </>
+                      )}
                     </p>
                   </div>
+
+                  {/* --- Quantity controls --- */}
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      marginLeft: isMobile ? "0" : "8px",
+                      marginLeft: isMobile ? 0 : 8,
                     }}
                   >
                     <button
-                      onClick={() => handleMinus(index)}
+                      onClick={() => handleMinus(idx)}
                       disabled={!boxesSelected || boxesSelected <= 0}
                       style={{
                         backgroundColor: "#fff",
                         border: "1px solid #333",
                         marginRight: "8px",
-                        width: isMobile ? "26px" : "30px",
-                        height: isMobile ? "26px" : "30px",
+                        width: isMobile ? 26 : 30,
+                        height: isMobile ? 26 : 30,
                         borderRadius: "4px",
-                        fontSize: "16px",
+                        fontSize: 16,
                         cursor:
                           isLoggedIn && boxesSelected > 0
                             ? "pointer"
@@ -865,7 +893,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                     </button>
                     <p
                       style={{
-                        width: isMobile ? "26px" : "30px",
+                        width: isMobile ? 26 : 30,
                         textAlign: "center",
                         fontFamily: "Plus Jakarta Sans, sans-serif",
                         fontSize: isMobile ? "14px" : "16px",
@@ -874,7 +902,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                       {boxesSelected || 0}
                     </p>
                     <button
-                      onClick={() => handlePlus(index)}
+                      onClick={() => handlePlus(idx)}
                       disabled={
                         !isLoggedIn ||
                         (boxesSelected !== null &&
@@ -884,19 +912,21 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                         backgroundColor: "#fff",
                         border: "1px solid #333",
                         marginLeft: "8px",
-                        width: isMobile ? "26px" : "30px",
-                        height: isMobile ? "26px" : "30px",
+                        width: isMobile ? 26 : 30,
+                        height: isMobile ? 26 : 30,
                         borderRadius: "4px",
-                        fontSize: "16px",
+                        fontSize: 16,
                         cursor: isLoggedIn ? "pointer" : "not-allowed",
                       }}
                     >
                       <AiOutlinePlus />
                     </button>
                   </div>
+
+                  {/* --- Totals / Stock --- */}
                   <div
                     style={{
-                      marginLeft: isMobile ? "0" : "20px",
+                      marginLeft: isMobile ? 0 : 20,
                       textAlign: isMobile ? "left" : "right",
                     }}
                   >
@@ -917,18 +947,29 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                           style={{
                             fontFamily: "Plus Jakarta Sans, sans-serif",
                             fontSize: isMobile ? "12px" : "14px",
-                            marginBottom: "2px",
+                            marginBottom: 2,
                           }}
                         >
-                          {isLoggedIn
-                            ? `Total: ₹${totalForThisSize}`
-                            : "Total: --"}
+                          {isLoggedIn ? (
+                            <>
+                              Total: ₹{totalForSize}
+                              {hasValidDiscount && (
+                                <>
+                                  {" "}
+                                  (
+                                  {product.discount}% OFF)
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            "Total: --"
+                          )}
                         </p>
                         {isLoggedIn && (
                           <p
                             style={{
                               fontFamily: "Plus Jakarta Sans, sans-serif",
-                              fontSize: "12px",
+                              fontSize: 12,
                               color: "#888",
                               margin: 0,
                             }}
@@ -960,6 +1001,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
             No sizes available for this product.
           </p>
         )}
+
         {!isLoggedIn && (
           <div
             style={{
@@ -1006,7 +1048,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
         )}
       </div>
 
-      {/* ---------- Grand Total & "Add to Cart" ---------- */}
+      {/* -------- GRAND TOTAL / CART BUTTON -------- */}
       {product.sizes &&
         product.sizes.some(
           (s) => computeTotalBoxes(s.piecesInStock, s.boxPieces) > 0
@@ -1018,7 +1060,7 @@ const hasSelection = sizesQuantity.some(q => q > 0);
               justifyContent: "space-between",
               marginTop: "10px",
               alignItems: isMobile ? "flex-start" : "center",
-              gap: isMobile ? "12px" : "0",
+              gap: isMobile ? "12px" : 0,
             }}
           >
             <div>
@@ -1031,35 +1073,21 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                 }}
               >
                 {isLoggedIn
-                  ? `Grand Total: ₹${getAllSizesTotal()}`
+                  ? `Grand Total: ₹${getAllSizesTotal()}${
+                      hasValidDiscount ? ` (${product.discount}% OFF)` : ""
+                    }`
                   : "Grand Total: --"}
               </p>
-              {/* {distinctSizesSelected < 2 && (
-                <p
-                  style={{
-                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                    fontSize: "12px",
-                    color: "#888",
-                    margin: "4px 0 0",
-                  }}
-                >
-                  You must select at least 2 different sizes.
-                </p>
-              )} */}
             </div>
-            <Tooltip
-              title={
-               cartButtonTooltip
-              }
-              arrow
-            >
+            <Tooltip title={cartButtonTooltip} arrow>
               <span>
                 <button
                   onClick={isLoggedIn ? handleAddToCart : undefined}
                   disabled={!isLoggedIn || !hasSelection}
                   style={{
                     padding: isMobile ? "12px 22px" : "14px 28px",
-                    backgroundColor: isLoggedIn && hasSelection ? "#333" : "#bbb",
+                    backgroundColor:
+                      isLoggedIn && hasSelection ? "#333" : "#bbb",
                     color: "#fff",
                     fontFamily: "Plus Jakarta Sans, sans-serif",
                     fontSize: isMobile ? "14px" : "16px",
@@ -1067,10 +1095,8 @@ const hasSelection = sizesQuantity.some(q => q > 0);
                     borderRadius: "4px",
                     border: "none",
                     cursor:
-   isLoggedIn && hasSelection
-     ? "pointer"
-     : "not-allowed",
-                 }}
+                      isLoggedIn && hasSelection ? "pointer" : "not-allowed",
+                  }}
                 >
                   ADD TO CART
                 </button>

@@ -51,6 +51,7 @@ export default function SearchProducts() {
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             addedOn: data.addedOn || null,
+            discount:data.discount || 0
           });
         });
         setAllProducts(productsArr);
