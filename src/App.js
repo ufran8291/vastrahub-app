@@ -1,7 +1,11 @@
 // src/App.js
 import React, { useState } from "react";
 import "./App.css";
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import Root from "./components/Root";
 import NoRoute from "./components/NoRoute";
 import { auth } from "./Configs/FirebaseConfig";
@@ -12,7 +16,7 @@ import SignIn from "./Pages/SignIn";
 import OTPVerification from "./Pages/OTPVerification";
 
 // New or updated pages
-import NewUser from "./Pages/NewUser";             // Registration page
+import NewUser from "./Pages/NewUser"; // Registration page
 import RequestPending from "./Pages/RequestPending";
 import RequestRejected from "./Pages/RequestRejected";
 import BlockedUser from "./Pages/BlockedUser";
@@ -27,7 +31,7 @@ import HelpPage from "./Pages/HelpPage";
 import OrderPage from "./Pages/OrderPage";
 import OrderSuccess from "./Pages/OrderSuccess";
 // import MyOrders from "./Pages/MyOrders";
-import MyOders from './Pages/MyOders';
+import MyOders from "./Pages/MyOders";
 import OrderDetails from "./Pages/OrderDetails";
 import RefundPolicy from "./Pages/RefundPolicy";
 
@@ -41,6 +45,7 @@ import CustomCursor from "./components/CustomCursor";
 import { motion } from "framer-motion";
 import ShippingPolicy from "./Pages/ShippingPolicy";
 import PaymentStatus from "./Pages/PaymentStatus";
+import DeleteAccount from "./Pages/DeleteAccount";
 
 // A helper component that adds a smooth transition to its children.
 const PageTransition = ({ children }) => (
@@ -56,7 +61,9 @@ const PageTransition = ({ children }) => (
 );
 
 // A helper function to wrap a component with PageTransition.
-const withTransition = (component) => <PageTransition>{component}</PageTransition>;
+const withTransition = (component) => (
+  <PageTransition>{component}</PageTransition>
+);
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -174,8 +181,10 @@ function App() {
           path: "/payment",
           element: withTransition(<PaymentStatus />),
         },
-        
-       
+        {
+          path: "/delete-account",
+          element: withTransition(<DeleteAccount />),
+        },
       ],
     },
   ]);
