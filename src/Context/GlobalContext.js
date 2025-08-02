@@ -136,9 +136,11 @@ export const GlobalProvider = ({ children }) => {
               window.location.href = "/";
             }
           } else {
-            console.log("User not found in Firestore. Signing out.");
-            await signOutUser();
-            window.location.href = "/register";
+            console.log("From Global cont User not found in Firestore. Signing out.");
+            // await signOutUser();
+            // let currentUrlOfPage = window.location.href;
+            // console.log(currentUrlOfPage);
+            // window.location.href = "/register";
           }
   
         } catch (err) {

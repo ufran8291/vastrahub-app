@@ -185,7 +185,7 @@ const OTPVerification = () => {
         navigate("/");
         return;
       }
-      console.log("No user found; redirecting to registration.");
+      console.log("From the page : No user found; redirecting to registration.");
       navigate("/register");
     } catch (error) {
       console.error("Error verifying OTP:", error);
