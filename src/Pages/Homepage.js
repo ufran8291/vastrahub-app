@@ -196,6 +196,7 @@ function CategoryCard2({ category, onClick }) {
     </div>
   );
 }
+
 export default function Homepage() {
   const navigate = useNavigate();
   const { currentUser, firestoreUser, checkSessionTokenConsistency } =
@@ -331,6 +332,7 @@ export default function Homepage() {
       console.error("Error fetching announcement:", error);
     }
   };
+
   const getCategoryImages = async () => {
     try {
       const catDocs = await getDocs(collection(db, "categories"));
@@ -380,7 +382,7 @@ export default function Homepage() {
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
-            discount : data.discount||0,
+            discount: data.discount || 0,
           });
         }
       }
@@ -413,7 +415,7 @@ export default function Homepage() {
             price: data.sizes?.[0]?.pricePerPiece || 0,
             sizes: data.sizes || [],
             fabric: data.fabric || "",
-            discount : data.discount||0,
+            discount: data.discount || 0,
           });
         }
       }
@@ -610,25 +612,30 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Categories Section */}
+      {/* Categories Section – now horizontal 4-up (scrollable) */}
       <div className="full-width-dark-container">
         <div className="container category-content">
           <ScrollFloat
             containerClassName=""
             textClassName="responsive-title"
-            styles={{ marginBottom: "50px", textAlign: "left" }}
+            styles={{ marginBottom: "30px", textAlign: "left" }}
           >
             SHOP BY CATEGORY
           </ScrollFloat>
-          <div className="category-grid">
+
+          <div
+            className="category-strip no-scrollbar"
+            ref={categoryCarouselRef}
+          >
             {categories.map((cat, i) => (
-              <CategoryCard2
-                key={i}
-                category={cat}
-                onClick={() =>
-                  navigate("/shopbycategory", { state: { category: cat } })
-                }
-              />
+              <div className="category-item" key={i}>
+                <CategoryCard2
+                  category={cat}
+                  onClick={() =>
+                    navigate("/shopbycategory", { state: { category: cat } })
+                  }
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -643,30 +650,13 @@ export default function Homepage() {
             styles={{
               fontFamily: "Lora, serif",
               fontWeight: "600",
-              fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
+              fontSize: "clamp(24px, 6vw, 48px)",
               marginBottom: "30px",
               textAlign: "left",
             }}
           >
             FEATURED PRODUCTS
           </ScrollFloat>
-          {featuredTagId && (
-            <Button
-              variant="text"
-              onClick={() =>
-                navigate("/tag-products", { state: { tagId: featuredTagId } })
-              }
-              sx={{
-                textTransform: "none",
-                fontFamily: "Plus Jakarta Sans, sans-serif",
-                color: "#333",
-                textDecoration: "underline",
-                fontSize: "15px",
-              }}
-            >
-              View All
-            </Button>
-          )}
         </div>
         <div
           style={{
@@ -682,12 +672,12 @@ export default function Homepage() {
             <ProductCard
               key={i}
               product={prod}
-               onView={() =>
-                   window.open(
-                     `/view-product?productId=${prod.id}`,
-                     "_blank",
-                     "noopener,noreferrer"
-                   )}
+              onView={() =>
+                window.open(
+                  `/view-product?productId=${prod.id}`,
+                  "_blank",
+                  "noopener,noreferrer"
+                )}
               onAdd={() => handleAddToCartClick(prod)}
             />
           ))}
@@ -785,30 +775,13 @@ export default function Homepage() {
             styles={{
               fontFamily: "Lora, serif",
               fontWeight: "600",
-              fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
+              fontSize: "clamp(24px, 6vw, 48px)",
               marginBottom: "30px",
               textAlign: "left",
             }}
           >
             FEATURED PRODUCTS
           </ScrollFloat>
-          {featuredTagId2 && (
-            <Button
-              variant="text"
-              onClick={() =>
-                navigate("/tag-products", { state: { tagId: featuredTagId2 } })
-              }
-              sx={{
-                textTransform: "none",
-                fontFamily: "Plus Jakarta Sans, sans-serif",
-                color: "#333",
-                textDecoration: "underline",
-                fontSize: "15px",
-              }}
-            >
-              View All
-            </Button>
-          )}
         </div>
         <div
           style={{
@@ -824,12 +797,12 @@ export default function Homepage() {
             <ProductCard
               key={i}
               product={prod}
-               onView={() =>
-                   window.open(
-                     `/view-product?productId=${prod.id}`,
-                     "_blank",
-                     "noopener,noreferrer"
-                   )}
+              onView={() =>
+                window.open(
+                  `/view-product?productId=${prod.id}`,
+                  "_blank",
+                  "noopener,noreferrer"
+                )}
               onAdd={() => handleAddToCartClick(prod)}
             />
           ))}
@@ -881,20 +854,10 @@ export default function Homepage() {
             <ScrollFloat
               containerClassName=""
               textClassName=""
-              // styles={{
-              //   fontFamily: "Lora",
-              //   fontWeight: "600",
-              //   fontSize: "38px",
-              //   lineHeight: "61px",
-              //   letterSpacing: "0.03em",
-              //   textTransform: "uppercase",
-              //   marginBottom: "20px",
-              //   textAlign: "left",
-              // }}
               styles={{
                 fontFamily: "Lora, serif",
                 fontWeight: "600",
-                fontSize: "clamp(24px, 6vw, 48px)", // Mobile → 24px , Desktop → max 48px
+                fontSize: "clamp(24px, 6vw, 48px)",
                 marginBottom: "20px",
                 textTransform: "uppercase",
                 textAlign: "left",

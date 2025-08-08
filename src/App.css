@@ -189,3 +189,26 @@ body {
     text-align: center;
   }
 }
+/* === Horizontal category strip (always 4 visible) === */
+:root { --cat-gap: 20px; }
+
+.category-strip {
+  display: flex;
+  gap: var(--cat-gap);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 10px;
+}
+
+/* Make exactly four items fit the viewport width (with 3 gaps) */
+.category-strip > .category-item {
+  flex: 0 0 calc((100% - (3 * var(--cat-gap))) / 4);
+  scroll-snap-align: start;
+}
+
+/* Optional: small left/right padding so first/last card aren’t hard-edged */
+.category-content .category-strip {
+  padding-left: 20px;
+  padding-right: 20px;
+}
